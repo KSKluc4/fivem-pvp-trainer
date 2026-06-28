@@ -37,7 +37,7 @@ const QUESTIONS = [
     question: 'Como você avalia seu reflexo atual?',
     subtitle: 'Seja honesto — isso calibra a intensidade do treino',
     options: [
-      { value: 'lento', label: 'Lento', description: 'Frequentemente fico no delay, o inimigo sempre atira primeiro', icon: '🐢' },
+      { value: 'lento', label: 'Lento', description: 'Frequentemente fico no delay, inimigo atira primeiro', icon: '🐢' },
       { value: 'medio', label: 'Médio', description: 'Às vezes reajo bem, às vezes não', icon: '⏱️' },
       { value: 'rapido', label: 'Rápido', description: 'Reajo bem, quero levar ao próximo nível', icon: '🐆' },
     ],
@@ -55,7 +55,7 @@ const QUESTIONS = [
   {
     id: 'daily_time',
     question: 'Quanto tempo você pode treinar por dia?',
-    subtitle: 'Consistência diária é mais importante que sessões longas',
+    subtitle: 'Consistência diária supera sessões longas esporádicas',
     options: [
       { value: 25, label: '15–30 min', description: 'Treino rápido e focado no ponto crítico', icon: '⚡' },
       { value: 45, label: '30–60 min', description: 'Sessão completa com aquecimento e revisão', icon: '🔥' },
@@ -77,6 +77,7 @@ const QUESTIONS = [
 
 export default function Questionnaire({ username, onComplete }) {
   const [step, setStep] = useState(0)
+  const [animDir, setAnimDir] = useState('right')
   const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -89,6 +90,7 @@ export default function Questionnaire({ username, onComplete }) {
     setAnswers(newAnswers)
 
     if (step < QUESTIONS.length - 1) {
+      setAnimDir('right')
       setStep(step + 1)
       return
     }
@@ -99,52 +101,82 @@ export default function Questionnaire({ username, onComplete }) {
       const res = await submitQuestionnaire({ name: username, ...newAnswers })
       onComplete(res.data)
     } catch {
-      setError('Erro ao enviar questionário. Verifique se o backend está rodando na porta 5000.')
+      setError('Erro ao enviar. Verifique se o backend está rodando na porta 5000.')
       setLoading(false)
     }
+  }
+
+  const handleBack = () => {
+    setAnimDir('left')
+    setStep(step - 1)
   }
 
   if (loading) {
     return (
       <div className="loading-screen">
-        <div className="spinner" />
+        <div className="loading-crosshair">
+          <div className="lc-ring lc-ring-1" />
+          <div className="lc-ring lc-ring-2" />
+          <div className="lc-dot" />
+        </div>
         <p>Gerando sua rotina personalizada...</p>
+        <span className="loading-sub">Analisando perfil de {username}</span>
       </div>
     )
   }
 
   return (
     <div className="questionnaire">
+      <div className="q-header">
+        <div className="q-logo-small">🎯 FiveM PvP Trainer</div>
+        <div className="step-indicator">
+          {Array.from({ length: QUESTIONS.length }, (_, i) => (
+            <div
+              key={i}
+              className={`step-dot ${i < step ? 'done' : ''} ${i === step ? 'active' : ''}`}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
-      <div className="step-indicator">
-        Pergunta {step + 1} de {QUESTIONS.length}
+
+      <div className="q-step-label">
+        Pergunta <strong>{step + 1}</strong> de {QUESTIONS.length}
       </div>
 
-      <div className="question-card">
+      {/* key={step} forces remount → CSS animation retriggers */}
+      <div key={step} className={`question-card anim-${animDir}`}>
         <h2 className="question-title">{current.question}</h2>
         <p className="question-subtitle">{current.subtitle}</p>
 
         <div className="options-grid">
-          {current.options.map((opt) => (
+          {current.options.map((opt, i) => (
             <button
               key={opt.value}
               className={`option-card ${answers[current.id] === opt.value ? 'selected' : ''}`}
               onClick={() => handleSelect(opt.value)}
+              style={{ animationDelay: `${i * 60}ms` }}
             >
-              <span className="option-icon">{opt.icon}</span>
-              <span className="option-label">{opt.label}</span>
-              <span className="option-desc">{opt.description}</span>
+              <div className="option-card-inner">
+                <span className="option-icon">{opt.icon}</span>
+                <div className="option-text">
+                  <span className="option-label">{opt.label}</span>
+                  <span className="option-desc">{opt.description}</span>
+                </div>
+                <span className="option-arrow">›</span>
+              </div>
             </button>
           ))}
         </div>
 
-        {error && <p className="error-msg">{error}</p>}
+        {error && <p className="error-msg">⚠️ {error}</p>}
 
         {step > 0 && (
-          <button className="btn-back" onClick={() => setStep(step - 1)}>
-            ← Voltar
+          <button className="btn-back" onClick={handleBack}>
+            ← Pergunta anterior
           </button>
         )}
       </div>
