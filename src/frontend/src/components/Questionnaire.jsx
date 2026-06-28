@@ -124,8 +124,9 @@ export default function Questionnaire({ username, onComplete }) {
     try {
       const res = await submitQuestionnaire({ name: username, ...newAnswers })
       onComplete(res.data)
-    } catch {
-      setError('Erro ao enviar. Verifique se o backend está rodando na porta 5000.')
+    } catch (err) {
+      const detail = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Erro desconhecido'
+      setError(`Erro ao enviar questionário: ${detail}`)
       setLoading(false)
     }
   }

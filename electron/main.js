@@ -1,18 +1,42 @@
 'use strict'
 
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, safeStorage, session } = require('electron')
-const { spawn } = require('child_process')
+const { app, BrowserWindow, Menu, shell, ipcMain, safeStorage, session } = require('electron')
 const path = require('path')
-const net  = require('net')
-const http = require('http')
 const fs   = require('fs')
 
-let mainWindow      = null
-let backendProcess  = null
-let APP_PORT        = 5000
-let _quitting       = false   // true when we intentionally kill the backend
+// ── Vercel URL ────────────────────────────────────────────────────────────────
+// Updated after each Vercel deployment.
+const VERCEL_URL = 'https://fivem-pvp-trainer.vercel.app'
 
-// ── Secure storage (safeStorage + local file) ─────────────────────────────────
+// ── File logger ───────────────────────────────────────────────────────────────
+
+const LOG_DIR  = path.join(app.getPath('appData'), '..', 'Local', 'FiveM-PvP-Trainer', 'logs')
+const LOG_FILE = path.join(LOG_DIR, 'app.log')
+
+function ensureLogDir() {
+  try { fs.mkdirSync(LOG_DIR, { recursive: true }) } catch (_) {}
+}
+
+function writeLog(level, ...args) {
+  ensureLogDir()
+  const ts  = new Date().toISOString()
+  const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')
+  const line = `[${ts}] [${level}] ${msg}\n`
+  try { fs.appendFileSync(LOG_FILE, line, 'utf8') } catch (_) {}
+}
+
+const log = {
+  info:  (...a) => writeLog('INFO',  ...a),
+  warn:  (...a) => writeLog('WARN',  ...a),
+  error: (...a) => writeLog('ERROR', ...a),
+}
+
+process.on('uncaughtException',  (err) => log.error('UncaughtException:', err.stack || err))
+process.on('unhandledRejection', (err) => log.error('UnhandledRejection:', err?.stack || err))
+
+log.info(`App starting — version ${app.getVersion ? app.getVersion() : '?'} — url: ${VERCEL_URL}`)
+
+// ── Secure storage ────────────────────────────────────────────────────────────
 
 function storePath() {
   return path.join(app.getPath('userData'), 'secure_store.json')
@@ -49,123 +73,24 @@ ipcMain.handle('ss:remove', (_, key) => {
   writeStore(store)
 })
 
-// Renderer calls this synchronously to get the backend port
-ipcMain.on('get-port', (event) => { event.returnValue = APP_PORT })
-
-// ── Backend helpers ───────────────────────────────────────────────────────────
-
-function getBackendExe() {
-  if (app.isPackaged) return path.join(process.resourcesPath, 'backend.exe')
-  return path.join(__dirname, '..', 'dist', 'backend.exe')
-}
-
-function findFreePort(start) {
-  return new Promise((resolve) => {
-    let port = start
-    const tryPort = () => {
-      const s = net.createServer()
-      s.listen(port, '127.0.0.1', () => { s.close(() => resolve(port)) })
-      s.on('error', () => { port += 1; if (port > start + 20) resolve(start); else tryPort() })
-    }
-    tryPort()
-  })
-}
-
-// Poll /api/health via real HTTP — more reliable than raw TCP
-function waitForFlask(port, timeoutMs = 45000) {
-  return new Promise((resolve, reject) => {
-    const deadline = Date.now() + timeoutMs
-    const attempt = () => {
-      const req = http.get(
-        { hostname: '127.0.0.1', port, path: '/api/health', timeout: 1500 },
-        (res) => {
-          res.resume()
-          if (res.statusCode === 200) resolve()
-          else retry()
-        }
-      )
-      req.on('error', () => retry())
-      req.on('timeout', () => { req.destroy(); retry() })
-    }
-    const retry = () => {
-      if (Date.now() >= deadline) return reject(new Error('Flask startup timeout'))
-      setTimeout(attempt, 500)
-    }
-    attempt()
-  })
-}
-
-function killBackend() {
-  _quitting = true
-  if (backendProcess) { try { backendProcess.kill() } catch (_) {}; backendProcess = null }
-}
-
-// ── Content Security Policy ───────────────────────────────────────────────────
-
-function applyCSP() {
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [
-          `default-src 'self' http://127.0.0.1:${APP_PORT};` +
-          `script-src 'self' 'unsafe-inline' 'unsafe-eval';` +
-          `style-src 'self' 'unsafe-inline';` +
-          `img-src 'self' data: https:;` +
-          `connect-src 'self' http://127.0.0.1:${APP_PORT} https://*.supabase.co;` +
-          `font-src 'self' data:;`
-        ],
-      },
-    })
-  })
-}
-
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
-const SPLASH_HTML = `data:text/html;charset=utf-8,<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:%23080810;display:flex;flex-direction:column;align-items:center;
-justify-content:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;color:%237a839a}
-.spinner{width:64px;height:64px;position:relative;margin-bottom:1.5rem}
-.ring{position:absolute;top:50%;left:50%;border-radius:50%;border:2px solid transparent}
-.r1{width:56px;height:56px;border-top-color:%2300d4ff;border-right-color:%2300d4ff;
-transform:translate(-50%,-50%);animation:spin 1s linear infinite}
-.r2{width:36px;height:36px;border-bottom-color:%237b2fd4;border-left-color:%237b2fd4;
-transform:translate(-50%,-50%);animation:spin .7s linear infinite reverse}
-.dot{position:absolute;top:50%;left:50%;width:8px;height:8px;background:%2300d4ff;
-border-radius:50%;transform:translate(-50%,-50%)}
-p{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
-@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-</style></head><body>
-<div class="spinner"><div class="ring r1"></div><div class="ring r2"></div><div class="dot"></div></div>
-<p>Iniciando servidor...</p>
-</body></html>`
+let mainWindow = null
 
 async function createWindow() {
-  APP_PORT = await findFreePort(5000)
+  const devMenu = Menu.buildFromTemplate([
+    {
+      label: 'Dev',
+      submenu: [
+        { label: 'Abrir DevTools', accelerator: 'F12', click: () => mainWindow?.webContents.openDevTools() },
+        { label: 'Abrir pasta de logs', click: () => shell.openPath(LOG_DIR) },
+        { type: 'separator' },
+        { label: 'Recarregar', accelerator: 'F5', click: () => mainWindow?.webContents.reload() },
+      ],
+    },
+  ])
+  Menu.setApplicationMenu(devMenu)
 
-  backendProcess = spawn(getBackendExe(), [`--port=${APP_PORT}`], {
-    windowsHide: true, stdio: 'ignore', detached: false,
-  })
-  backendProcess.on('error', (err) => {
-    dialog.showErrorBox('Erro ao iniciar backend', err.message)
-    app.quit()
-  })
-  backendProcess.on('exit', (code) => {
-    if (_quitting) return
-    if (code !== 0 && mainWindow && !mainWindow.isDestroyed()) {
-      dialog.showErrorBox(
-        'Servidor encerrado',
-        `O servidor interno fechou inesperadamente (código ${code ?? '?'}).\nReinicie o aplicativo.`
-      )
-    }
-  })
-
-  Menu.setApplicationMenu(null)
-  applyCSP()
-
-  // Show loading splash immediately — don't make user stare at nothing
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 900, minHeight: 600,
     icon:            path.join(__dirname, 'icon.ico'),
@@ -179,29 +104,42 @@ async function createWindow() {
     },
   })
 
-  mainWindow.loadURL(SPLASH_HTML)
+  // Log renderer console errors and network failures to app.log
+  mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    if (level >= 2) log.error(`[Renderer] ${message}  (${sourceId}:${line})`)
+    else if (level === 1) log.warn(`[Renderer] ${message}`)
+  })
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    log.error('[Renderer] process gone:', JSON.stringify(details))
+  })
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log.error(`[Renderer] did-fail-load: ${desc} (${code}) url=${url}`)
+  })
+
+  // Log API request failures
+  session.defaultSession.webRequest.onCompleted((details) => {
+    if (details.statusCode >= 400 && details.url.includes('/api/')) {
+      log.error(`[Network] ${details.method} ${details.url} → ${details.statusCode}`)
+    }
+  })
+  session.defaultSession.webRequest.onErrorOccurred((details) => {
+    if (details.url.includes('/api/') || details.url.startsWith(VERCEL_URL)) {
+      log.error(`[Network] FAILED ${details.method} ${details.url} — ${details.error}`)
+    }
+  })
+
   mainWindow.once('ready-to-show', () => mainWindow.show())
   mainWindow.on('closed', () => { mainWindow = null })
-
-  // Wait for Flask to be fully ready (polls /api/health via HTTP)
-  try {
-    await waitForFlask(APP_PORT)
-  } catch {
-    dialog.showErrorBox('FiveM PvP Trainer', 'Não foi possível iniciar o servidor. Tente novamente.')
-    killBackend(); app.quit(); return
-  }
-
-  // Use 127.0.0.1 explicitly — avoids localhost → ::1 (IPv6) resolution on
-  // Windows 11, where Chromium XHR does not fall back to IPv4 after IPv6 fails.
-  mainWindow.loadURL(`http://127.0.0.1:${APP_PORT}`)
 
   // External links open in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith(`http://127.0.0.1:${APP_PORT}`)) { event.preventDefault(); shell.openExternal(url) }
+    if (!url.startsWith(VERCEL_URL)) { event.preventDefault(); shell.openExternal(url) }
   })
+
+  log.info(`Loading: ${VERCEL_URL}`)
+  mainWindow.loadURL(VERCEL_URL)
 }
 
 app.whenReady().then(createWindow)
-app.on('window-all-closed', () => { killBackend(); app.quit() })
-app.on('before-quit', killBackend)
+app.on('window-all-closed', () => app.quit())

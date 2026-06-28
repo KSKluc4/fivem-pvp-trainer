@@ -19,12 +19,6 @@
     "files": [
       "electron/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "dist/backend.exe",
-        "to": "backend.exe"
-      }
-    ],
     "win": {
       "target": [
         {

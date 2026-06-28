@@ -71,3 +71,7 @@ htmlcov/
 out/
 release/
 dist/electron-build/
+
+.vercel
+
+# Vercel — React build bundled into Flask function

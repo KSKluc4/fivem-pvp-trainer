@@ -1,25 +1,13 @@
 import axios from 'axios'
 import { secureStorage } from './storage'
 
-// Resolve the backend origin once at module load.
-// In Electron, use the explicit port from the main process so we always
-// hit http://127.0.0.1:<port> — avoids localhost→::1 and relative-URL issues.
-// In browser dev mode (no electronAPI), fall back to the current origin.
-const _backendOrigin = (() => {
-  try {
-    if (typeof window !== 'undefined' && window.electronAPI?.getBackendPort) {
-      return `http://127.0.0.1:${window.electronAPI.getBackendPort()}`
-    }
-  } catch (_) {}
-  return ''  // relative URLs work fine in the Vite dev server
-})()
-
+// All requests use relative URLs — works both on Vercel (same origin)
+// and in Electron (which loads the Vercel URL directly).
 const api = axios.create({
-  baseURL: `${_backendOrigin}/api`,
+  baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Access token lives in memory only (never touches disk)
 let _accessToken = null
 
 export function setAccessToken(token) {
@@ -37,11 +25,11 @@ api.interceptors.request.use((config) => {
 })
 
 // ── Response interceptor: auto-refresh on 401 ────────────────────────────────
-let _isRefreshing   = false
-let _refreshQueue   = []
+let _isRefreshing = false
+let _refreshQueue = []
 
 function processQueue(error, token = null) {
-  _refreshQueue.forEach((prom) => (error ? prom.reject(error) : prom.resolve(token)))
+  _refreshQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)))
   _refreshQueue = []
 }
 
@@ -90,14 +78,12 @@ api.interceptors.response.use(
 )
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-export const register      = (data) => api.post('/auth/register', data)
-export const login         = (data) => api.post('/auth/login', data)
-export const refreshTokenApi = (refreshToken) =>
-  axios.post(`${_backendOrigin}/api/auth/refresh`, { refresh_token: refreshToken })
-export const getMe         = ()     => api.get('/auth/me')
-export const updateProfile = (data) => api.put('/auth/profile', data)
-export const logoutApi     = (refreshToken) =>
-  api.post('/auth/logout', { refresh_token: refreshToken })
+export const register        = (data)         => api.post('/auth/register', data)
+export const login           = (data)         => api.post('/auth/login', data)
+export const refreshTokenApi = (refreshToken) => axios.post('/api/auth/refresh', { refresh_token: refreshToken })
+export const getMe           = ()             => api.get('/auth/me')
+export const updateProfile   = (data)         => api.put('/auth/profile', data)
+export const logoutApi       = (refreshToken) => api.post('/auth/logout', { refresh_token: refreshToken })
 
 // ── Training ──────────────────────────────────────────────────────────────────
 export const submitQuestionnaire = (data)   => api.post('/questionnaire', data)
