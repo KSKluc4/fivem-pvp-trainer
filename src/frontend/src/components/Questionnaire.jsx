@@ -15,17 +15,6 @@ const QUESTIONS = [
     ],
   },
   {
-    id: 'main_weapon',
-    question: 'Qual é sua arma principal no PvP?',
-    subtitle: 'Cada arma exige um padrão de mira diferente',
-    options: [
-      { value: 'pistola', label: 'Pistola',           description: 'Semi-auto preciso — cada bala conta',              icon: '🔫' },
-      { value: 'rifle',   label: 'Rifle / Carbine',   description: 'Alta cadência — controle de spray é crucial',      icon: '⚡' },
-      { value: 'shotgun', label: 'Shotgun',            description: 'Burst de curto alcance — agressividade máxima',    icon: '💥' },
-      { value: 'misto',   label: 'Depende do contexto', description: 'Adapto a arma ao cenário do combate',            icon: '🎯' },
-    ],
-  },
-  {
     id: 'specific_weakness',
     question: 'Qual é sua maior dificuldade específica?',
     subtitle: 'Vamos focar no seu maior gargalo técnico',

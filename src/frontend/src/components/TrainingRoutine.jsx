@@ -108,8 +108,8 @@ const FIVEM_SERVERS = [
     name:       'Goat PvP',
     desc:       'Servidor brasileiro focado em PvP tático',
     icon:       '🐐',
-    connectUrl: 'fivem://connect/play.goatpvp.com.br',
-    webUrl:     'https://discord.gg/goatpvp',
+    connectUrl: 'fivem://connect/goatroyale.com',
+    webUrl:     'https://discord.com/invite/goatgg',
     color:      '#00d4ff',
   },
   {
@@ -117,8 +117,8 @@ const FIVEM_SERVERS = [
     name:       '1v99',
     desc:       'Arena PvP competitiva brasileira',
     icon:       '⚔️',
-    connectUrl: 'fivem://connect/1v99.gg',
-    webUrl:     'https://discord.gg/1v99pvp',
+    connectUrl: 'fivem://connect/jogar.1v99.gg',
+    webUrl:     'https://discord.gg/1v99',
     color:      '#ff4757',
   },
 ]
