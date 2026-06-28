@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
 from database import init_db
@@ -12,10 +13,10 @@ _static = os.environ.get('FIVEM_STATIC', _default_static)
 
 app = Flask(__name__, static_folder=os.path.abspath(_static), static_url_path='')
 
-# CORS: only allow localhost origins (the Electron renderer or dev server)
-CORS(app, resources={r'/api/*': {
-    'origins': [r'http://localhost:\d+', r'http://127\.0\.0\.1:\d+'],
-}})
+# CORS: allow any loopback origin (Electron renderer or Vite dev server).
+# Uses compiled regex so Flask-CORS matches correctly.
+_localhost_re = re.compile(r'http://(localhost|127\.0\.0\.1):\d+')
+CORS(app, resources={r'/api/*': {'origins': _localhost_re}})
 
 init_db()
 

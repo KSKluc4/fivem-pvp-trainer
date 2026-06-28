@@ -7,9 +7,10 @@ const net  = require('net')
 const http = require('http')
 const fs   = require('fs')
 
-let mainWindow    = null
-let backendProcess = null
-let APP_PORT       = 5000
+let mainWindow      = null
+let backendProcess  = null
+let APP_PORT        = 5000
+let _quitting       = false   // true when we intentionally kill the backend
 
 // ── Secure storage (safeStorage + local file) ─────────────────────────────────
 
@@ -47,6 +48,9 @@ ipcMain.handle('ss:remove', (_, key) => {
   delete store[key]
   writeStore(store)
 })
+
+// Renderer calls this synchronously to get the backend port
+ipcMain.on('get-port', (event) => { event.returnValue = APP_PORT })
 
 // ── Backend helpers ───────────────────────────────────────────────────────────
 
@@ -92,6 +96,7 @@ function waitForFlask(port, timeoutMs = 45000) {
 }
 
 function killBackend() {
+  _quitting = true
   if (backendProcess) { try { backendProcess.kill() } catch (_) {}; backendProcess = null }
 }
 
@@ -146,6 +151,15 @@ async function createWindow() {
   backendProcess.on('error', (err) => {
     dialog.showErrorBox('Erro ao iniciar backend', err.message)
     app.quit()
+  })
+  backendProcess.on('exit', (code) => {
+    if (_quitting) return
+    if (code !== 0 && mainWindow && !mainWindow.isDestroyed()) {
+      dialog.showErrorBox(
+        'Servidor encerrado',
+        `O servidor interno fechou inesperadamente (código ${code ?? '?'}).\nReinicie o aplicativo.`
+      )
+    }
   })
 
   Menu.setApplicationMenu(null)

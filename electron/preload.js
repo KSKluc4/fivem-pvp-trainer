@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get:    (key)        => ipcRenderer.invoke('ss:get',    key),
     remove: (key)        => ipcRenderer.invoke('ss:remove', key),
   },
+  // Synchronous: renderer calls this once at module load to get the port
+  getBackendPort: () => ipcRenderer.sendSync('get-port'),
 })

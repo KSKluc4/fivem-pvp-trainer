@@ -1,8 +1,21 @@
 import axios from 'axios'
 import { secureStorage } from './storage'
 
+// Resolve the backend origin once at module load.
+// In Electron, use the explicit port from the main process so we always
+// hit http://127.0.0.1:<port> — avoids localhost→::1 and relative-URL issues.
+// In browser dev mode (no electronAPI), fall back to the current origin.
+const _backendOrigin = (() => {
+  try {
+    if (typeof window !== 'undefined' && window.electronAPI?.getBackendPort) {
+      return `http://127.0.0.1:${window.electronAPI.getBackendPort()}`
+    }
+  } catch (_) {}
+  return ''  // relative URLs work fine in the Vite dev server
+})()
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${_backendOrigin}/api`,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -80,7 +93,7 @@ api.interceptors.response.use(
 export const register      = (data) => api.post('/auth/register', data)
 export const login         = (data) => api.post('/auth/login', data)
 export const refreshTokenApi = (refreshToken) =>
-  axios.post('/api/auth/refresh', { refresh_token: refreshToken })
+  axios.post(`${_backendOrigin}/api/auth/refresh`, { refresh_token: refreshToken })
 export const getMe         = ()     => api.get('/auth/me')
 export const updateProfile = (data) => api.put('/auth/profile', data)
 export const logoutApi     = (refreshToken) =>
