@@ -1,0 +1,51 @@
+{
+  "name": "fivem-pvp-trainer",
+  "version": "1.0.0",
+  "description": "FiveM PvP Trainer — Desktop App",
+  "main": "electron/main.js",
+  "author": "KSKluc4",
+  "scripts": {
+    "electron": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ksk.fivempvptrainer",
+    "productName": "FiveM PvP Trainer",
+    "copyright": "Copyright 2026 KSKluc4",
+    "files": [
+      "electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/backend.exe",
+        "to": "backend.exe"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "FiveM-PvP-Trainer-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "directories": {
+      "output": "dist/electron-build"
+    }
+  }
+}

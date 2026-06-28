@@ -1,46 +1,59 @@
 import { useState, useEffect } from 'react'
-import { getMe } from './services/api'
-import LoginForm      from './components/LoginForm'
-import RegisterForm   from './components/RegisterForm'
-import Questionnaire  from './components/Questionnaire'
+import { getMe, getTraining } from './services/api'
+import LoginForm       from './components/LoginForm'
+import RegisterForm    from './components/RegisterForm'
+import Questionnaire   from './components/Questionnaire'
 import TrainingRoutine from './components/TrainingRoutine'
-import Progress       from './components/Progress'
-import UserMenu       from './components/UserMenu'
+import Progress        from './components/Progress'
+import UserMenu        from './components/UserMenu'
 
 export default function App() {
-  // ── Auth state ─────────────────────────────────────────────────────────────
-  const [authState, setAuthState] = useState('loading') // loading | login | register | app
+  const [authState, setAuthState] = useState('loading')
   const [user,      setUser]      = useState(null)
-
-  // ── App view ───────────────────────────────────────────────────────────────
-  const [view,      setView]      = useState('questionnaire')
+  const [view,      setView]      = useState('loading')
   const [sessionId, setSessionId] = useState(null)
   const [routine,   setRoutine]   = useState(null)
 
-  // ── Boot: restore session from localStorage ────────────────────────────────
+  // Try to load today's training; if no profile → questionnaire
+  async function loadTraining(u) {
+    setView('loading')
+    try {
+      const res = await getTraining(u.id)
+      setSessionId(res.data.session_id)
+      setRoutine(res.data.routine)
+      setView('routine')
+    } catch {
+      setView('questionnaire')
+    }
+  }
+
+  // Boot: restore session from localStorage
   useEffect(() => {
     const token = localStorage.getItem('pvp_token')
     if (!token) { setAuthState('login'); return }
 
     getMe()
-      .then((res) => { setUser(res.data); setAuthState('app') })
+      .then(async (res) => {
+        const u = res.data
+        setUser(u)
+        setAuthState('app')
+        await loadTraining(u)
+      })
       .catch(() => { localStorage.removeItem('pvp_token'); setAuthState('login') })
   }, [])
 
-  // ── Listen for 401 events from api.js ─────────────────────────────────────
+  // Listen for 401 events from api.js interceptor
   useEffect(() => {
     const handler = () => handleLogout()
     window.addEventListener('pvp:logout', handler)
     return () => window.removeEventListener('pvp:logout', handler)
   }, [])
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleAuthSuccess = (u) => {
+  const handleAuthSuccess = async (u) => {
     setUser(u)
-    setView('questionnaire')
-    setSessionId(null)
-    setRoutine(null)
+    setView('loading')
     setAuthState('app')
+    await loadTraining(u)
   }
 
   const handleQuestionnaireComplete = (data) => {
@@ -49,16 +62,22 @@ export default function App() {
     setView('routine')
   }
 
+  const handleChangeProfile = () => {
+    setSessionId(null)
+    setRoutine(null)
+    setView('questionnaire')
+  }
+
   const handleLogout = () => {
     setUser(null)
     setSessionId(null)
     setRoutine(null)
-    setView('questionnaire')
+    setView('loading')
     setAuthState('login')
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  if (authState === 'loading') {
+  // ── Render ────────────────────────────────────────────────────────────────────
+  if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
     return (
       <div className="loading-screen">
         <div className="loading-crosshair">
@@ -88,15 +107,14 @@ export default function App() {
     )
   }
 
-  // Authenticated app
   return (
     <div className="app">
-      {/* Always visible top-right user menu */}
       {user && (
         <UserMenu
           user={user}
           onLogout={handleLogout}
           onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+          onChangeProfile={handleChangeProfile}
         />
       )}
 
@@ -114,6 +132,7 @@ export default function App() {
           routine={routine}
           username={user?.name || ''}
           onViewProgress={() => setView('progress')}
+          onChangeProfile={handleChangeProfile}
         />
       )}
 

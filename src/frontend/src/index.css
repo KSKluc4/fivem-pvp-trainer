@@ -233,6 +233,22 @@ body {
 }
 .btn-secondary:hover { background: var(--bg-card); border-color: var(--color-primary); }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--border); }
+
+.routine-header-btns { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+
 .btn-back {
   background: transparent;
   color: var(--text-secondary);

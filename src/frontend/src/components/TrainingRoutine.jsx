@@ -123,7 +123,7 @@ const FIVEM_SERVERS = [
   },
 ]
 
-export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress }) {
+export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile }) {
   const [completed, setCompleted] = useState({})
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
@@ -170,7 +170,12 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
             &nbsp;•&nbsp;<span className="tag">{routine.total_duration} min</span>
           </p>
         </div>
-        <button className="btn-secondary" onClick={onViewProgress}>📊 Progresso</button>
+        <div className="routine-header-btns">
+          <button className="btn-secondary" onClick={onViewProgress}>📊 Progresso</button>
+          <button className="btn-ghost" onClick={onChangeProfile} title="Refazer questionário de perfil">
+            ⚙️ Alterar perfil
+          </button>
+        </div>
       </div>
 
       {/* ── Exercise sections ── */}

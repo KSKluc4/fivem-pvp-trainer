@@ -70,3 +70,4 @@ htmlcov/
 # Electron
 out/
 release/
+dist/electron-build/
