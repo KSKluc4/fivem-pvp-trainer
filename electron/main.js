@@ -103,11 +103,11 @@ function applyCSP() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          `default-src 'self' http://localhost:${APP_PORT};` +
+          `default-src 'self' http://127.0.0.1:${APP_PORT};` +
           `script-src 'self' 'unsafe-inline' 'unsafe-eval';` +
           `style-src 'self' 'unsafe-inline';` +
           `img-src 'self' data: https:;` +
-          `connect-src 'self' http://localhost:${APP_PORT} https://*.supabase.co;` +
+          `connect-src 'self' http://127.0.0.1:${APP_PORT} https://*.supabase.co;` +
           `font-src 'self' data:;`
         ],
       },
@@ -177,13 +177,14 @@ async function createWindow() {
     killBackend(); app.quit(); return
   }
 
-  // Navigate to the real app — Flask is guaranteed ready now
-  mainWindow.loadURL(`http://localhost:${APP_PORT}`)
+  // Use 127.0.0.1 explicitly — avoids localhost → ::1 (IPv6) resolution on
+  // Windows 11, where Chromium XHR does not fall back to IPv4 after IPv6 fails.
+  mainWindow.loadURL(`http://127.0.0.1:${APP_PORT}`)
 
   // External links open in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith(`http://localhost:${APP_PORT}`)) { event.preventDefault(); shell.openExternal(url) }
+    if (!url.startsWith(`http://127.0.0.1:${APP_PORT}`)) { event.preventDefault(); shell.openExternal(url) }
   })
 }
 
