@@ -8,6 +8,16 @@ import TrainingRoutine from './components/TrainingRoutine'
 import Progress        from './components/Progress'
 import UserMenu        from './components/UserMenu'
 
+async function retryNetworkCall(fn, retries = 5, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try { return await fn() }
+    catch (err) {
+      if (err.response || i === retries - 1) throw err
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+}
+
 export default function App() {
   const [authState, setAuthState] = useState('loading')
   const [user,      setUser]      = useState(null)
@@ -35,7 +45,7 @@ export default function App() {
       if (!refreshToken) { setAuthState('login'); return }
 
       try {
-        const res = await refreshTokenApi(refreshToken)
+        const res = await retryNetworkCall(() => refreshTokenApi(refreshToken))
         const { access_token, refresh_token: newRefresh, user: u } = res.data
         setAccessToken(access_token)
         await secureStorage.set('refresh_token', newRefresh)
@@ -101,6 +111,9 @@ export default function App() {
           <div className="lc-ring lc-ring-2" />
           <div className="lc-dot" />
         </div>
+        <span className="loading-sub">
+          {authState === 'loading' ? 'Iniciando servidor...' : 'Carregando...'}
+        </span>
       </div>
     )
   }

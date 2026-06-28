@@ -12,14 +12,21 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    try {
-      const res = await register(form)
-      onSuccess(res.data)
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
-    } finally {
-      setLoading(false)
+    const MAX = 5
+    for (let attempt = 0; attempt < MAX; attempt++) {
+      try {
+        const res = await register(form)
+        onSuccess(res.data)
+        return
+      } catch (err) {
+        if (err.response || attempt === MAX - 1) {
+          setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
+          break
+        }
+        await new Promise(r => setTimeout(r, 1000))
+      }
     }
+    setLoading(false)
   }
 
   return (

@@ -41,6 +41,11 @@ def security_headers(response):
     return response
 
 
+@app.route('/api/health')
+def health():
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_spa(path):

@@ -4,6 +4,7 @@ const { app, BrowserWindow, Menu, shell, dialog, ipcMain, safeStorage, session }
 const { spawn } = require('child_process')
 const path = require('path')
 const net  = require('net')
+const http = require('http')
 const fs   = require('fs')
 
 let mainWindow    = null
@@ -66,20 +67,25 @@ function findFreePort(start) {
   })
 }
 
-function waitForFlask(port, timeoutMs = 20000) {
+// Poll /api/health via real HTTP — more reliable than raw TCP
+function waitForFlask(port, timeoutMs = 45000) {
   return new Promise((resolve, reject) => {
     const deadline = Date.now() + timeoutMs
     const attempt = () => {
-      const sock = new net.Socket()
-      sock.setTimeout(400)
-      sock.on('connect', () => { sock.destroy(); resolve() })
-      sock.on('timeout', () => { sock.destroy(); retry() })
-      sock.on('error', () => retry())
-      sock.connect(port, '127.0.0.1')
+      const req = http.get(
+        { hostname: '127.0.0.1', port, path: '/api/health', timeout: 1500 },
+        (res) => {
+          res.resume()
+          if (res.statusCode === 200) resolve()
+          else retry()
+        }
+      )
+      req.on('error', () => retry())
+      req.on('timeout', () => { req.destroy(); retry() })
     }
     const retry = () => {
       if (Date.now() >= deadline) return reject(new Error('Flask startup timeout'))
-      setTimeout(attempt, 400)
+      setTimeout(attempt, 500)
     }
     attempt()
   })
@@ -111,6 +117,26 @@ function applyCSP() {
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
+const SPLASH_HTML = `data:text/html;charset=utf-8,<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:%23080810;display:flex;flex-direction:column;align-items:center;
+justify-content:center;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;color:%237a839a}
+.spinner{width:64px;height:64px;position:relative;margin-bottom:1.5rem}
+.ring{position:absolute;top:50%;left:50%;border-radius:50%;border:2px solid transparent}
+.r1{width:56px;height:56px;border-top-color:%2300d4ff;border-right-color:%2300d4ff;
+transform:translate(-50%,-50%);animation:spin 1s linear infinite}
+.r2{width:36px;height:36px;border-bottom-color:%237b2fd4;border-left-color:%237b2fd4;
+transform:translate(-50%,-50%);animation:spin .7s linear infinite reverse}
+.dot{position:absolute;top:50%;left:50%;width:8px;height:8px;background:%2300d4ff;
+border-radius:50%;transform:translate(-50%,-50%)}
+p{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+</style></head><body>
+<div class="spinner"><div class="ring r1"></div><div class="ring r2"></div><div class="dot"></div></div>
+<p>Iniciando servidor...</p>
+</body></html>`
+
 async function createWindow() {
   APP_PORT = await findFreePort(5000)
 
@@ -122,17 +148,10 @@ async function createWindow() {
     app.quit()
   })
 
+  Menu.setApplicationMenu(null)
   applyCSP()
 
-  try {
-    await waitForFlask(APP_PORT)
-  } catch {
-    dialog.showErrorBox('FiveM PvP Trainer', 'Não foi possível iniciar o servidor. Tente novamente.')
-    killBackend(); app.quit(); return
-  }
-
-  Menu.setApplicationMenu(null)
-
+  // Show loading splash immediately — don't make user stare at nothing
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 900, minHeight: 600,
     icon:            path.join(__dirname, 'icon.ico'),
@@ -146,16 +165,26 @@ async function createWindow() {
     },
   })
 
-  mainWindow.loadURL(`http://localhost:${APP_PORT}`)
+  mainWindow.loadURL(SPLASH_HTML)
   mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.on('closed', () => { mainWindow = null })
+
+  // Wait for Flask to be fully ready (polls /api/health via HTTP)
+  try {
+    await waitForFlask(APP_PORT)
+  } catch {
+    dialog.showErrorBox('FiveM PvP Trainer', 'Não foi possível iniciar o servidor. Tente novamente.')
+    killBackend(); app.quit(); return
+  }
+
+  // Navigate to the real app — Flask is guaranteed ready now
+  mainWindow.loadURL(`http://localhost:${APP_PORT}`)
 
   // External links open in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(`http://localhost:${APP_PORT}`)) { event.preventDefault(); shell.openExternal(url) }
   })
-
-  mainWindow.on('closed', () => { mainWindow = null })
 }
 
 app.whenReady().then(createWindow)
