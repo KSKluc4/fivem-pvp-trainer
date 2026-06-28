@@ -2,24 +2,59 @@ import { useState } from 'react'
 import { submitQuestionnaire } from '../services/api'
 
 const QUESTIONS = [
+  // ── FiveM context ──────────────────────────────────────────────────────────
+  {
+    id: 'server_type',
+    question: 'Qual servidor FiveM você joga?',
+    subtitle: 'Isso calibra o treino para o meta e ritmo do seu servidor',
+    options: [
+      { value: 'goat',  label: 'Goat PvP',  description: 'Combates táticos, range médio-longo, muito pre-aim', icon: '🐐' },
+      { value: '1v99',  label: '1v99',       description: 'Arena competitiva, ritmo frenético, fights curtas',   icon: '⚔️' },
+      { value: 'ambos', label: 'Ambos',      description: 'Jogo em múltiplos servidores e estilos',              icon: '🌐' },
+      { value: 'outro', label: 'Outro',      description: 'Servidor diferente ou privado',                       icon: '🎮' },
+    ],
+  },
+  {
+    id: 'main_weapon',
+    question: 'Qual é sua arma principal no PvP?',
+    subtitle: 'Cada arma exige um padrão de mira diferente',
+    options: [
+      { value: 'pistola', label: 'Pistola',           description: 'Semi-auto preciso — cada bala conta',              icon: '🔫' },
+      { value: 'rifle',   label: 'Rifle / Carbine',   description: 'Alta cadência — controle de spray é crucial',      icon: '⚡' },
+      { value: 'shotgun', label: 'Shotgun',            description: 'Burst de curto alcance — agressividade máxima',    icon: '💥' },
+      { value: 'misto',   label: 'Depende do contexto', description: 'Adapto a arma ao cenário do combate',            icon: '🎯' },
+    ],
+  },
+  {
+    id: 'specific_weakness',
+    question: 'Qual é sua maior dificuldade específica?',
+    subtitle: 'Vamos focar no seu maior gargalo técnico',
+    options: [
+      { value: 'moving_target', label: 'Mira em Movimento',    description: 'Erro muito quando o inimigo se movimenta',       icon: '🏃' },
+      { value: 'headshot',      label: 'Headshot Consistente', description: 'Acerto no corpo mas raramente na cabeça',         icon: '🎯' },
+      { value: 'long_range',    label: 'Distância Longa',      description: 'Perco fights de longe facilmente',               icon: '🔭' },
+      { value: 'reaction',      label: 'Reação sob Pressão',   description: 'Travo quando levo o primeiro tiro',              icon: '⚡' },
+    ],
+  },
+  // ── Aim training profile ───────────────────────────────────────────────────
   {
     id: 'focus_area',
     question: 'Qual é seu maior desafio no PvP?',
-    subtitle: 'Isso define o foco principal do seu treino diário',
+    subtitle: 'Define o foco principal dos exercícios gerados',
     options: [
-      { value: 'aim', label: 'Mira', description: 'Erro muito ao atirar, crosshair impreciso ou tremido', icon: '🎯' },
-      { value: 'reflex', label: 'Reflexo', description: 'Reajo lento, demoro para sacar e atirar', icon: '⚡' },
-      { value: 'movement', label: 'Movimento', description: 'Me movo de forma previsível, levo muita bala', icon: '🏃' },
+      { value: 'aim',      label: 'Mira',      description: 'Erro muito ao atirar, crosshair impreciso ou tremido', icon: '🎯' },
+      { value: 'reflex',   label: 'Reflexo',   description: 'Reajo lento, demoro para sacar e atirar',             icon: '⚡' },
+      { value: 'movement', label: 'Movimento', description: 'Me movo de forma previsível, levo muita bala',         icon: '🏃' },
     ],
   },
   {
     id: 'experience_level',
     question: 'Qual é seu nível de experiência em PvP?',
-    subtitle: 'Isso define a dificuldade dos exercícios gerados',
+    subtitle: 'Define a dificuldade dos exercícios gerados',
     options: [
-      { value: 'iniciante', label: 'Iniciante', description: 'Comecei a jogar FiveM PvP recentemente', icon: '🌱' },
-      { value: 'intermediario', label: 'Intermediário', description: 'Jogo há alguns meses, ganho algumas fights', icon: '⚔️' },
-      { value: 'avancado', label: 'Avançado', description: 'Jogo há mais de 1 ano, quero refinar a técnica', icon: '🏆' },
+      { value: 'iniciante',    label: 'Iniciante',    description: 'Comecei a jogar FiveM PvP recentemente',           icon: '🌱' },
+      { value: 'intermediario', label: 'Intermediário', description: 'Jogo há alguns meses, ganho algumas fights',     icon: '⚔️' },
+      { value: 'avancado',     label: 'Avançado',     description: 'Jogo há mais de 1 ano, quero refinar a técnica',  icon: '🏆' },
     ],
   },
   {
@@ -27,9 +62,9 @@ const QUESTIONS = [
     question: 'Que tipo de mira é mais difícil para você?',
     subtitle: 'Selecione sua maior dificuldade com o crosshair',
     options: [
-      { value: 'tracking', label: 'Tracking', description: 'Manter a mira em inimigos que se movem', icon: '👁️' },
-      { value: 'flick', label: 'Flick Shot', description: 'Miras rápidas para alvos distantes', icon: '💥' },
-      { value: 'close', label: 'Close Range', description: 'Trocar tiros de perto sob pressão', icon: '🔫' },
+      { value: 'tracking', label: 'Tracking',    description: 'Manter a mira em inimigos que se movem',   icon: '👁️' },
+      { value: 'flick',    label: 'Flick Shot',  description: 'Miras rápidas para alvos distantes',       icon: '💥' },
+      { value: 'close',    label: 'Close Range', description: 'Trocar tiros de perto sob pressão',        icon: '🔫' },
     ],
   },
   {
@@ -37,9 +72,9 @@ const QUESTIONS = [
     question: 'Como você avalia seu reflexo atual?',
     subtitle: 'Seja honesto — isso calibra a intensidade do treino',
     options: [
-      { value: 'lento', label: 'Lento', description: 'Frequentemente fico no delay, inimigo atira primeiro', icon: '🐢' },
-      { value: 'medio', label: 'Médio', description: 'Às vezes reajo bem, às vezes não', icon: '⏱️' },
-      { value: 'rapido', label: 'Rápido', description: 'Reajo bem, quero levar ao próximo nível', icon: '🐆' },
+      { value: 'lento',  label: 'Lento',  description: 'Inimigo frequentemente atira primeiro',  icon: '🐢' },
+      { value: 'medio',  label: 'Médio',  description: 'Às vezes reajo bem, às vezes não',       icon: '⏱️' },
+      { value: 'rapido', label: 'Rápido', description: 'Reajo bem, quero ir ao próximo nível',   icon: '🐆' },
     ],
   },
   {
@@ -47,9 +82,9 @@ const QUESTIONS = [
     question: 'Como é seu movimento durante o combate?',
     subtitle: 'Movimento imprevisível é uma das habilidades mais importantes',
     options: [
-      { value: 'previsivel', label: 'Previsível', description: 'Fico parado ou ando em linha reta, levo muito dano', icon: '🪆' },
-      { value: 'moderado', label: 'Moderado', description: 'Às vezes consigo confundir o inimigo', icon: '🎲' },
-      { value: 'imprevisivel', label: 'Imprevisível', description: 'Movimento bom, quero combinar com mira melhor', icon: '🌪️' },
+      { value: 'previsivel',   label: 'Previsível',   description: 'Fico parado ou ando linear, levo muito dano', icon: '🪆' },
+      { value: 'moderado',     label: 'Moderado',     description: 'Às vezes consigo confundir o inimigo',        icon: '🎲' },
+      { value: 'imprevisivel', label: 'Imprevisível', description: 'Movimento bom, quero combinar com mira',      icon: '🌪️' },
     ],
   },
   {
@@ -57,9 +92,9 @@ const QUESTIONS = [
     question: 'Quanto tempo você pode treinar por dia?',
     subtitle: 'Consistência diária supera sessões longas esporádicas',
     options: [
-      { value: 25, label: '15–30 min', description: 'Treino rápido e focado no ponto crítico', icon: '⚡' },
-      { value: 45, label: '30–60 min', description: 'Sessão completa com aquecimento e revisão', icon: '🔥' },
-      { value: 65, label: '60+ min', description: 'Treino intensivo para evolução acelerada', icon: '💪' },
+      { value: 25, label: '15–30 min', description: 'Treino rápido e focado no ponto crítico',       icon: '⚡' },
+      { value: 45, label: '30–60 min', description: 'Sessão completa com aquecimento e revisão',     icon: '🔥' },
+      { value: 65, label: '60+ min',   description: 'Treino intensivo para evolução acelerada',      icon: '💪' },
     ],
   },
   {
@@ -67,22 +102,22 @@ const QUESTIONS = [
     question: 'Qual ferramenta de treino você usa?',
     subtitle: 'Os exercícios serão adaptados para sua ferramenta',
     options: [
-      { value: 'kovaak', label: "KovaaK's", description: 'Focado em FPS, altamente customizável', icon: '🎮' },
-      { value: 'aimlab', label: 'Aim Lab', description: 'Gratuito, interface moderna, boas métricas', icon: '🎯' },
-      { value: 'ambos', label: 'Ambos', description: 'Uso as duas ferramentas', icon: '⚡' },
-      { value: 'nenhum', label: 'Nenhum (ainda)', description: 'Vou baixar agora — Aim Lab é gratuito na Steam', icon: '🆕' },
+      { value: 'kovaak', label: "KovaaK's",      description: 'Focado em FPS, altamente customizável',              icon: '🎮' },
+      { value: 'aimlab', label: 'Aim Lab',        description: 'Gratuito, interface moderna, boas métricas',         icon: '🎯' },
+      { value: 'ambos',  label: 'Ambos',          description: 'Uso as duas ferramentas',                            icon: '⚡' },
+      { value: 'nenhum', label: 'Nenhum (ainda)', description: 'Vou baixar agora — Aim Lab é gratuito na Steam',     icon: '🆕' },
     ],
   },
 ]
 
 export default function Questionnaire({ username, onComplete }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep]       = useState(0)
   const [animDir, setAnimDir] = useState('right')
   const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError]     = useState(null)
 
-  const current = QUESTIONS[step]
+  const current  = QUESTIONS[step]
   const progress = (step / QUESTIONS.length) * 100
 
   const handleSelect = async (value) => {
@@ -147,7 +182,6 @@ export default function Questionnaire({ username, onComplete }) {
         Pergunta <strong>{step + 1}</strong> de {QUESTIONS.length}
       </div>
 
-      {/* key={step} forces remount → CSS animation retriggers */}
       <div key={step} className={`question-card anim-${animDir}`}>
         <h2 className="question-title">{current.question}</h2>
         <p className="question-subtitle">{current.subtitle}</p>

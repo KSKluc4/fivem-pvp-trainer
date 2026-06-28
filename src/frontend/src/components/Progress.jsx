@@ -3,8 +3,17 @@ import { getProgress } from '../services/api'
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
+const ACHIEVEMENTS = [
+  { id: 'first',   name: 'Primeira Batalha', desc: 'Complete 1 sessão',        icon: '🎯', goal: 1,  key: 'completed' },
+  { id: 'streak3', name: 'Em Chamas',        desc: '3 dias consecutivos',       icon: '🔥', goal: 3,  key: 'streak'    },
+  { id: 'sess5',   name: 'Consistente',      desc: '5 sessões completas',       icon: '⚔️', goal: 5,  key: 'completed' },
+  { id: 'streak7', name: 'Semana Perfeita',  desc: '7 dias seguidos',           icon: '💫', goal: 7,  key: 'streak'    },
+  { id: 'sess10',  name: 'Dedicado',         desc: '10 sessões completas',      icon: '🏅', goal: 10, key: 'completed' },
+  { id: 'sess30',  name: 'Veterano',         desc: '30 sessões completas',      icon: '🏆', goal: 30, key: 'completed' },
+]
+
 export default function Progress({ userId, username, onBack }) {
-  const [data, setData] = useState([])
+  const [data, setData]       = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,11 +36,13 @@ export default function Progress({ userId, username, onBack }) {
     )
   }
 
-  const totalSessions = data.length
-  const completedSessions = data.filter((s) => s.completed).length
-  const streak = calcStreak(data)
-  const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0
-  const weekCalendar = getWeekCalendar(data)
+  const total          = data.length
+  const completed      = data.filter((s) => s.completed).length
+  const streak         = calcStreak(data)
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+  const weekCalendar   = getWeekCalendar(data)
+  const weeklyData     = getWeeklyData(data)
+  const stats          = { completed, streak }
 
   return (
     <div className="progress-view">
@@ -40,80 +51,114 @@ export default function Progress({ userId, username, onBack }) {
           <h1>Seu Progresso</h1>
           <p className="routine-meta">{username}</p>
         </div>
-        <button className="btn-secondary" onClick={onBack}>
-          ← Voltar ao Treino
-        </button>
+        <button className="btn-secondary" onClick={onBack}>← Voltar ao Treino</button>
       </div>
 
-      {/* Weekly Calendar */}
+      {/* ── Weekly Calendar ── */}
       <div className="section-card">
         <div className="section-header">
           <h2><span className="section-icon">📅</span> Últimos 7 Dias</h2>
           {streak > 0 && (
-            <span className="streak-badge">🔥 {streak} dia{streak > 1 ? 's' : ''} seguido{streak > 1 ? 's' : ''}</span>
+            <span className="streak-badge">🔥 {streak} dia{streak !== 1 ? 's' : ''} seguido{streak !== 1 ? 's' : ''}</span>
           )}
         </div>
         <div className="week-calendar">
           {weekCalendar.map((day, i) => (
             <div key={i} className={`week-day ${day.completed ? 'completed' : ''} ${day.today ? 'today' : ''}`}>
               <div className="week-day-label">{day.label}</div>
-              <div className="week-day-dot">
-                {day.completed ? '✓' : day.today ? '◉' : '○'}
-              </div>
+              <div className="week-day-dot">{day.completed ? '✓' : day.today ? '◉' : '○'}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* ── Stats Grid ── */}
       <div className="stats-grid">
-        <StatCard
-          number={totalSessions}
-          label="Sessões geradas"
-          icon="📋"
-          color="var(--color-primary)"
-        />
-        <StatCard
-          number={completedSessions}
-          label="Sessões completas"
-          icon="✅"
-          color="var(--color-success)"
-        />
-        <StatCard
-          number={streak}
-          label="Dias seguidos"
-          icon="🔥"
-          color="var(--color-warning)"
-        />
-        <StatCard
-          number={`${completionRate}%`}
-          label="Taxa de conclusão"
-          icon="📊"
-          color="var(--color-secondary)"
-        />
+        <StatCard number={total}          label="Sessões geradas"   icon="📋" color="var(--color-primary)"   />
+        <StatCard number={completed}      label="Sessões completas" icon="✅" color="var(--color-success)"   />
+        <StatCard number={streak}         label="Dias seguidos"     icon="🔥" color="var(--color-warning)"   />
+        <StatCard number={`${completionRate}%`} label="Conclusão"   icon="📊" color="var(--color-secondary)" />
       </div>
 
-      {/* Completion Rate Bar */}
-      {totalSessions > 0 && (
+      {/* ── Weekly Evolution Chart ── */}
+      {weeklyData.length > 0 && (
+        <div className="section-card">
+          <div className="section-header">
+            <h2><span className="section-icon">📈</span> Evolução Semanal</h2>
+          </div>
+          <div className="weekly-chart">
+            {weeklyData.map((week, i) => (
+              <div key={i} className="chart-row">
+                <div className="chart-row-label">{week.label}</div>
+                <div className="chart-row-bar">
+                  <div className="chart-bar-track">
+                    <div className="chart-bar-total"  style={{ width: `${(week.total    / 7) * 100}%` }} />
+                    <div className="chart-bar-filled" style={{ width: `${(week.completed / 7) * 100}%` }} />
+                  </div>
+                </div>
+                <div className="chart-row-stat">
+                  <span className="chart-completed">{week.completed}</span>
+                  <span className="chart-sep">/</span>
+                  <span className="chart-total">{week.total}</span>
+                  {week.completed === week.total && week.total > 0 && (
+                    <span className="chart-star">★</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Completion Rate Bar ── */}
+      {total > 0 && (
         <div className="section-card">
           <div className="section-header">
             <h2><span className="section-icon">📊</span> Taxa de Conclusão</h2>
             <span className="section-duration">{completionRate}%</span>
           </div>
           <div className="rate-bar-track">
-            <div
-              className="rate-bar-fill"
-              style={{ width: `${completionRate}%` }}
-            />
+            <div className="rate-bar-fill" style={{ width: `${completionRate}%` }} />
           </div>
           <div className="rate-labels">
-            <span>{completedSessions} completa{completedSessions !== 1 ? 's' : ''}</span>
-            <span>{totalSessions - completedSessions} em andamento</span>
+            <span>{completed} completa{completed !== 1 ? 's' : ''}</span>
+            <span>{total - completed} em andamento</span>
           </div>
         </div>
       )}
 
-      {/* History */}
+      {/* ── Achievements ── */}
+      <div className="section-card">
+        <h2 style={{ marginBottom: '1rem' }}>
+          <span className="section-icon">🏅</span> Conquistas
+        </h2>
+        <div className="achievements-grid">
+          {ACHIEVEMENTS.map((ach) => {
+            const current = stats[ach.key] ?? 0
+            const unlocked = current >= ach.goal
+            const pct      = Math.min((current / ach.goal) * 100, 100)
+            return (
+              <div key={ach.id} className={`achievement-card ${unlocked ? 'unlocked' : ''}`}>
+                <div className="ach-icon">{ach.icon}</div>
+                <div className="ach-name">{ach.name}</div>
+                <div className="ach-desc">{ach.desc}</div>
+                {unlocked ? (
+                  <div className="ach-status unlocked">✓ Desbloqueado</div>
+                ) : (
+                  <>
+                    <div className="ach-bar-track">
+                      <div className="ach-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="ach-progress">{current}/{ach.goal}</div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Session History ── */}
       <div className="section-card">
         <h2><span className="section-icon">🗂️</span> Histórico de Sessões</h2>
         {data.length === 0 ? (
@@ -125,12 +170,8 @@ export default function Progress({ userId, username, onBack }) {
           <div className="history-list">
             {data.map((session, i) => (
               <div key={i} className={`history-item ${session.completed ? 'completed' : ''}`}>
-                <div className="history-date-block">
-                  <span className="history-date">{formatDate(session.date)}</span>
-                </div>
-                <div className="history-exercises">
-                  {session.exercises_logged} exercício(s)
-                </div>
+                <div className="history-date">{formatDate(session.date)}</div>
+                <div className="history-exercises">{session.exercises_logged} exercício(s)</div>
                 <div className={`history-status ${session.completed ? 'done' : 'pending'}`}>
                   {session.completed ? '✓ Completo' : '● Em andamento'}
                 </div>
@@ -160,19 +201,13 @@ function formatDate(dateStr) {
 }
 
 function calcStreak(sessions) {
-  const completed = sessions
-    .filter((s) => s.completed)
-    .map((s) => s.date)
-    .sort()
-    .reverse()
+  const completed = sessions.filter((s) => s.completed).map((s) => s.date).sort().reverse()
   if (!completed.length) return 0
   let streak = 0
-  let prev = new Date()
-  prev.setHours(0, 0, 0, 0)
+  let prev   = new Date(); prev.setHours(0, 0, 0, 0)
   for (const d of completed) {
     const curr = new Date(d + 'T00:00:00')
-    const diff = Math.round((prev - curr) / 86400000)
-    if (diff <= 1) { streak++; prev = curr } else break
+    if (Math.round((prev - curr) / 86400000) <= 1) { streak++; prev = curr } else break
   }
   return streak
 }
@@ -180,13 +215,32 @@ function calcStreak(sessions) {
 function getWeekCalendar(sessions) {
   const completedDates = new Set(sessions.filter((s) => s.completed).map((s) => s.date))
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
     const dateStr = d.toISOString().split('T')[0]
-    return {
-      label: DAY_NAMES[d.getDay()],
-      completed: completedDates.has(dateStr),
-      today: i === 6,
-    }
+    return { label: DAY_NAMES[d.getDay()], completed: completedDates.has(dateStr), today: i === 6 }
   })
+}
+
+function getWeeklyData(sessions) {
+  const weeks = {}
+  sessions.forEach((s) => {
+    if (!s.date) return
+    const d   = new Date(s.date + 'T00:00:00')
+    const day = d.getDay()
+    const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    const key = mon.toISOString().split('T')[0]
+    if (!weeks[key]) weeks[key] = { total: 0, completed: 0, mon }
+    weeks[key].total++
+    if (s.completed) weeks[key].completed++
+  })
+  return Object.entries(weeks)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-4)
+    .map(([, w]) => ({ ...w, label: weekLabel(w.mon) }))
+}
+
+function weekLabel(mon) {
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
+  const f   = (d) => `${d.getDate()}/${d.getMonth() + 1}`
+  return `${f(mon)}–${f(sun)}`
 }

@@ -58,4 +58,18 @@ def init_db():
     )''')
 
     conn.commit()
+
+    # Schema migration — add new FiveM-specific columns if they don't exist yet
+    new_cols = [
+        ('server_type', 'TEXT DEFAULT ""'),
+        ('main_weapon', 'TEXT DEFAULT ""'),
+        ('specific_weakness', 'TEXT DEFAULT ""'),
+    ]
+    for col_name, col_def in new_cols:
+        try:
+            c.execute(f'ALTER TABLE questionnaire_results ADD COLUMN {col_name} {col_def}')
+            conn.commit()
+        except Exception:
+            pass  # column already exists
+
     conn.close()

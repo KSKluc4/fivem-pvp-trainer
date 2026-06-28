@@ -941,3 +941,221 @@ body {
 .history-status { font-size: 0.8rem; font-weight: 700; }
 .history-status.done  { color: var(--color-success); }
 .history-status.pending { color: var(--color-warning); }
+
+/* ─── Exercise link button ──────────────────────────── */
+.exercise-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.12rem;
+}
+.exercise-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.exercise-link:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+/* ─── Playlists Section ─────────────────────────────── */
+.playlists-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.1rem;
+  animation: fadeInUp 0.4s 0.15s ease both;
+}
+.playlists-header { margin-bottom: 1.1rem; }
+.playlists-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+.playlists-header p { color: var(--text-secondary); font-size: 0.85rem; }
+
+.playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.playlist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+.playlist-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--pl-color, var(--color-primary));
+  opacity: 0.7;
+}
+.playlist-card:hover {
+  border-color: var(--pl-color, var(--color-primary));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.playlist-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 0.1rem 0.45rem;
+  width: fit-content;
+}
+.playlist-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.playlist-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  flex: 1;
+}
+.playlist-cta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--pl-color, var(--color-primary));
+  margin-top: 0.2rem;
+}
+
+/* ─── Weekly Evolution Chart ────────────────────────── */
+.weekly-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.chart-row-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  width: 80px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.chart-row-bar { flex: 1; }
+.chart-bar-track {
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.chart-bar-total {
+  position: absolute;
+  height: 100%;
+  background: var(--border);
+  border-radius: 4px;
+  top: 0; left: 0;
+}
+.chart-bar-filled {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  border-radius: 4px;
+  top: 0; left: 0;
+  transition: width 0.6s ease;
+}
+.chart-row-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 52px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.chart-completed { color: var(--color-primary); font-weight: 700; }
+.chart-sep       { color: var(--text-secondary); }
+.chart-total     { color: var(--text-secondary); }
+.chart-star      { color: var(--color-warning); font-size: 0.85rem; margin-left: 2px; }
+
+/* ─── Achievements Grid ─────────────────────────────── */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.7rem;
+}
+
+.achievement-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+  filter: grayscale(1) opacity(0.5);
+}
+.achievement-card.unlocked {
+  filter: none;
+  border-color: rgba(255, 165, 2, 0.35);
+  background: rgba(255, 165, 2, 0.04);
+}
+.achievement-card.unlocked::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--color-warning);
+}
+.achievement-card.unlocked:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(255, 165, 2, 0.12);
+}
+
+.ach-icon    { font-size: 1.75rem; margin-bottom: 0.4rem; }
+.ach-name    { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; }
+.ach-desc    { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.6rem; }
+.ach-status  { font-size: 0.72rem; font-weight: 700; }
+.ach-status.unlocked { color: var(--color-warning); }
+
+.ach-bar-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+.ach-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.ach-progress { font-size: 0.7rem; color: var(--text-secondary); }
