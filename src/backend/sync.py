@@ -52,16 +52,19 @@ import logging
 
 log = logging.getLogger(__name__)
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
+SUPABASE_URL         = os.environ.get('SUPABASE_URL', '')
+SUPABASE_KEY         = os.environ.get('SUPABASE_KEY', '')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
 
 def _get_client():
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    # Prefer service_role key (bypasses RLS); fall back to anon key
+    key = SUPABASE_SERVICE_KEY or SUPABASE_KEY
+    if not SUPABASE_URL or not key:
         return None
     try:
         from supabase import create_client
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        return create_client(SUPABASE_URL, key)
     except Exception as e:
         log.warning('Supabase unavailable: %s', e)
         return None
@@ -179,4 +182,4 @@ def sync_async(user_id: int):
 
 
 def is_enabled() -> bool:
-    return bool(SUPABASE_URL and SUPABASE_KEY)
+    return bool(SUPABASE_URL and (SUPABASE_SERVICE_KEY or SUPABASE_KEY))
