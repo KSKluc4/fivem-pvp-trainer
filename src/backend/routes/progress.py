@@ -1,13 +1,18 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from database import get_db
+from utils import require_auth
 
 progress_bp = Blueprint('progress', __name__)
 
 
 @progress_bp.route('/progress/<int:user_id>', methods=['GET'])
+@require_auth
 def get_progress(user_id):
+    if g.user_id != user_id:
+        return jsonify({'error': 'Proibido'}), 403
+
     conn = get_db()
-    c = conn.cursor()
+    c    = conn.cursor()
     c.execute('''
         SELECT ts.date, ts.completed, COUNT(p.id) as exercises_logged
         FROM training_sessions ts
@@ -23,13 +28,17 @@ def get_progress(user_id):
 
 
 @progress_bp.route('/progress', methods=['POST'])
+@require_auth
 def save_progress():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data'}), 400
 
+    # Enforce that the user can only save their own progress
+    data['user_id'] = g.user_id
+
     conn = get_db()
-    c = conn.cursor()
+    c    = conn.cursor()
     c.execute('''
         INSERT INTO progress (user_id, session_id, exercise_name, score, completed, notes)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -44,8 +53,8 @@ def save_progress():
 
     if data.get('session_completed'):
         c.execute(
-            'UPDATE training_sessions SET completed = 1 WHERE id = ?',
-            (data['session_id'],)
+            'UPDATE training_sessions SET completed = 1 WHERE id = ? AND user_id = ?',
+            (data['session_id'], g.user_id),
         )
 
     conn.commit()

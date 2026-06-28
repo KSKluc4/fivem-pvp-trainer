@@ -1,19 +1,18 @@
 import json
 from datetime import date
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from database import get_db
 from services.routine_generator import generate_routine
+from utils import require_auth
 
 questionnaire_bp = Blueprint('questionnaire', __name__)
 
 
 @questionnaire_bp.route('/questionnaire', methods=['POST'])
+@require_auth
 def submit_questionnaire():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
+    data = request.get_json() or {}
 
-    name              = data.get('name', 'Jogador')
     focus_area        = data.get('focus_area', 'aim')
     experience_level  = data.get('experience_level', 'iniciante')
     aim_difficulty    = data.get('aim_difficulty', '')
@@ -25,12 +24,13 @@ def submit_questionnaire():
     main_weapon       = data.get('main_weapon', '')
     specific_weakness = data.get('specific_weakness', '')
 
-    conn = get_db()
+    user_id = g.user_id
+    conn    = get_db()
+
+    user = conn.execute('SELECT name FROM users WHERE id = ?', (user_id,)).fetchone()
+    name = user['name'] if user else 'Jogador'
+
     c = conn.cursor()
-
-    c.execute('INSERT INTO users (name) VALUES (?)', (name,))
-    user_id = c.lastrowid
-
     c.execute('''
         INSERT INTO questionnaire_results
         (user_id, focus_area, experience_level, aim_difficulty, reflex_level,
@@ -54,10 +54,9 @@ def submit_questionnaire():
 
     c.execute(
         'INSERT INTO training_sessions (user_id, date, routine) VALUES (?, ?, ?)',
-        (user_id, date.today().isoformat(), json.dumps(routine))
+        (user_id, date.today().isoformat(), json.dumps(routine)),
     )
     session_id = c.lastrowid
-
     conn.commit()
     conn.close()
 

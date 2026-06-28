@@ -5,9 +5,8 @@ from database import init_db
 from routes.questionnaire import questionnaire_bp
 from routes.training import training_bp
 from routes.progress import progress_bp
+from routes.auth import auth_bp
 
-# In production (frozen exe) FIVEM_STATIC points to the embedded React build.
-# In dev, fall back to the Vite dist folder relative to this file.
 _default_static = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
 _static = os.environ.get('FIVEM_STATIC', _default_static)
 
@@ -17,8 +16,9 @@ CORS(app)
 init_db()
 
 app.register_blueprint(questionnaire_bp, url_prefix='/api')
-app.register_blueprint(training_bp, url_prefix='/api')
-app.register_blueprint(progress_bp, url_prefix='/api')
+app.register_blueprint(training_bp,      url_prefix='/api')
+app.register_blueprint(progress_bp,      url_prefix='/api')
+app.register_blueprint(auth_bp,          url_prefix='/api')
 
 
 @app.route('/', defaults={'path': ''})

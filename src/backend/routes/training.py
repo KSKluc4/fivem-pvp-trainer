@@ -1,16 +1,21 @@
 import json
 from datetime import date
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, g
 from database import get_db
 from services.routine_generator import generate_routine
+from utils import require_auth
 
 training_bp = Blueprint('training', __name__)
 
 
 @training_bp.route('/training/<int:user_id>', methods=['GET'])
+@require_auth
 def get_training(user_id):
+    if g.user_id != user_id:
+        return jsonify({'error': 'Proibido'}), 403
+
     conn = get_db()
-    c = conn.cursor()
+    c    = conn.cursor()
 
     c.execute('''
         SELECT * FROM training_sessions
@@ -20,13 +25,12 @@ def get_training(user_id):
     session = c.fetchone()
 
     if session:
-        routine = json.loads(session['routine'])
+        routine    = json.loads(session['routine'])
         session_id = session['id']
     else:
         c.execute('''
             SELECT * FROM questionnaire_results
-            WHERE user_id = ?
-            ORDER BY created_at DESC LIMIT 1
+            WHERE user_id = ? ORDER BY created_at DESC LIMIT 1
         ''', (user_id,))
         profile = c.fetchone()
 
@@ -37,7 +41,7 @@ def get_training(user_id):
         routine = generate_routine(dict(profile))
         c.execute(
             'INSERT INTO training_sessions (user_id, date, routine) VALUES (?, ?, ?)',
-            (user_id, date.today().isoformat(), json.dumps(routine))
+            (user_id, date.today().isoformat(), json.dumps(routine)),
         )
         session_id = c.lastrowid
         conn.commit()
