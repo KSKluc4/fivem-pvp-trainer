@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, g
 from database import get_db
 from utils import require_auth
+import sync
 
 progress_bp = Blueprint('progress', __name__)
 
@@ -34,7 +35,6 @@ def save_progress():
     if not data:
         return jsonify({'error': 'No data'}), 400
 
-    # Enforce that the user can only save their own progress
     data['user_id'] = g.user_id
 
     conn = get_db()
@@ -59,4 +59,8 @@ def save_progress():
 
     conn.commit()
     conn.close()
+
+    # Fire-and-forget cloud sync
+    sync.sync_async(g.user_id)
+
     return jsonify({'message': 'Progresso salvo'}), 201

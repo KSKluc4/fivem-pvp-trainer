@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getMe, updateProfile, logoutApi } from '../services/api'
+import { getMe, updateProfile } from '../services/api'
 
 const LEVELS = [
   { min: 50, label: 'Elite',        icon: '🏆', color: '#ffa502' },
@@ -70,11 +70,7 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
     }
   }
 
-  const handleLogout = async () => {
-    try { await logoutApi() } catch (_) { /* ignore */ }
-    localStorage.removeItem('pvp_token')
-    onLogout()
-  }
+  const handleLogout = () => onLogout()
 
   return (
     <div className="user-menu" ref={ref}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getMe, getTraining } from './services/api'
+import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
+import { secureStorage } from './services/storage'
 import LoginForm       from './components/LoginForm'
 import RegisterForm    from './components/RegisterForm'
 import Questionnaire   from './components/Questionnaire'
@@ -14,7 +15,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null)
   const [routine,   setRoutine]   = useState(null)
 
-  // Try to load today's training; if no profile → questionnaire
+  // Check existing training profile; route accordingly
   async function loadTraining(u) {
     setView('loading')
     try {
@@ -27,29 +28,40 @@ export default function App() {
     }
   }
 
-  // Boot: restore session from localStorage
+  // Boot: restore session via refresh token
   useEffect(() => {
-    const token = localStorage.getItem('pvp_token')
-    if (!token) { setAuthState('login'); return }
+    async function boot() {
+      const refreshToken = await secureStorage.get('refresh_token')
+      if (!refreshToken) { setAuthState('login'); return }
 
-    getMe()
-      .then(async (res) => {
-        const u = res.data
+      try {
+        const res = await refreshTokenApi(refreshToken)
+        const { access_token, refresh_token: newRefresh, user: u } = res.data
+        setAccessToken(access_token)
+        await secureStorage.set('refresh_token', newRefresh)
         setUser(u)
         setAuthState('app')
         await loadTraining(u)
-      })
-      .catch(() => { localStorage.removeItem('pvp_token'); setAuthState('login') })
+      } catch {
+        await secureStorage.remove('refresh_token')
+        clearAccessToken()
+        setAuthState('login')
+      }
+    }
+    boot()
   }, [])
 
-  // Listen for 401 events from api.js interceptor
+  // Handle forced logout from api.js interceptor
   useEffect(() => {
     const handler = () => handleLogout()
     window.addEventListener('pvp:logout', handler)
     return () => window.removeEventListener('pvp:logout', handler)
   }, [])
 
-  const handleAuthSuccess = async (u) => {
+  // Called by LoginForm / RegisterForm with full JWT response
+  const handleAuthSuccess = async ({ access_token, refresh_token, user: u }) => {
+    setAccessToken(access_token)
+    await secureStorage.set('refresh_token', refresh_token)
     setUser(u)
     setView('loading')
     setAuthState('app')
@@ -68,15 +80,19 @@ export default function App() {
     setView('questionnaire')
   }
 
-  const handleLogout = () => {
-    setUser(null)
-    setSessionId(null)
-    setRoutine(null)
-    setView('loading')
-    setAuthState('login')
+  const handleLogout = async () => {
+    const refreshToken = await secureStorage.get('refresh_token')
+    await secureStorage.remove('refresh_token')
+    clearAccessToken()
+    setUser(null); setSessionId(null); setRoutine(null)
+    setView('loading'); setAuthState('login')
+    // Best-effort server-side token invalidation
+    if (refreshToken) {
+      try { await import('./services/api').then(m => m.logoutApi(refreshToken)) } catch (_) {}
+    }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────────────
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
     return (
       <div className="loading-screen">

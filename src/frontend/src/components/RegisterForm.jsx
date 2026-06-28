@@ -14,8 +14,7 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
     setLoading(true)
     try {
       const res = await register(form)
-      localStorage.setItem('pvp_token', res.data.token)
-      onSuccess(res.data.user)
+      onSuccess(res.data)
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
     } finally {

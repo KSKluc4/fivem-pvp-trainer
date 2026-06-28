@@ -1,24 +1,76 @@
 import axios from 'axios'
+import { secureStorage } from './storage'
 
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach token on every request
+// Access token lives in memory only (never touches disk)
+let _accessToken = null
+
+export function setAccessToken(token) {
+  _accessToken = token
+}
+
+export function clearAccessToken() {
+  _accessToken = null
+}
+
+// ── Request interceptor: attach access token ──────────────────────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pvp_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (_accessToken) config.headers.Authorization = `Bearer ${_accessToken}`
   return config
 })
 
-// On 401, clear token and notify App
+// ── Response interceptor: auto-refresh on 401 ────────────────────────────────
+let _isRefreshing   = false
+let _refreshQueue   = []
+
+function processQueue(error, token = null) {
+  _refreshQueue.forEach((prom) => (error ? prom.reject(error) : prom.resolve(token)))
+  _refreshQueue = []
+}
+
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('pvp_token')
-      window.dispatchEvent(new Event('pvp:logout'))
+  async (err) => {
+    const original = err.config
+    if (err.response?.status === 401 && !original._retry) {
+      if (_isRefreshing) {
+        return new Promise((resolve, reject) => {
+          _refreshQueue.push({ resolve, reject })
+        }).then((token) => {
+          original.headers.Authorization = `Bearer ${token}`
+          return api(original)
+        })
+      }
+
+      original._retry = true
+      _isRefreshing   = true
+
+      try {
+        const refreshToken = await secureStorage.get('refresh_token')
+        if (!refreshToken) throw new Error('No refresh token')
+
+        const res = await axios.post('/api/auth/refresh', { refresh_token: refreshToken })
+        const { access_token, refresh_token: newRefresh } = res.data
+
+        setAccessToken(access_token)
+        await secureStorage.set('refresh_token', newRefresh)
+
+        processQueue(null, access_token)
+        original.headers.Authorization = `Bearer ${access_token}`
+        return api(original)
+      } catch (refreshErr) {
+        processQueue(refreshErr, null)
+        clearAccessToken()
+        await secureStorage.remove('refresh_token')
+        window.dispatchEvent(new Event('pvp:logout'))
+        return Promise.reject(refreshErr)
+      } finally {
+        _isRefreshing = false
+      }
     }
     return Promise.reject(err)
   },
@@ -27,9 +79,12 @@ api.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const register      = (data) => api.post('/auth/register', data)
 export const login         = (data) => api.post('/auth/login', data)
+export const refreshTokenApi = (refreshToken) =>
+  axios.post('/api/auth/refresh', { refresh_token: refreshToken })
 export const getMe         = ()     => api.get('/auth/me')
 export const updateProfile = (data) => api.put('/auth/profile', data)
-export const logoutApi     = ()     => api.post('/auth/logout')
+export const logoutApi     = (refreshToken) =>
+  api.post('/auth/logout', { refresh_token: refreshToken })
 
 // ── Training ──────────────────────────────────────────────────────────────────
 export const submitQuestionnaire = (data)   => api.post('/questionnaire', data)

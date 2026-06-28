@@ -13,8 +13,7 @@ export default function LoginForm({ onSuccess, onGoRegister }) {
     setLoading(true)
     try {
       const res = await login({ username, password })
-      localStorage.setItem('pvp_token', res.data.token)
-      onSuccess(res.data.user)
+      onSuccess(res.data)
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
     } finally {
