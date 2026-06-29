@@ -35,7 +35,7 @@ def verify_password(password: str, stored: str) -> bool:
 
 def create_access_token(user_id: int) -> str:
     payload = {
-        'sub':  user_id,
+        'sub':  str(user_id),   # PyJWT 2.x requires sub to be a string (RFC 7519)
         'type': 'access',
         'iat':  datetime.now(timezone.utc),
         'exp':  datetime.now(timezone.utc) + _ACCESS_TTL,
@@ -48,8 +48,8 @@ def decode_access_token(token: str):
         payload = jwt.decode(token, _secret(), algorithms=[_JWT_ALGORITHM])
         if payload.get('type') != 'access':
             return None
-        return payload['sub']
-    except jwt.PyJWTError:
+        return int(payload['sub'])
+    except (jwt.PyJWTError, ValueError, TypeError):
         return None
 
 
