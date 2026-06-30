@@ -58,12 +58,13 @@ function HistoryRow({ row }) {
 }
 
 export default function SensConverter({ onBack }) {
-  const [gtaSens, setGtaSens]   = useState('50')
-  const [dpi,     setDpi]       = useState('800')
-  const [result,  setResult]    = useState(null)
-  const [history, setHistory]   = useState([])
-  const [loading, setLoading]   = useState(false)
-  const [histErr, setHistErr]   = useState(false)
+  const [gtaSens, setGtaSens]     = useState('50')
+  const [dpi,     setDpi]         = useState('800')
+  const [result,  setResult]      = useState(null)
+  const [history, setHistory]     = useState([])
+  const [loading, setLoading]     = useState(false)
+  const [histErr, setHistErr]     = useState(false)
+  const [showFormula, setShowFormula] = useState(false)
 
   // Preview result computed locally on every keystroke
   const preview = (() => {
@@ -189,31 +190,40 @@ export default function SensConverter({ onBack }) {
             </form>
           </div>
 
-          {/* Formula info */}
+          {/* Formula info — collapsible */}
           <div className="section-card sens-formula-card">
-            <div className="section-header">
-              <h2><span className="section-icon">📐</span> Fórmula</h2>
-            </div>
-            <div className="sens-formula-rows">
-              <div className="sens-formula-row">
-                <span className="sens-formula-label">GTA V yaw</span>
-                <code className="sens-formula-val">0.0009 °/count</code>
+            <button
+              className="sens-formula-toggle"
+              type="button"
+              onClick={() => setShowFormula((v) => !v)}
+              aria-expanded={showFormula}
+            >
+              <span>{showFormula ? '▾' : '▸'}</span>
+              Como calculamos isso?
+            </button>
+            <div className={`sens-formula-collapse ${showFormula ? 'open' : ''}`}>
+              <div className="sens-formula-divider" style={{ margin: '0.5rem 0 0.75rem' }} />
+              <div className="sens-formula-rows">
+                <div className="sens-formula-row">
+                  <span className="sens-formula-label">GTA V yaw</span>
+                  <code className="sens-formula-val">0.0009 °/count</code>
+                </div>
+                <div className="sens-formula-row">
+                  <span className="sens-formula-label">KovaaK's yaw</span>
+                  <code className="sens-formula-val">0.022 °/count</code>
+                </div>
+                <div className="sens-formula-row">
+                  <span className="sens-formula-label">Aim Lab yaw</span>
+                  <code className="sens-formula-val">0.022 °/count</code>
+                </div>
+                <div className="sens-formula-divider" />
+                <p className="sens-formula-eq">
+                  cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54
+                </p>
+                <p className="sens-formula-source">
+                  Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer
+                </p>
               </div>
-              <div className="sens-formula-row">
-                <span className="sens-formula-label">KovaaK's yaw</span>
-                <code className="sens-formula-val">0.022 °/count</code>
-              </div>
-              <div className="sens-formula-row">
-                <span className="sens-formula-label">Aim Lab yaw</span>
-                <code className="sens-formula-val">0.022 °/count</code>
-              </div>
-              <div className="sens-formula-divider" />
-              <p className="sens-formula-eq">
-                cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54
-              </p>
-              <p className="sens-formula-source">
-                Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer
-              </p>
             </div>
           </div>
         </div>

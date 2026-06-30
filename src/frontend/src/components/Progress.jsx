@@ -84,7 +84,7 @@ export default function Progress({ userId, username, onBack }) {
       </div>
 
       {/* ── Weekly Calendar ── */}
-      <div className="section-card">
+      <div className="section-card section-card--calendar">
         <div className="section-header">
           <h2><span className="section-icon">📅</span> Últimos 7 Dias</h2>
           {streak > 0 && (
@@ -157,8 +157,8 @@ export default function Progress({ userId, username, onBack }) {
       )}
 
       {/* ── Achievements ── */}
-      <div className="section-card">
-        <h2 style={{ marginBottom: '1rem' }}>
+      <div className="section-card section-card--achievements">
+        <h2 style={{ marginBottom: '1rem', fontSize: '1.12rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
           <span className="section-icon">🏅</span> Conquistas
         </h2>
         <div className="achievements-grid">
@@ -189,7 +189,7 @@ export default function Progress({ userId, username, onBack }) {
 
       {/* ── Session History ── */}
       <div className="section-card">
-        <h2><span className="section-icon">🗂️</span> Histórico de Sessões</h2>
+        <h2 style={{ fontSize: '1.12rem', fontWeight: 800, letterSpacing: '-0.2px', marginBottom: '1rem' }}><span className="section-icon">🗂️</span> Histórico de Sessões</h2>
         {data.length === 0 ? (
           <div className="empty-section">
             <span>📭</span>
