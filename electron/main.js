@@ -66,6 +66,16 @@ ipcMain.on('update:restart', () => {
   autoUpdater.quitAndInstall(false, true) // isSilent=false, isForceRunAfter=true
 })
 
+// Allow renderer to open fivem:// protocol links via OS shell
+ipcMain.handle('shell:openExternal', (_event, url) => {
+  if (typeof url !== 'string' || !url.startsWith('fivem://')) {
+    log.warn('shell:openExternal blocked — unexpected url:', url)
+    return
+  }
+  log.info('shell:openExternal:', url)
+  shell.openExternal(url).catch((e) => log.error('shell:openExternal failed:', e?.message || e))
+})
+
 // ── Secure storage ────────────────────────────────────────────────────────────
 
 function storePath() {

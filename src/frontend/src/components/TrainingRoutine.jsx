@@ -274,9 +274,19 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 <div className="server-card-desc">{srv.desc}</div>
               </div>
               <div className="server-card-actions">
-                <a href={srv.connectUrl} className="btn-server btn-server--connect" title="Conectar direto no FiveM">
+                <button
+                  className="btn-server btn-server--connect"
+                  title="Conectar direto no FiveM"
+                  onClick={() => {
+                    if (window.electronAPI?.openExternal) {
+                      window.electronAPI.openExternal(srv.connectUrl)
+                    } else {
+                      window.location.href = srv.connectUrl
+                    }
+                  }}
+                >
                   Conectar
-                </a>
+                </button>
                 <a href={srv.webUrl} target="_blank" rel="noreferrer" className="btn-server btn-server--discord">
                   Discord
                 </a>
