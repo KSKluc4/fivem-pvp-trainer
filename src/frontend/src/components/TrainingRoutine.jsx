@@ -124,7 +124,7 @@ const FIVEM_SERVERS = [
   },
 ]
 
-export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile }) {
+export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
   const [completed, setCompleted] = useState({})
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
@@ -173,6 +173,9 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
         </div>
         <div className="routine-header-btns">
           <button className="btn-secondary" onClick={onViewProgress}>📊 Progresso</button>
+          <button className="btn-ghost" onClick={onConverter} title="Conversor de sensibilidade GTA V → KovaaK / Aim Lab">
+            🎮 Conversor
+          </button>
           <button className="btn-ghost" onClick={onChangeProfile} title="Refazer questionário de perfil">
             ⚙️ Alterar perfil
           </button>

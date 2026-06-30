@@ -91,4 +91,8 @@ export const getTraining         = (userId) => api.get(`/training/${userId}`)
 export const getProgress         = (userId) => api.get(`/progress/${userId}`)
 export const saveProgress        = (data)   => api.post('/progress', data)
 
+// ── Sensitivity converter ─────────────────────────────────────────────────────
+export const convertSensitivity    = (data) => api.post('/sensitivity/convert', data)
+export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
+
 export default api

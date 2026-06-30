@@ -24,7 +24,7 @@ function avatarHue(username) {
   return hues[h % hues.length]
 }
 
-export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile }) {
+export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter }) {
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -167,6 +167,9 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
               </button>
               <button className="ud-action-btn" onClick={() => { setOpen(false); onChangeProfile?.() }}>
                 ⚙️ Alterar perfil de treino
+              </button>
+              <button className="ud-action-btn" onClick={() => { setOpen(false); onConverter?.() }}>
+                🎮 Conversor de sensibilidade
               </button>
               <button className="ud-action-btn ud-action-btn--logout" onClick={handleLogout}>
                 🚪 Sair

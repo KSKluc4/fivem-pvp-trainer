@@ -6,6 +6,7 @@ import RegisterForm    from './components/RegisterForm'
 import Questionnaire   from './components/Questionnaire'
 import TrainingRoutine from './components/TrainingRoutine'
 import Progress        from './components/Progress'
+import SensConverter   from './components/SensConverter'
 import UserMenu        from './components/UserMenu'
 import ToastContainer  from './components/Toast'
 
@@ -151,6 +152,7 @@ export default function App() {
           onLogout={handleLogout}
           onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
           onChangeProfile={handleChangeProfile}
+          onConverter={() => setView('converter')}
         />
       )}
 
@@ -171,6 +173,7 @@ export default function App() {
           username={user?.name || ''}
           onViewProgress={() => setView('progress')}
           onChangeProfile={handleChangeProfile}
+          onConverter={() => setView('converter')}
         />
       )}
 
@@ -179,6 +182,13 @@ export default function App() {
           key="progress"
           userId={user?.id}
           username={user?.name || ''}
+          onBack={() => setView('routine')}
+        />
+      )}
+
+      {view === 'converter' && (
+        <SensConverter
+          key="converter"
           onBack={() => setView('routine')}
         />
       )}

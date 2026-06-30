@@ -188,6 +188,34 @@ def get_progress_history(user_id: int, limit: int = 30):
     ]
 
 
+# ── Sensitivity conversions ───────────────────────────────────────────────────
+
+def save_sensitivity_conversion(user_id: int, gta_sens: float, dpi: int,
+                                 cm_360: float, kovaak: float, aimlab: float,
+                                 inverted: int):
+    sb = get_supabase()
+    sb.table('sensitivity_conversions').insert({
+        'user_id':         user_id,
+        'gta_sensitivity': gta_sens,
+        'dpi':             dpi,
+        'cm_per_360':      cm_360,
+        'kovaak_sens':     kovaak,
+        'aimlab_sens':     aimlab,
+        'inverted':        inverted,
+    }).execute()
+
+
+def get_sensitivity_history(user_id: int, limit: int = 15):
+    sb = get_supabase()
+    res = (sb.table('sensitivity_conversions')
+             .select('id,gta_sensitivity,dpi,cm_per_360,kovaak_sens,aimlab_sens,inverted,created_at')
+             .eq('user_id', user_id)
+             .order('created_at', desc=True)
+             .limit(limit)
+             .execute())
+    return res.data or []
+
+
 # ── Stats (for /auth/me) ──────────────────────────────────────────────────────
 
 def get_user_stats(user_id: int) -> dict:
