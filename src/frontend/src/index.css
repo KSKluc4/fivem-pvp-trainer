@@ -1896,6 +1896,115 @@ body {
   .toast              { max-width: 100%; }
 }
 
+/* ── Admin panel ─────────────────────────────────────────────────────────────── */
+.admin-view {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.admin-loading { display: flex; flex-direction: column; gap: 1rem; }
+
+/* Stat cards */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  padding: 0.25rem 0 0.5rem;
+}
+.admin-stat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent, var(--color-primary));
+  border-radius: var(--radius);
+  padding: 1rem 0.75rem;
+  text-align: center;
+  transition: transform 0.15s;
+}
+.admin-stat-card:hover { transform: translateY(-2px); }
+.admin-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent, var(--color-primary));
+  line-height: 1.1;
+}
+.admin-stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.3rem; }
+.admin-stat-sub   { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.15rem; opacity: 0.7; }
+
+/* Distributions */
+.admin-dist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.admin-dist-bars { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.5rem 0; }
+.admin-dist-row  { display: flex; align-items: center; gap: 0.75rem; }
+.admin-dist-label { font-size: 0.82rem; color: var(--text-secondary); width: 80px; flex-shrink: 0; }
+.admin-dist-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.admin-dist-fill  { height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border-radius: 4px; transition: width 0.6s ease; }
+.admin-dist-pct   { font-size: 0.78rem; color: var(--text-secondary); width: 32px; text-align: right; flex-shrink: 0; }
+.admin-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 1rem 0; }
+
+/* User table */
+.admin-search {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  width: 220px;
+  outline: none;
+}
+.admin-search:focus { border-color: var(--color-primary); }
+.admin-table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.admin-th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+.admin-user-row { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
+.admin-user-row:hover { background: rgba(255,255,255,0.03); }
+.admin-user-row--admin { background: rgba(0,212,255,0.03); }
+.admin-td { padding: 0.55rem 0.75rem; color: var(--text-primary); vertical-align: middle; }
+.admin-td--idx  { color: var(--text-secondary); width: 36px; }
+.admin-td--mono { font-family: monospace; font-size: 0.8rem; color: var(--text-secondary); }
+.admin-td--date { color: var(--text-secondary); font-size: 0.8rem; }
+.admin-td--num  { text-align: right; font-weight: 600; color: var(--color-primary); }
+.admin-user-name { font-weight: 500; }
+.admin-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(0,212,255,0.15);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.ud-action-btn--admin { color: var(--color-primary); }
+
+@media (max-width: 860px) {
+  .admin-stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .admin-dist-grid  { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-search     { width: 160px; }
+}
+
 /* ── Update Banner ───────────────────────────────────────────────────────────── */
 .update-banner {
   display: flex;

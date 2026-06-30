@@ -95,4 +95,8 @@ export const saveProgress        = (data)   => api.post('/progress', data)
 export const convertSensitivity    = (data) => api.post('/sensitivity/convert', data)
 export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
 
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export const getAdminStats = () => api.get('/admin/stats')
+export const getAdminUsers = () => api.get('/admin/users')
+
 export default api

@@ -19,13 +19,13 @@ def get_supabase() -> Client:
 
 def get_user_by_username(username: str):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,password_hash,created_at').eq('username', username).limit(1).execute()
+    res = sb.table('users').select('id,name,username,password_hash,created_at,is_admin').eq('username', username).limit(1).execute()
     return res.data[0] if res.data else None
 
 
 def get_user_by_id(user_id: int):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,created_at').eq('id', user_id).limit(1).execute()
+    res = sb.table('users').select('id,name,username,created_at,is_admin').eq('id', user_id).limit(1).execute()
     return res.data[0] if res.data else None
 
 
@@ -214,6 +214,116 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
              .limit(limit)
              .execute())
     return res.data or []
+
+
+# ── Admin ─────────────────────────────────────────────────────────────────────
+
+def get_admin_stats() -> dict:
+    from datetime import date, timedelta
+    from collections import Counter
+    sb = get_supabase()
+
+    today           = date.today().isoformat()
+    seven_days_ago  = (date.today() - timedelta(days=7)).isoformat()
+    thirty_days_ago = (date.today() - timedelta(days=30)).isoformat()
+
+    # All users
+    users_res = sb.table('users').select('id,created_at').execute()
+    all_users = users_res.data or []
+    total_users = len(all_users)
+    new_7d  = sum(1 for u in all_users if str(u.get('created_at', ''))[:10] >= seven_days_ago)
+    new_30d = sum(1 for u in all_users if str(u.get('created_at', ''))[:10] >= thirty_days_ago)
+
+    # Active users (completed a session in last 7 days)
+    active_res = (sb.table('training_sessions')
+                    .select('user_id')
+                    .gte('date', seven_days_ago)
+                    .eq('completed', 1)
+                    .execute())
+    active_users = len({r['user_id'] for r in (active_res.data or [])})
+
+    # Total completed sessions
+    sessions_res = (sb.table('training_sessions')
+                      .select('id')
+                      .eq('completed', 1)
+                      .execute())
+    total_sessions = len(sessions_res.data or [])
+
+    # Focus area + server type from latest questionnaire per user
+    quest_res = sb.table('questionnaire_results').select('user_id,focus_area,server_type').execute()
+    quest_all = quest_res.data or []
+    # Keep only latest per user (list is unordered; use last occurrence)
+    latest = {}
+    for q in quest_all:
+        latest[q['user_id']] = q
+    focus_counts  = Counter(q.get('focus_area',  '') for q in latest.values() if q.get('focus_area'))
+    server_counts = Counter(q.get('server_type', '') for q in latest.values() if q.get('server_type'))
+
+    FOCUS_LABELS  = {'aim': 'Mira', 'reflex': 'Reflexo', 'movement': 'Movimento'}
+    SERVER_LABELS = {'goat': 'Goat PvP', '1v99': '1v99', 'ambos': 'Ambos', 'outro': 'Outro'}
+
+    def top(counter):
+        if not counter:
+            return None, 0, {}
+        best_key = counter.most_common(1)[0][0]
+        total    = sum(counter.values())
+        pcts     = {k: round(v / total * 100) for k, v in counter.items()}
+        return best_key, pcts.get(best_key, 0), pcts
+
+    top_focus,  focus_pct,  focus_dist  = top(focus_counts)
+    top_server, server_pct, server_dist = top(server_counts)
+
+    return {
+        'total_users':             total_users,
+        'new_users_7d':            new_7d,
+        'new_users_30d':           new_30d,
+        'active_users_7d':         active_users,
+        'total_sessions_completed': total_sessions,
+        'top_focus_area':          top_focus,
+        'top_focus_label':         FOCUS_LABELS.get(top_focus, top_focus) if top_focus else None,
+        'top_focus_pct':           focus_pct,
+        'focus_distribution':      {FOCUS_LABELS.get(k, k): v for k, v in focus_dist.items()},
+        'top_server_type':         top_server,
+        'top_server_label':        SERVER_LABELS.get(top_server, top_server) if top_server else None,
+        'top_server_pct':          server_pct,
+        'server_distribution':     {SERVER_LABELS.get(k, k): v for k, v in server_dist.items()},
+    }
+
+
+def get_admin_users() -> list:
+    from collections import defaultdict
+    sb = get_supabase()
+
+    users_res = (sb.table('users')
+                   .select('id,name,username,created_at,is_admin')
+                   .order('created_at', desc=True)
+                   .execute())
+    users = users_res.data or []
+    if not users:
+        return []
+
+    sessions_res = (sb.table('training_sessions')
+                      .select('user_id,date')
+                      .eq('completed', 1)
+                      .execute())
+    sessions = sessions_res.data or []
+
+    session_dates = defaultdict(list)
+    for s in sessions:
+        session_dates[s['user_id']].append(s['date'])
+
+    return [
+        {
+            'id':             u['id'],
+            'name':           u['name'],
+            'username':       u['username'],
+            'created_at':     u['created_at'],
+            'is_admin':       bool(u.get('is_admin', 0)),
+            'total_sessions': len(session_dates[u['id']]),
+            'last_session':   max(session_dates[u['id']]) if session_dates[u['id']] else None,
+        }
+        for u in users
+    ]
 
 
 # ── Stats (for /auth/me) ──────────────────────────────────────────────────────

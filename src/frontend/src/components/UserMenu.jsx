@@ -24,7 +24,7 @@ function avatarHue(username) {
   return hues[h % hues.length]
 }
 
-export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter }) {
+export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter, onAdmin }) {
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -171,6 +171,11 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
               <button className="ud-action-btn" onClick={() => { setOpen(false); onConverter?.() }}>
                 🎮 Conversor de sensibilidade
               </button>
+              {user.is_admin && (
+                <button className="ud-action-btn ud-action-btn--admin" onClick={() => { setOpen(false); onAdmin?.() }}>
+                  ⚙️ Painel admin
+                </button>
+              )}
               <button className="ud-action-btn ud-action-btn--logout" onClick={handleLogout}>
                 🚪 Sair
               </button>

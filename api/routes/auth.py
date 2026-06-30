@@ -13,14 +13,15 @@ from utils import (
 auth_bp = Blueprint('auth', __name__)
 
 
-def _build_auth_response(user_id: int, name: str, username: str, status: int = 200):
+def _build_auth_response(user_id: int, name: str, username: str,
+                          is_admin: bool = False, status: int = 200):
     access_token  = create_access_token(user_id)
     refresh_token = create_refresh_token()
     create_session(user_id, refresh_token, refresh_token_expiry())
     return jsonify({
         'access_token':  access_token,
         'refresh_token': refresh_token,
-        'user': {'id': user_id, 'name': name, 'username': username},
+        'user': {'id': user_id, 'name': name, 'username': username, 'is_admin': is_admin},
     }), status
 
 
@@ -71,7 +72,8 @@ def login():
     if user['password_hash'].startswith('pbkdf2:'):
         update_password(user['id'], hash_password(password))
 
-    return _build_auth_response(user['id'], user['name'], user['username'])
+    return _build_auth_response(user['id'], user['name'], user['username'],
+                                is_admin=bool(user.get('is_admin', 0)))
 
 
 @auth_bp.route('/auth/refresh', methods=['POST'])
@@ -103,7 +105,8 @@ def refresh():
     if not user:
         return jsonify({'error': 'Usuário não encontrado'}), 404
 
-    return _build_auth_response(user_id, user['name'], user['username'])
+    return _build_auth_response(user_id, user['name'], user['username'],
+                                is_admin=bool(user.get('is_admin', 0)))
 
 
 @auth_bp.route('/auth/me', methods=['GET'])
@@ -117,6 +120,7 @@ def get_me():
         'id':         user['id'],
         'name':       user['name'],
         'username':   user['username'],
+        'is_admin':   bool(user.get('is_admin', 0)),
         'created_at': user.get('created_at'),
         'stats':      stats,
     })

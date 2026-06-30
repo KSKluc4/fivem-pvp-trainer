@@ -10,6 +10,7 @@ import SensConverter   from './components/SensConverter'
 import UserMenu        from './components/UserMenu'
 import ToastContainer  from './components/Toast'
 import UpdateBanner    from './components/UpdateBanner'
+import AdminPanel      from './components/AdminPanel'
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -155,6 +156,7 @@ export default function App() {
           onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
           onChangeProfile={handleChangeProfile}
           onConverter={() => setView('converter')}
+          onAdmin={() => setView('admin')}
         />
       )}
 
@@ -191,6 +193,13 @@ export default function App() {
       {view === 'converter' && (
         <SensConverter
           key="converter"
+          onBack={() => setView('routine')}
+        />
+      )}
+
+      {view === 'admin' && user?.is_admin && (
+        <AdminPanel
+          key="admin"
           onBack={() => setView('routine')}
         />
       )}
