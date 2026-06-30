@@ -1,6 +1,7 @@
 'use strict'
 
 const { app, BrowserWindow, Menu, shell, ipcMain, safeStorage, session } = require('electron')
+const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs   = require('fs')
@@ -66,13 +67,32 @@ ipcMain.on('update:restart', () => {
   autoUpdater.quitAndInstall(false, true) // isSilent=false, isForceRunAfter=true
 })
 
-// Allow renderer to open fivem:// protocol links via OS shell
+// Allow renderer to open fivem:// links by spawning FiveM.exe directly.
+// shell.openExternal fails on machines where the fivem:// protocol handler in the
+// Windows registry is incomplete (URL Protocol key exists but shell\open\command missing).
+const FIVEM_PATHS = [
+  path.join(process.env.LOCALAPPDATA || '', 'FiveM', 'FiveM.exe'),
+  'C:\\FiveM\\FiveM.exe',
+  path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'FiveM', 'FiveM.exe'),
+  path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'FiveM', 'FiveM.exe'),
+]
+
 ipcMain.handle('shell:openExternal', (_event, url) => {
   if (typeof url !== 'string' || !url.startsWith('fivem://')) {
     log.warn('shell:openExternal blocked — unexpected url:', url)
     return
   }
-  log.info('shell:openExternal:', url)
+  log.info('shell:openExternal fivem:// requested:', url)
+
+  const fivemExe = FIVEM_PATHS.find(p => fs.existsSync(p))
+  if (fivemExe) {
+    log.info('Spawning FiveM.exe directly:', fivemExe)
+    spawn(fivemExe, [url], { detached: true, stdio: 'ignore' }).unref()
+    return
+  }
+
+  // FiveM not found in common locations — fall back to shell.openExternal
+  log.warn('FiveM.exe not found, falling back to shell.openExternal')
   shell.openExternal(url).catch((e) => log.error('shell:openExternal failed:', e?.message || e))
 })
 
