@@ -7,7 +7,7 @@ sensitivity_bp = Blueprint('sensitivity', __name__)
 
 # Community-validated yaw values (degrees/count per sensitivity unit)
 # Source: mouse-sensitivity.com — verified against community posts on r/FPSAimTrainer
-GTA_YAW    = 0.009   # GTA V, sensitivity scale 0–10
+GTA_YAW    = 0.0009  # GTA V, sensitivity scale 0–100 (in-game slider)
 KOVAAK_YAW = 0.022   # KovaaK's FPS Aim Trainer
 AIMLAB_YAW = 0.022   # Aim Lab (same effective yaw as KovaaK's)
 
@@ -44,6 +44,9 @@ def convert_sensitivity():
 
     if gta_sens == 0:
         return jsonify({'error': 'Sensibilidade não pode ser zero (resultaria em rotação infinita).'}), 400
+
+    if abs(gta_sens) > 100:
+        return jsonify({'error': 'Sensibilidade do GTA V deve estar entre -100 e 100.'}), 400
 
     try:
         dpi = int(dpi_raw)

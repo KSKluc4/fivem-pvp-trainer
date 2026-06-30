@@ -3,7 +3,7 @@ import { convertSensitivity, getSensitivityHistory } from '../services/api'
 import { toast } from '../services/toast'
 
 // Community-validated yaw values (mirrors backend constants)
-const GTA_YAW    = 0.009
+const GTA_YAW    = 0.0009  // GTA V scale 0–100 (in-game slider)
 const KOVAAK_YAW = 0.022
 const AIMLAB_YAW = 0.022
 
@@ -58,7 +58,7 @@ function HistoryRow({ row }) {
 }
 
 export default function SensConverter({ onBack }) {
-  const [gtaSens, setGtaSens]   = useState('5')
+  const [gtaSens, setGtaSens]   = useState('50')
   const [dpi,     setDpi]       = useState('800')
   const [result,  setResult]    = useState(null)
   const [history, setHistory]   = useState([])
@@ -86,8 +86,9 @@ export default function SensConverter({ onBack }) {
     const s = parseFloat(gtaSens)
     const d = parseInt(dpi, 10)
 
-    if (isNaN(s) || s === 0) { toast.error('Informe uma sensibilidade válida (diferente de zero).'); return }
-    if (isNaN(d) || d <= 0)  { toast.error('Informe um DPI válido (número positivo).'); return }
+    if (isNaN(s) || s === 0)          { toast.error('Informe uma sensibilidade válida (diferente de zero).'); return }
+    if (Math.abs(s) > 100)            { toast.error('Sensibilidade deve estar entre -100 e 100.'); return }
+    if (isNaN(d) || d <= 0)           { toast.error('Informe um DPI válido (número positivo).'); return }
 
     // Show instant local result
     const local = calcLocal(s, d)
@@ -131,19 +132,21 @@ export default function SensConverter({ onBack }) {
               <div className="sens-field">
                 <label className="sens-label">
                   Sensibilidade GTA V
-                  <span className="sens-label-hint">escala 0–10 · aceita negativo para eixo invertido</span>
+                  <span className="sens-label-hint">escala 0–100 · aceita negativo para eixo invertido</span>
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
+                  min="-100"
+                  max="100"
                   className="name-input sens-input"
                   value={gtaSens}
                   onChange={(e) => setGtaSens(e.target.value)}
-                  placeholder="ex: 5 ou -3.5"
+                  placeholder="ex: 50 ou -35"
                   autoFocus
                 />
                 <p className="sens-hint">
-                  Encontre em <code>Documents\Rockstar Games\GTA V\settings.xml</code> → campo <code>MouseSensitivity</code> × 10
+                  Configure em GTA V → <code>Opções → Controles → Sensibilidade do Mouse</code>
                 </p>
               </div>
 
@@ -194,7 +197,7 @@ export default function SensConverter({ onBack }) {
             <div className="sens-formula-rows">
               <div className="sens-formula-row">
                 <span className="sens-formula-label">GTA V yaw</span>
-                <code className="sens-formula-val">0.009 °/count</code>
+                <code className="sens-formula-val">0.0009 °/count</code>
               </div>
               <div className="sens-formula-row">
                 <span className="sens-formula-label">KovaaK's yaw</span>
