@@ -156,20 +156,35 @@ def mark_session_completed(session_id: int, user_id: int):
 
 
 def get_progress_history(user_id: int, limit: int = 30):
+    from collections import Counter
     sb = get_supabase()
-    res = (sb.table('training_sessions')
-             .select('date,completed,progress(id)')
-             .eq('user_id', user_id)
-             .order('date', desc=True)
-             .limit(limit)
-             .execute())
+
+    sessions_res = (sb.table('training_sessions')
+                      .select('id,date,completed')
+                      .eq('user_id', user_id)
+                      .order('date', desc=True)
+                      .limit(limit)
+                      .execute())
+
+    if not sessions_res.data:
+        return []
+
+    session_ids = [s['id'] for s in sessions_res.data]
+    progress_res = (sb.table('progress')
+                      .select('session_id')
+                      .in_('session_id', session_ids)
+                      .neq('exercise_name', '__session__')
+                      .execute())
+
+    counts = Counter(p['session_id'] for p in (progress_res.data or []))
+
     return [
         {
-            'date':             r['date'],
-            'completed':        bool(r['completed']),
-            'exercises_logged': len(r.get('progress') or []),
+            'date':             s['date'],
+            'completed':        bool(s['completed']),
+            'exercises_logged': counts.get(s['id'], 0),
         }
-        for r in res.data
+        for s in sessions_res.data
     ]
 
 

@@ -143,12 +143,11 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
         if (done)
           await saveProgress({ user_id: userId, session_id: sessionId, exercise_name: name, completed: 1 })
       }
-      if (completedCount === mainExercises.length && mainExercises.length > 0) {
-        await saveProgress({
-          user_id: userId, session_id: sessionId,
-          exercise_name: '__session__', completed: 1, session_completed: true,
-        })
-      }
+      // Always mark session as completed when user explicitly finalizes it
+      await saveProgress({
+        user_id: userId, session_id: sessionId,
+        exercise_name: '__session__', completed: 1, session_completed: true,
+      })
       setSaved(true)
     } catch (e) {
       console.error(e)
