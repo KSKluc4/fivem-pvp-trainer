@@ -12,46 +12,6 @@ const FOCUS_LABELS = { aim: 'Mira', reflex: 'Reflexo', movement: 'Movimento' }
 
 const SECTION_ICONS = { 'Aquecimento': '🔥', 'Treino Principal': '⚡', 'Revisão': '📋' }
 
-// ── Direct links to each exercise ────────────────────────────────────────────
-const KOVAAK_IDS = {
-  'Smoothbot':                       '1478425793',
-  'Tile Frenzy':                     '1478426043',
-  'popcorn nightmare':               '1512274524',
-  '1w4ts_Goated':                    '1834777095',
-  'Bounce 180':                      '1572175655',
-  'Strafing Tiles':                  '1478427141',
-  'Air Angelic 4':                   '1807948098',
-  'Thin Gauntlet':                   '1736465676',
-  'B180 Goated':                     '1807967283',
-  'Pasu Voltaic':                    '1866374614',
-  'Revosect':                        '1807949112',
-  'Valorant Medium Strafes Goated':  '1866374000',
-  'psalmsfasttargets':               '1807951800',
-  'Movement Redirect':               '1807948790',
-}
-
-const AIMLAB_SLUGS = {
-  'Gridshot Ultimate': 'gridshot',
-  'Microshot':         'microshot',
-  'Strafetrack':       'strafetrack',
-  'Multilitrack':      'multilitrack',
-  'Reflexshot':        'reflexshot',
-  'Spidershot':        'spidershot',
-  'Motionshot':        'motionshot',
-  'Circletrack':       'circletrack',
-}
-
-function getExerciseUrl(name, tool) {
-  if (tool === 'kovaak') {
-    const id = KOVAAK_IDS[name]
-    if (id) return `https://steamcommunity.com/sharedfiles/filedetails/?id=${id}`
-    return `https://steamcommunity.com/workshop/browse/?appid=824270&searchtext=${encodeURIComponent(name)}`
-  }
-  const slug = AIMLAB_SLUGS[name]
-  if (slug) return `https://aimlab.gg/aim/tasks/${slug}`
-  return `https://aimlab.gg/aim/tasks?search=${encodeURIComponent(name)}`
-}
-
 // ── Recommended playlists ─────────────────────────────────────────────────────
 const PLAYLISTS = {
   kovaak: [
@@ -203,7 +163,6 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 const diff   = DIFFICULTY_LABELS[ex.difficulty] || { label: ex.difficulty, color: '#8892a4' }
                 const isMain = section.name === 'Treino Principal'
                 const isDone = !!completed[ex.name]
-                const exUrl  = getExerciseUrl(ex.name, routine.tool)
 
                 return (
                   <div
@@ -216,16 +175,6 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                     <div className="exercise-body">
                       <div className="exercise-name-row">
                         <span className="exercise-name">{ex.name}</span>
-                        <a
-                          href={exUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="exercise-link"
-                          onClick={(e) => e.stopPropagation()}
-                          title={`Abrir ${ex.name} em ${toolLabel}`}
-                        >
-                          ↗
-                        </a>
                       </div>
                       <div className="exercise-desc">{ex.description}</div>
                       <div className="exercise-tags">
