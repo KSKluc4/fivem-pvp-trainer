@@ -1411,6 +1411,15 @@ body {
 .ud-edit-actions { display: flex; gap: 0.5rem; }
 .ud-edit-actions .btn-primary   { flex: 1; padding: 0.6rem; font-size: 0.85rem; }
 .ud-edit-actions .btn-secondary { flex: 1; padding: 0.6rem; font-size: 0.85rem; }
+.ud-version {
+  padding: 0.5rem 1rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
 
 /* ─── Toast notifications ──────────────────────────── */
 .toast-container {

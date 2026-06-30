@@ -67,8 +67,8 @@ console.log(`\n📦  Releasing v${version}`)
 console.log('\n⚛️   Building React frontend…')
 runIn('src/frontend', 'npm run build')
 
-// 3. Commit package.json + built assets, then tag
-run(`git add package.json api/static/`)
+// 3. Stage all tracked changes + built assets, commit, then tag
+run(`git add -A`)
 run(`git commit -m "chore: release v${version}"`)
 run(`git tag v${version}`)
 

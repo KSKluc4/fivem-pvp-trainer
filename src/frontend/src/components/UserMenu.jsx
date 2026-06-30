@@ -176,6 +176,9 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
               </button>
             </div>
           )}
+          <div className="ud-version">
+            {window.electronAPI ? 'Desktop' : 'Web'} · FiveM PvP Trainer
+          </div>
         </div>
       )}
     </div>
