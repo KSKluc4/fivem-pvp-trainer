@@ -8,4 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get:    (key)        => ipcRenderer.invoke('ss:get',    key),
     remove: (key)        => ipcRenderer.invoke('ss:remove', key),
   },
+  // Auto-updater bridge
+  onUpdateReady: (cb) => ipcRenderer.on('update:ready', (_event, info) => cb(info)),
+  restartNow:    ()   => ipcRenderer.send('update:restart'),
 })

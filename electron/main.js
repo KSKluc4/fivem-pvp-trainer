@@ -1,11 +1,11 @@
 'use strict'
 
 const { app, BrowserWindow, Menu, shell, ipcMain, safeStorage, session } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs   = require('fs')
 
 // ── Vercel URL ────────────────────────────────────────────────────────────────
-// Updated after each Vercel deployment.
 const VERCEL_URL = 'https://fivem-pvp-trainer.vercel.app'
 
 // ── File logger ───────────────────────────────────────────────────────────────
@@ -34,7 +34,37 @@ const log = {
 process.on('uncaughtException',  (err) => log.error('UncaughtException:', err.stack || err))
 process.on('unhandledRejection', (err) => log.error('UnhandledRejection:', err?.stack || err))
 
-log.info(`App starting — version ${app.getVersion ? app.getVersion() : '?'} — url: ${VERCEL_URL}`)
+log.info(`App starting — version ${app.getVersion()} — url: ${VERCEL_URL}`)
+
+// ── Auto-updater ──────────────────────────────────────────────────────────────
+
+autoUpdater.logger = {
+  info:  (...a) => log.info('[AutoUpdater]', ...a),
+  warn:  (...a) => log.warn('[AutoUpdater]', ...a),
+  error: (...a) => log.error('[AutoUpdater]', ...a),
+  debug: () => {},
+  transports: { file: { level: false }, console: { level: false } },
+}
+autoUpdater.autoDownload        = true   // download silently in background
+autoUpdater.autoInstallOnAppQuit = true  // install when user closes app normally
+
+autoUpdater.on('update-available', (info) => {
+  log.info(`Update available: v${info.version} — downloading in background`)
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info(`Update downloaded: v${info.version} — notifying renderer`)
+  mainWindow?.webContents.send('update:ready', { version: info.version })
+})
+
+autoUpdater.on('error', (err) => {
+  log.error('Auto-update error:', err?.message || err)
+})
+
+ipcMain.on('update:restart', () => {
+  log.info('User requested restart to apply update')
+  autoUpdater.quitAndInstall(false, true) // isSilent=false, isForceRunAfter=true
+})
 
 // ── Secure storage ────────────────────────────────────────────────────────────
 
@@ -104,7 +134,6 @@ async function createWindow() {
     },
   })
 
-  // Log renderer console errors and network failures to app.log
   mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
     if (level >= 2) log.error(`[Renderer] ${message}  (${sourceId}:${line})`)
     else if (level === 1) log.warn(`[Renderer] ${message}`)
@@ -116,7 +145,6 @@ async function createWindow() {
     log.error(`[Renderer] did-fail-load: ${desc} (${code}) url=${url}`)
   })
 
-  // Log API request failures
   session.defaultSession.webRequest.onCompleted((details) => {
     if (details.statusCode >= 400 && details.url.includes('/api/')) {
       log.error(`[Network] ${details.method} ${details.url} → ${details.statusCode}`)
@@ -128,10 +156,16 @@ async function createWindow() {
     }
   })
 
-  mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+    // Check for updates 4 seconds after window appears — avoids blocking initial load
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((e) => log.error('Update check failed:', e))
+    }, 4000)
+  })
+
   mainWindow.on('closed', () => { mainWindow = null })
 
-  // External links open in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(VERCEL_URL)) { event.preventDefault(); shell.openExternal(url) }

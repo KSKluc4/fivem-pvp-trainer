@@ -9,6 +9,7 @@ import Progress        from './components/Progress'
 import SensConverter   from './components/SensConverter'
 import UserMenu        from './components/UserMenu'
 import ToastContainer  from './components/Toast'
+import UpdateBanner    from './components/UpdateBanner'
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -145,6 +146,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <UpdateBanner />
       <ToastContainer />
       {user && (
         <UserMenu
