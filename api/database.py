@@ -145,14 +145,14 @@ def save_progress_entry(user_id: int, session_id: int, exercise_name: str,
         'session_id':    session_id,
         'exercise_name': exercise_name,
         'score':         score,
-        'completed':     bool(completed),
+        'completed':     1 if completed else 0,
         'notes':         notes or '',
     }).execute()
 
 
 def mark_session_completed(session_id: int, user_id: int):
     sb = get_supabase()
-    sb.table('training_sessions').update({'completed': True}).eq('id', session_id).eq('user_id', user_id).execute()
+    sb.table('training_sessions').update({'completed': 1}).eq('id', session_id).eq('user_id', user_id).execute()
 
 
 def get_progress_history(user_id: int, limit: int = 30):
