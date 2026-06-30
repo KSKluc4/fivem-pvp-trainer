@@ -48,5 +48,14 @@ def serve_spa(path):
         return jsonify({'error': 'Frontend not built — run npm run build in src/frontend'}), 503
     full = os.path.join(_STATIC, path)
     if path and os.path.isfile(full):
-        return send_from_directory(_STATIC, path)
-    return send_from_directory(_STATIC, 'index.html')
+        resp = send_from_directory(_STATIC, path)
+        # Hashed assets (JS/CSS with content hash in filename) are immutable
+        if path.startswith('assets/'):
+            resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        return resp
+    # index.html must never be cached — always fetch fresh so new JS bundles load
+    resp = send_from_directory(_STATIC, 'index.html')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Pragma']        = 'no-cache'
+    resp.headers['Expires']       = '0'
+    return resp
