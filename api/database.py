@@ -204,7 +204,7 @@ def get_user_stats(user_id: int) -> dict:
     exs = (sb.table('progress')
              .select('id')
              .eq('user_id', user_id)
-             .eq('completed', True)
+             .eq('completed', 1)
              .neq('exercise_name', '__session__')
              .execute())
 

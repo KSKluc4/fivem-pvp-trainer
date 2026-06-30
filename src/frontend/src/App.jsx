@@ -7,6 +7,7 @@ import Questionnaire   from './components/Questionnaire'
 import TrainingRoutine from './components/TrainingRoutine'
 import Progress        from './components/Progress'
 import UserMenu        from './components/UserMenu'
+import ToastContainer  from './components/Toast'
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -104,6 +105,7 @@ export default function App() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
+    const msg = authState === 'loading' ? 'Iniciando...' : 'Carregando rotina...'
     return (
       <div className="loading-screen">
         <div className="loading-crosshair">
@@ -111,33 +113,38 @@ export default function App() {
           <div className="lc-ring lc-ring-2" />
           <div className="lc-dot" />
         </div>
-        <span className="loading-sub">
-          {authState === 'loading' ? 'Iniciando servidor...' : 'Carregando...'}
-        </span>
+        <span className="loading-sub">{msg}</span>
       </div>
     )
   }
 
   if (authState === 'login') {
     return (
-      <LoginForm
-        onSuccess={handleAuthSuccess}
-        onGoRegister={() => setAuthState('register')}
-      />
+      <>
+        <ToastContainer />
+        <LoginForm
+          onSuccess={handleAuthSuccess}
+          onGoRegister={() => setAuthState('register')}
+        />
+      </>
     )
   }
 
   if (authState === 'register') {
     return (
-      <RegisterForm
-        onSuccess={handleAuthSuccess}
-        onGoLogin={() => setAuthState('login')}
-      />
+      <>
+        <ToastContainer />
+        <RegisterForm
+          onSuccess={handleAuthSuccess}
+          onGoLogin={() => setAuthState('login')}
+        />
+      </>
     )
   }
 
   return (
     <div className="app">
+      <ToastContainer />
       {user && (
         <UserMenu
           user={user}
@@ -149,6 +156,7 @@ export default function App() {
 
       {view === 'questionnaire' && (
         <Questionnaire
+          key="questionnaire"
           username={user?.name || ''}
           onComplete={handleQuestionnaireComplete}
         />
@@ -156,6 +164,7 @@ export default function App() {
 
       {view === 'routine' && routine && (
         <TrainingRoutine
+          key={`routine-${sessionId}`}
           userId={user?.id}
           sessionId={sessionId}
           routine={routine}
@@ -167,6 +176,7 @@ export default function App() {
 
       {view === 'progress' && (
         <Progress
+          key="progress"
           userId={user?.id}
           username={user?.name || ''}
           onBack={() => setView('routine')}

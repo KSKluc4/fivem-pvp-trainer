@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getMe, updateProfile } from '../services/api'
+import { toast } from '../services/toast'
 
 const LEVELS = [
   { min: 50, label: 'Elite',        icon: '🏆', color: '#ffa502' },
@@ -62,9 +63,13 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
       const res = await updateProfile(editForm)
       onUserUpdate(res.data)
       setEditing(false)
+      setOpen(false)
       setProfile(null) // force reload on next open
+      toast.success('Perfil atualizado com sucesso!')
     } catch (err) {
-      setEditErr(err.response?.data?.error || 'Erro ao salvar')
+      const msg = err.response?.data?.error || 'Erro ao salvar. Tente novamente.'
+      setEditErr(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

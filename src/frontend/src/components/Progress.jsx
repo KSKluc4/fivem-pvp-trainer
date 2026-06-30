@@ -25,13 +25,42 @@ export default function Progress({ userId, username, onBack }) {
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="loading-crosshair">
-          <div className="lc-ring lc-ring-1" />
-          <div className="lc-ring lc-ring-2" />
-          <div className="lc-dot" />
+      <div className="progress-view">
+        <div className="progress-header">
+          <div>
+            <div className="skeleton skeleton-title" />
+            <div className="skeleton skeleton-text w60" />
+          </div>
         </div>
-        <p>Carregando progresso...</p>
+        {/* Week calendar skeleton */}
+        <div className="skeleton-card">
+          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="skeleton skeleton-stat" style={{ height: 56 }} />
+            ))}
+          </div>
+        </div>
+        {/* Stats skeleton */}
+        <div className="skeleton-grid-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton skeleton-stat" />
+          ))}
+        </div>
+        {/* Chart skeleton */}
+        <div className="skeleton-card">
+          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton skeleton-bar" style={{ marginBottom: '0.7rem' }} />
+          ))}
+        </div>
+        {/* History skeleton */}
+        <div className="skeleton-card">
+          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton skeleton-row" />
+          ))}
+        </div>
       </div>
     )
   }

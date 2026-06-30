@@ -1,10 +1,22 @@
 import { useState } from 'react'
 import { register } from '../services/api'
 
+function friendlyError(err) {
+  if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
+  const msg = err.response?.data?.error || ''
+  if (msg) return msg
+  const code = err.response?.status
+  if (code === 409) return 'Este username já está em uso. Escolha outro.'
+  if (code === 400) return 'Dados inválidos. Verifique os campos e tente novamente.'
+  if (code >= 500) return 'Erro interno do servidor. Tente novamente em instantes.'
+  return 'Ocorreu um erro. Tente novamente.'
+}
+
 export default function RegisterForm({ onSuccess, onGoLogin }) {
   const [form,    setForm]    = useState({ name: '', username: '', password: '' })
   const [error,   setError]   = useState(null)
   const [loading, setLoading] = useState(false)
+  const [showPw,  setShowPw]  = useState(false)
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }))
 
@@ -20,7 +32,7 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
         return
       } catch (err) {
         if (err.response || attempt === MAX - 1) {
-          setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
+          setError(friendlyError(err))
           break
         }
         await new Promise(r => setTimeout(r, 1000))
@@ -87,19 +99,35 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
 
           <div className="auth-field">
             <label>Senha <span className="auth-hint">(mínimo 6 caracteres)</span></label>
-            <input
-              type="password"
-              className="name-input"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={set('password')}
-              autoComplete="new-password"
-              minLength={6}
-              required
-            />
+            <div className="pw-field">
+              <input
+                type={showPw ? 'text' : 'password'}
+                className="name-input"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={set('password')}
+                autoComplete="new-password"
+                minLength={6}
+                required
+              />
+              <button
+                type="button"
+                className="pw-toggle"
+                onClick={() => setShowPw((p) => !p)}
+                tabIndex={-1}
+                aria-label={showPw ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
-          {error && <div className="error-msg">⚠️ {error}</div>}
+          {error && (
+            <div className="error-msg" role="alert">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
 
           <button
             type="submit"

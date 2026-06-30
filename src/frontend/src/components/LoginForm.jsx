@@ -1,11 +1,23 @@
 import { useState } from 'react'
 import { login } from '../services/api'
 
+function friendlyError(err) {
+  if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
+  const msg = err.response?.data?.error || ''
+  if (msg) return msg
+  const code = err.response?.status
+  if (code === 401) return 'Username ou senha incorretos.'
+  if (code === 429) return 'Muitas tentativas. Aguarde um momento e tente novamente.'
+  if (code >= 500) return 'Erro interno do servidor. Tente novamente em instantes.'
+  return 'Ocorreu um erro. Tente novamente.'
+}
+
 export default function LoginForm({ onSuccess, onGoRegister }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState(null)
   const [loading,  setLoading]  = useState(false)
+  const [showPw,   setShowPw]   = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -18,9 +30,8 @@ export default function LoginForm({ onSuccess, onGoRegister }) {
         onSuccess(res.data)
         return
       } catch (err) {
-        // Network error (server not ready yet) → retry; HTTP error → show immediately
         if (err.response || attempt === MAX - 1) {
-          setError(err.response?.data?.error || 'Erro ao conectar com o servidor')
+          setError(friendlyError(err))
           break
         }
         await new Promise(r => setTimeout(r, 1000))
@@ -73,18 +84,34 @@ export default function LoginForm({ onSuccess, onGoRegister }) {
 
           <div className="auth-field">
             <label>Senha</label>
-            <input
-              type="password"
-              className="name-input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
+            <div className="pw-field">
+              <input
+                type={showPw ? 'text' : 'password'}
+                className="name-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="pw-toggle"
+                onClick={() => setShowPw((p) => !p)}
+                tabIndex={-1}
+                aria-label={showPw ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPw ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
-          {error && <div className="error-msg">⚠️ {error}</div>}
+          {error && (
+            <div className="error-msg" role="alert">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
 
           <button
             type="submit"

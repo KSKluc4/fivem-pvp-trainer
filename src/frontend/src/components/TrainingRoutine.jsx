@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { saveProgress } from '../services/api'
+import { toast } from '../services/toast'
 
 const DIFFICULTY_LABELS = {
   beginner:     { label: 'Iniciante',    color: '#2ed573' },
@@ -143,14 +144,15 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
         if (done)
           await saveProgress({ user_id: userId, session_id: sessionId, exercise_name: name, completed: 1 })
       }
-      // Always mark session as completed when user explicitly finalizes it
       await saveProgress({
         user_id: userId, session_id: sessionId,
         exercise_name: '__session__', completed: 1, session_completed: true,
       })
       setSaved(true)
+      toast.success(`Sessão finalizada! ${completedCount} exercício${completedCount !== 1 ? 's' : ''} concluído${completedCount !== 1 ? 's' : ''}.`)
     } catch (e) {
       console.error(e)
+      toast.error('Erro ao salvar sessão. Verifique sua conexão e tente novamente.')
     } finally {
       setSaving(false)
     }
@@ -263,8 +265,15 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           </div>
         </div>
         {!saved ? (
-          <button className="btn-primary" onClick={handleFinish} disabled={saving || completedCount === 0}>
-            {saving ? 'Salvando...' : 'Finalizar Sessão ✓'}
+          <button
+            className="btn-primary"
+            onClick={handleFinish}
+            disabled={saving || completedCount === 0}
+            title={completedCount === 0 ? 'Marque pelo menos um exercício para finalizar' : ''}
+          >
+            {saving
+              ? <><span style={{ opacity: 0.7 }}>Salvando</span><span className="saving-dots">...</span></>
+              : 'Finalizar Sessão ✓'}
           </button>
         ) : (
           <div className="success-msg">🏆 Sessão salva! Bom treino, {username}!</div>
