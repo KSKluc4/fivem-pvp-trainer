@@ -920,7 +920,8 @@ body {
   color: var(--srv-color, var(--color-primary));
   border-color: color-mix(in srgb, var(--srv-color, var(--color-primary)) 30%, transparent);
 }
-.btn-server--connect:hover { opacity: 0.85; transform: scale(0.98); }
+.btn-server--connect:hover:not(:disabled) { opacity: 0.85; transform: scale(0.98); }
+.btn-server--connect:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-server--discord {
   background: rgba(88, 101, 242, 0.1);
   color: #7289da;

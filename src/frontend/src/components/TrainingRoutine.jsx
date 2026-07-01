@@ -63,31 +63,56 @@ const PLAYLISTS = {
 }
 
 // ── FiveM server links ─────────────────────────────────────────────────────────
+//
+// cfx.re/join/<código> dos servidores, usado como fallback de navegador quando o
+// FiveM não está instalado. Não foi possível descobrir esses códigos de forma
+// automática: a API pública de listagem de servidores da FiveM
+// (servers-frontend.fivem.net/api/servers/) não responde mais externamente e o
+// site atual (servers.fivem.net) busca os dados via um backend interno sem rota
+// pública documentada.
+//
+// Para preencher manualmente: abra https://servers.fivem.net/servers, procure
+// pelo nome do servidor (ex.: "Goat PvP" / "1v99"), abra a página de detalhes e
+// copie o código que aparece na URL "cfx.re/join/XXXXXX". Enquanto ficar null,
+// o Discord do servidor (webUrl) é usado como fallback de navegador.
+const CFX_JOIN_CODES = {
+  goat: null,
+  '1v99': null,
+}
+
+function webConnectUrlFor(id, discordUrl) {
+  const code = CFX_JOIN_CODES[id]
+  return code ? `https://cfx.re/join/${code}` : discordUrl
+}
+
 const FIVEM_SERVERS = [
   {
-    id:         'goat',
-    name:       'Goat PvP',
-    desc:       'Servidor brasileiro focado em PvP tático',
-    icon:       '🐐',
-    connectUrl: 'fivem://connect/goatroyale.com',
-    webUrl:     'https://discord.com/invite/goatgg',
-    color:      '#00d4ff',
+    id:            'goat',
+    name:          'Goat PvP',
+    desc:          'Servidor brasileiro focado em PvP tático',
+    icon:          '🐐',
+    connectUrl:    'fivem://connect/goatroyale.com',
+    webConnectUrl: webConnectUrlFor('goat', 'https://discord.com/invite/goatgg'),
+    webUrl:        'https://discord.com/invite/goatgg',
+    color:         '#00d4ff',
   },
   {
-    id:         '1v99',
-    name:       '1v99',
-    desc:       'Arena PvP competitiva brasileira',
-    icon:       '⚔️',
-    connectUrl: 'fivem://connect/jogar.1v99.gg',
-    webUrl:     'https://discord.gg/1v99',
-    color:      '#ff4757',
+    id:            '1v99',
+    name:          '1v99',
+    desc:          'Arena PvP competitiva brasileira',
+    icon:          '⚔️',
+    connectUrl:    'fivem://connect/jogar.1v99.gg',
+    webConnectUrl: webConnectUrlFor('1v99', 'https://discord.gg/1v99'),
+    webUrl:        'https://discord.gg/1v99',
+    color:         '#ff4757',
   },
 ]
 
 export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
-  const [completed, setCompleted] = useState({})
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
+  const [completed, setCompleted]     = useState({})
+  const [saving, setSaving]           = useState(false)
+  const [saved, setSaved]             = useState(false)
+  const [connectingId, setConnectingId] = useState(null)
 
   const mainExercises  = routine.sections[1]?.exercises || []
   const completedCount = Object.values(completed).filter(Boolean).length
@@ -96,6 +121,42 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   const playlists      = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
 
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
+
+  const handleConnect = async (srv) => {
+    if (connectingId) return
+    setConnectingId(srv.id)
+    try {
+      if (window.electronAPI?.connectFivem) {
+        const result = await window.electronAPI.connectFivem(srv.connectUrl, srv.webConnectUrl)
+        if (result?.ok) {
+          if (result.method === 'registry' || result.method === 'path') {
+            toast.success('Abrindo FiveM e conectando ao servidor...')
+          } else if (result.method === 'protocol') {
+            toast.info('Solicitando conexão ao FiveM...')
+          } else if (result.method === 'browser') {
+            toast.info('FiveM não encontrado. Abrimos a página do servidor no navegador.')
+          }
+        } else {
+          toast.error(
+            <>
+              Não foi possível abrir o FiveM. Verifique se ele está instalado.{' '}
+              <a href="https://fivem.net" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                Baixar FiveM
+              </a>
+            </>,
+            6000
+          )
+        }
+      } else {
+        window.location.href = srv.connectUrl
+      }
+    } catch (e) {
+      console.error(e)
+      toast.error('Não foi possível abrir o FiveM. Verifique se ele está instalado.')
+    } finally {
+      setConnectingId(null)
+    }
+  }
 
   const handleFinish = async () => {
     setSaving(true)
@@ -277,15 +338,10 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 <button
                   className="btn-server btn-server--connect"
                   title="Conectar direto no FiveM"
-                  onClick={() => {
-                    if (window.electronAPI?.openExternal) {
-                      window.electronAPI.openExternal(srv.connectUrl)
-                    } else {
-                      window.location.href = srv.connectUrl
-                    }
-                  }}
+                  disabled={connectingId === srv.id}
+                  onClick={() => handleConnect(srv)}
                 >
-                  Conectar
+                  {connectingId === srv.id ? 'Conectando…' : 'Conectar'}
                 </button>
                 <a href={srv.webUrl} target="_blank" rel="noreferrer" className="btn-server btn-server--discord">
                   Discord

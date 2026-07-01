@@ -5,6 +5,7 @@ const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs   = require('fs')
+const { resolveFivemExePath } = require('./fivemLocator')
 
 // ── Vercel URL ────────────────────────────────────────────────────────────────
 const VERCEL_URL = 'https://fivem-pvp-trainer.vercel.app'
@@ -67,33 +68,81 @@ ipcMain.on('update:restart', () => {
   autoUpdater.quitAndInstall(false, true) // isSilent=false, isForceRunAfter=true
 })
 
-// Allow renderer to open fivem:// links by spawning FiveM.exe directly.
-// shell.openExternal fails on machines where the fivem:// protocol handler in the
-// Windows registry is incomplete (URL Protocol key exists but shell\open\command missing).
-const FIVEM_PATHS = [
-  path.join(process.env.LOCALAPPDATA || '', 'FiveM', 'FiveM.exe'),
-  'C:\\FiveM\\FiveM.exe',
-  path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'FiveM', 'FiveM.exe'),
-  path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'FiveM', 'FiveM.exe'),
-]
+// Allow renderer to connect to a FiveM server with a robust fallback chain:
+//   1. Spawn FiveM.exe directly (path found via Windows registry, or fixed install paths)
+//   2. shell.openExternal(fivem://...) — relies on the protocol being registered
+//   3. Open the server's web page (allowlisted host only) in the default browser
+// This exists because shell.openExternal fails silently on machines where the
+// fivem:// protocol handler in the Windows registry is incomplete (URL Protocol
+// key exists but shell\open\command is missing or broken).
+const ALLOWED_BROWSER_HOSTS = new Set([
+  'discord.com',
+  'www.discord.com',
+  'discord.gg',
+  'cfx.re',
+  'fivem.net',
+  'www.fivem.net',
+])
 
-ipcMain.handle('shell:openExternal', (_event, url) => {
-  if (typeof url !== 'string' || !url.startsWith('fivem://')) {
-    log.warn('shell:openExternal blocked — unexpected url:', url)
-    return
-  }
-  log.info('shell:openExternal fivem:// requested:', url)
-
-  const fivemExe = FIVEM_PATHS.find(p => fs.existsSync(p))
-  if (fivemExe) {
-    log.info('Spawning FiveM.exe directly:', fivemExe)
-    spawn(fivemExe, [url], { detached: true, stdio: 'ignore' }).unref()
-    return
+ipcMain.handle('fivem:connect', async (_event, fivemUrl, webUrl) => {
+  if (typeof fivemUrl !== 'string' || !fivemUrl.startsWith('fivem://')) {
+    log.warn('fivem:connect blocked — invalid fivem url:', fivemUrl)
+    return { ok: false, method: null, error: 'invalid-url' }
   }
 
-  // FiveM not found in common locations — fall back to shell.openExternal
-  log.warn('FiveM.exe not found, falling back to shell.openExternal')
-  shell.openExternal(url).catch((e) => log.error('shell:openExternal failed:', e?.message || e))
+  let allowedWebUrl = null
+  if (typeof webUrl === 'string') {
+    try {
+      const parsed = new URL(webUrl)
+      if (parsed.protocol === 'https:' && ALLOWED_BROWSER_HOSTS.has(parsed.hostname)) {
+        allowedWebUrl = webUrl
+      } else {
+        log.warn('fivem:connect — webUrl host not allowlisted, ignoring:', webUrl)
+      }
+    } catch (_) {
+      log.warn('fivem:connect — malformed webUrl, ignoring:', webUrl)
+    }
+  }
+
+  log.info('fivem:connect requested:', fivemUrl)
+
+  // 1) Spawn FiveM.exe directly
+  const resolved = await resolveFivemExePath(log)
+  if (resolved) {
+    try {
+      log.info(`fivem:connect — spawning FiveM.exe (source=${resolved.source}):`, resolved.path)
+      spawn(resolved.path, [fivemUrl], { detached: true, stdio: 'ignore' }).unref()
+      return { ok: true, method: resolved.source }
+    } catch (e) {
+      log.error('fivem:connect — spawning FiveM.exe failed:', e?.message || e)
+    }
+  } else {
+    log.warn('fivem:connect — FiveM.exe not found via registry or fixed paths')
+  }
+
+  // 2) shell.openExternal with the fivem:// protocol
+  try {
+    await shell.openExternal(fivemUrl)
+    log.info('fivem:connect — opened via shell.openExternal (protocol)')
+    return { ok: true, method: 'protocol' }
+  } catch (e) {
+    log.warn('fivem:connect — shell.openExternal(fivem://) failed:', e?.message || e)
+  }
+
+  // 3) Last resort — open the server's web page in the default browser
+  if (allowedWebUrl) {
+    try {
+      await shell.openExternal(allowedWebUrl)
+      log.info('fivem:connect — opened web fallback in browser:', allowedWebUrl)
+      return { ok: true, method: 'browser' }
+    } catch (e) {
+      log.error('fivem:connect — shell.openExternal(webUrl) failed:', e?.message || e)
+      return { ok: false, method: null, error: e?.message || 'browser-open-failed' }
+    }
+  }
+
+  log.error('fivem:connect — all methods exhausted, no web fallback available')
+  return { ok: false, method: null, error: 'fivem-not-found' }
 })
 
 // ── Secure storage ────────────────────────────────────────────────────────────

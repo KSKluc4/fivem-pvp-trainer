@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Auto-updater bridge
   onUpdateReady:   (cb)  => ipcRenderer.on('update:ready', (_event, info) => cb(info)),
   restartNow:      ()    => ipcRenderer.send('update:restart'),
-  // Opens fivem:// protocol links via OS shell (bypasses Chromium's URL navigation)
-  openExternal:    (url) => ipcRenderer.invoke('shell:openExternal', url),
+  // Connects to a FiveM server with a fallback chain (direct spawn → protocol → browser).
+  // Returns { ok, method: 'registry'|'path'|'protocol'|'browser', error? }
+  connectFivem:    (fivemUrl, webUrl) => ipcRenderer.invoke('fivem:connect', fivemUrl, webUrl),
 })
