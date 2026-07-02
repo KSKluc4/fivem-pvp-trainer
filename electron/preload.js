@@ -11,7 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Auto-updater bridge
   onUpdateReady:   (cb)  => ipcRenderer.on('update:ready', (_event, info) => cb(info)),
   restartNow:      ()    => ipcRenderer.send('update:restart'),
-  // Connects to a FiveM server with a fallback chain (direct spawn → protocol → browser).
+  // Connects to a FiveM server by its cfx.re join code, with a fallback chain
+  // (direct spawn → protocol → browser). Main validates the code and builds
+  // the fivem:// / cfx.re URLs itself — the renderer never passes a raw URL.
   // Returns { ok, method: 'registry'|'path'|'protocol'|'browser', error? }
-  connectFivem:    (fivemUrl, webUrl) => ipcRenderer.invoke('fivem:connect', fivemUrl, webUrl),
+  connectFivem:    (cfxCode) => ipcRenderer.invoke('fivem:connect', cfxCode),
 })

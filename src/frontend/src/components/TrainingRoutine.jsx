@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { saveProgress } from '../services/api'
+import { useState, useEffect } from 'react'
+import { saveProgress, getUserServers, deleteUserServer } from '../services/api'
 import { toast } from '../services/toast'
+import AddServerModal from './AddServerModal'
 
 const DIFFICULTY_LABELS = {
   beginner:     { label: 'Iniciante',    color: '#2ed573' },
@@ -64,44 +65,68 @@ const PLAYLISTS = {
 
 // ── FiveM server links ─────────────────────────────────────────────────────────
 //
-// cfx.re/join/<código> dos servidores, usado como fallback de navegador quando o
-// FiveM não está instalado. Descoberto manualmente em https://servers.fivem.net/servers
-// (a API pública de listagem de servidores não responde mais externamente, então
-// para novos servidores o código precisa ser conferido ali e preenchido aqui).
-const CFX_JOIN_CODES = {
-  goat: 'q93zep',
-}
-
-function webConnectUrlFor(id, discordUrl) {
-  const code = CFX_JOIN_CODES[id]
-  return code ? `https://cfx.re/join/${code}` : discordUrl
-}
-
-// Adicione novos servidores acrescentando um objeto a este array.
+// Servidores oficiais (fixos). O cfxCode é o código da URL cfx.re/join/XXXXXX —
+// conecta pelo FiveM (fivem://connect/cfx.re/join/<code>) e serve de fallback de
+// navegador (https://cfx.re/join/<code>) quando o FiveM.exe não é encontrado.
+// Adicione novos servidores oficiais acrescentando um objeto a este array.
 const FIVEM_SERVERS = [
   {
-    id:            'goat',
-    name:          'Goat PvP',
-    desc:          'Servidor brasileiro focado em PvP tático',
-    icon:          '🐐',
-    connectUrl:    'fivem://connect/goatroyale.com',
-    webConnectUrl: webConnectUrlFor('goat', 'https://discord.com/invite/goatgg'),
-    webUrl:        'https://discord.com/invite/goatgg',
-    color:         '#00d4ff',
+    id:       'goat',
+    name:     'Goat PvP',
+    desc:     'Servidor brasileiro focado em PvP tático',
+    icon:     '🐐',
+    cfxCode:  'q93zep',
+    webUrl:   'https://discord.com/invite/goatgg',
+    color:    '#00d4ff',
+    official: true,
+  },
+  {
+    id:       'plf',
+    name:     'PLF',
+    desc:     'Servidor brasileiro de PvP',
+    icon:     '🛡️',
+    cfxCode:  'oemxzx',
+    color:    '#7b2fd4',
+    official: true,
   },
 ]
+
+const MAX_CUSTOM_SERVERS = 5
 
 export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
   const [saved, setSaved]             = useState(false)
   const [connectingId, setConnectingId] = useState(null)
+  const [customServers, setCustomServers]           = useState([])
+  const [customServersError, setCustomServersError] = useState(false)
+  const [showAddServer, setShowAddServer]           = useState(false)
+  const [removingId, setRemovingId]                 = useState(null)
 
   const mainExercises  = routine.sections[1]?.exercises || []
   const completedCount = Object.values(completed).filter(Boolean).length
   const toolLabel      = routine.tool === 'kovaak' ? "KovaaK's" : 'Aim Lab'
   const toolClass      = routine.tool === 'kovaak' ? 'tool--kovaak' : 'tool--aimlab'
   const playlists      = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
+
+  const customServerCards = customServers.map((s) => ({
+    id:       s.id,
+    name:     s.name,
+    desc:     null,
+    icon:     '🎮',
+    cfxCode:  s.cfx_code,
+    color:    '#8892a4',
+    official: false,
+  }))
+  const allServers = [...FIVEM_SERVERS, ...customServerCards]
+
+  useEffect(() => {
+    let cancelled = false
+    getUserServers()
+      .then((res) => { if (!cancelled) setCustomServers(res.data || []) })
+      .catch(() => { if (!cancelled) setCustomServersError(true) })
+    return () => { cancelled = true }
+  }, [])
 
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
 
@@ -110,7 +135,7 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
     setConnectingId(srv.id)
     try {
       if (window.electronAPI?.connectFivem) {
-        const result = await window.electronAPI.connectFivem(srv.connectUrl, srv.webConnectUrl)
+        const result = await window.electronAPI.connectFivem(srv.cfxCode)
         if (result?.ok) {
           if (result.method === 'registry' || result.method === 'path') {
             toast.success('Abrindo FiveM e conectando ao servidor...')
@@ -131,13 +156,33 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           )
         }
       } else {
-        window.location.href = srv.connectUrl
+        window.location.href = `fivem://connect/cfx.re/join/${srv.cfxCode}`
       }
     } catch (e) {
       console.error(e)
       toast.error('Não foi possível abrir o FiveM. Verifique se ele está instalado.')
     } finally {
       setConnectingId(null)
+    }
+  }
+
+  const handleServerAdded = (row) => {
+    setCustomServers((prev) => [...prev, row])
+    setShowAddServer(false)
+    toast.success('Servidor adicionado!')
+  }
+
+  const handleRemoveServer = async (srv) => {
+    if (!window.confirm(`Remover o servidor "${srv.name}"?`)) return
+    setRemovingId(srv.id)
+    try {
+      await deleteUserServer(srv.id)
+      setCustomServers((prev) => prev.filter((s) => s.id !== srv.id))
+      toast.success('Servidor removido.')
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erro ao remover servidor.')
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -310,12 +355,17 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           <p>Aplique o treino em servidores PvP reais do FiveM</p>
         </div>
         <div className="server-btns">
-          {FIVEM_SERVERS.map((srv) => (
-            <div key={srv.id} className="server-card" style={{ '--srv-color': srv.color }}>
+          {allServers.map((srv) => (
+            <div
+              key={srv.official ? srv.id : `custom-${srv.id}`}
+              className={`server-card ${srv.official ? '' : 'server-card--custom'}`}
+              style={{ '--srv-color': srv.color }}
+            >
+              {!srv.official && <span className="server-card-badge">Personalizado</span>}
               <div className="server-card-icon">{srv.icon}</div>
               <div className="server-card-info">
                 <div className="server-card-name">{srv.name}</div>
-                <div className="server-card-desc">{srv.desc}</div>
+                {srv.desc && <div className="server-card-desc">{srv.desc}</div>}
               </div>
               <div className="server-card-actions">
                 <button
@@ -326,14 +376,43 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 >
                   {connectingId === srv.id ? 'Conectando…' : 'Conectar'}
                 </button>
-                <a href={srv.webUrl} target="_blank" rel="noreferrer" className="btn-server btn-server--discord">
-                  Discord
-                </a>
+                {srv.webUrl && (
+                  <a href={srv.webUrl} target="_blank" rel="noreferrer" className="btn-server btn-server--discord">
+                    Discord
+                  </a>
+                )}
+                {!srv.official && (
+                  <button
+                    className="server-card-remove"
+                    title="Remover servidor"
+                    disabled={removingId === srv.id}
+                    onClick={() => handleRemoveServer(srv)}
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
           ))}
+
+          {customServers.length < MAX_CUSTOM_SERVERS && (
+            <button type="button" className="server-card server-card--add" onClick={() => setShowAddServer(true)}>
+              <span className="server-card-add-icon">➕</span>
+              <span>Adicionar servidor</span>
+            </button>
+          )}
         </div>
+
+        {customServersError && (
+          <div className="server-links-warning">
+            ⚠️ Não foi possível carregar seus servidores personalizados no momento.
+          </div>
+        )}
       </div>
+
+      {showAddServer && (
+        <AddServerModal onClose={() => setShowAddServer(false)} onAdded={handleServerAdded} />
+      )}
     </div>
   )
 }

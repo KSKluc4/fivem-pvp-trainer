@@ -71,40 +71,28 @@ ipcMain.on('update:restart', () => {
 // Allow renderer to connect to a FiveM server with a robust fallback chain:
 //   1. Spawn FiveM.exe directly (path found via Windows registry, or fixed install paths)
 //   2. shell.openExternal(fivem://...) — relies on the protocol being registered
-//   3. Open the server's web page (allowlisted host only) in the default browser
+//   3. Open the server's cfx.re page in the default browser
 // This exists because shell.openExternal fails silently on machines where the
 // fivem:// protocol handler in the Windows registry is incomplete (URL Protocol
 // key exists but shell\open\command is missing or broken).
-const ALLOWED_BROWSER_HOSTS = new Set([
-  'discord.com',
-  'www.discord.com',
-  'discord.gg',
-  'cfx.re',
-  'fivem.net',
-  'www.fivem.net',
-])
+//
+// SECURITY: the renderer never supplies a URL — only a short cfx.re join code
+// (as used by user-added custom servers too), validated here against the same
+// regex as the API. Main builds both the fivem:// and https://cfx.re/ URLs
+// itself, so there is no path for the renderer to make this process spawn or
+// open an arbitrary URL.
+const CFX_CODE_RE = /^[a-z0-9]{4,10}$/
 
-ipcMain.handle('fivem:connect', async (_event, fivemUrl, webUrl) => {
-  if (typeof fivemUrl !== 'string' || !fivemUrl.startsWith('fivem://')) {
-    log.warn('fivem:connect blocked — invalid fivem url:', fivemUrl)
-    return { ok: false, method: null, error: 'invalid-url' }
+ipcMain.handle('fivem:connect', async (_event, cfxCode) => {
+  if (typeof cfxCode !== 'string' || !CFX_CODE_RE.test(cfxCode)) {
+    log.warn('fivem:connect blocked — invalid cfx code:', cfxCode)
+    return { ok: false, method: null, error: 'invalid-code' }
   }
 
-  let allowedWebUrl = null
-  if (typeof webUrl === 'string') {
-    try {
-      const parsed = new URL(webUrl)
-      if (parsed.protocol === 'https:' && ALLOWED_BROWSER_HOSTS.has(parsed.hostname)) {
-        allowedWebUrl = webUrl
-      } else {
-        log.warn('fivem:connect — webUrl host not allowlisted, ignoring:', webUrl)
-      }
-    } catch (_) {
-      log.warn('fivem:connect — malformed webUrl, ignoring:', webUrl)
-    }
-  }
+  const fivemUrl = `fivem://connect/cfx.re/join/${cfxCode}`
+  const webUrl   = `https://cfx.re/join/${cfxCode}`
 
-  log.info('fivem:connect requested:', fivemUrl)
+  log.info('fivem:connect requested for cfx code:', cfxCode)
 
   // 1) Spawn FiveM.exe directly
   const resolved = await resolveFivemExePath(log)
@@ -129,20 +117,15 @@ ipcMain.handle('fivem:connect', async (_event, fivemUrl, webUrl) => {
     log.warn('fivem:connect — shell.openExternal(fivem://) failed:', e?.message || e)
   }
 
-  // 3) Last resort — open the server's web page in the default browser
-  if (allowedWebUrl) {
-    try {
-      await shell.openExternal(allowedWebUrl)
-      log.info('fivem:connect — opened web fallback in browser:', allowedWebUrl)
-      return { ok: true, method: 'browser' }
-    } catch (e) {
-      log.error('fivem:connect — shell.openExternal(webUrl) failed:', e?.message || e)
-      return { ok: false, method: null, error: e?.message || 'browser-open-failed' }
-    }
+  // 3) Last resort — open the server's cfx.re page in the default browser
+  try {
+    await shell.openExternal(webUrl)
+    log.info('fivem:connect — opened web fallback in browser:', webUrl)
+    return { ok: true, method: 'browser' }
+  } catch (e) {
+    log.error('fivem:connect — shell.openExternal(webUrl) failed:', e?.message || e)
+    return { ok: false, method: null, error: e?.message || 'browser-open-failed' }
   }
-
-  log.error('fivem:connect — all methods exhausted, no web fallback available')
-  return { ok: false, method: null, error: 'fivem-not-found' }
 })
 
 // ── Secure storage ────────────────────────────────────────────────────────────

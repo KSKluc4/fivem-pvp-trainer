@@ -216,6 +216,43 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
     return res.data or []
 
 
+# ── Custom user servers ───────────────────────────────────────────────────────
+
+MAX_USER_SERVERS = 5
+
+
+def list_user_servers(user_id: int) -> list:
+    sb = get_supabase()
+    res = (sb.table('user_servers')
+             .select('id,name,cfx_code,created_at')
+             .eq('user_id', user_id)
+             .order('created_at')
+             .execute())
+    return res.data or []
+
+
+def count_user_servers(user_id: int) -> int:
+    sb = get_supabase()
+    res = sb.table('user_servers').select('id', count='exact').eq('user_id', user_id).execute()
+    return res.count or 0
+
+
+def create_user_server(user_id: int, name: str, cfx_code: str) -> dict:
+    sb = get_supabase()
+    res = sb.table('user_servers').insert({
+        'user_id':  user_id,
+        'name':     name,
+        'cfx_code': cfx_code,
+    }).execute()
+    return res.data[0]
+
+
+def delete_user_server(user_id: int, server_id: int) -> bool:
+    sb = get_supabase()
+    res = sb.table('user_servers').delete().eq('id', server_id).eq('user_id', user_id).execute()
+    return bool(res.data)
+
+
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
 def get_admin_stats() -> dict:
