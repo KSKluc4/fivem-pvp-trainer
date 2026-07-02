@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAdminStats, getAdminUsers } from '../services/api'
 
 const FOCUS_ICONS  = { Mira: '🎯', Reflexo: '⚡', Movimento: '🏃' }
-const SERVER_ICONS = { 'Goat PvP': '🐐', '1v99': '⚔️', Ambos: '🌐', Outro: '🎮' }
+const SERVER_ICONS = { 'Goat PvP': '🐐', Ambos: '🌐', Outro: '🎮' }
 
 function StatCard({ label, value, sub, accent }) {
   return (

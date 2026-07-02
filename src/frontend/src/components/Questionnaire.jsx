@@ -9,7 +9,6 @@ const QUESTIONS = [
     subtitle: 'Isso calibra o treino para o meta e ritmo do seu servidor',
     options: [
       { value: 'goat',  label: 'Goat PvP',  description: 'Combates táticos, range médio-longo, muito pre-aim', icon: '🐐' },
-      { value: '1v99',  label: '1v99',       description: 'Arena competitiva, ritmo frenético, fights curtas',   icon: '⚔️' },
       { value: 'ambos', label: 'Ambos',      description: 'Jogo em múltiplos servidores e estilos',              icon: '🌐' },
       { value: 'outro', label: 'Outro',      description: 'Servidor diferente ou privado',                       icon: '🎮' },
     ],

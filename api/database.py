@@ -260,7 +260,7 @@ def get_admin_stats() -> dict:
     server_counts = Counter(q.get('server_type', '') for q in latest.values() if q.get('server_type'))
 
     FOCUS_LABELS  = {'aim': 'Mira', 'reflex': 'Reflexo', 'movement': 'Movimento'}
-    SERVER_LABELS = {'goat': 'Goat PvP', '1v99': '1v99', 'ambos': 'Ambos', 'outro': 'Outro'}
+    SERVER_LABELS = {'goat': 'Goat PvP', 'ambos': 'Ambos', 'outro': 'Outro'}
 
     def top(counter):
         if not counter:

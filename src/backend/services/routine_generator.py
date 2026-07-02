@@ -82,9 +82,15 @@ WEAKNESS_NOTES = {
 
 SERVER_NOTES = {
     'goat':  'Goat PvP: combates táticos de médio range. Pre-aim de corners é fundamental.',
-    '1v99':  '1v99: ritmo frenético, fights curtas. Reflexo e decisão rápida valem mais que precisão.',
     'ambos': 'Múltiplos servidores: treine adaptabilidade — mude a sensibilidade de cenário para cenário.',
     'outro': 'Adapte o treino ao ritmo do seu servidor.',
+}
+
+# Servidores desativados — questionnaire_results existentes no Supabase podem
+# ainda ter esses valores gravados. Trate como o comportamento mais neutro
+# ('outro') em vez de quebrar ou ignorar a dica de servidor.
+LEGACY_SERVER_ALIASES = {
+    '1v99': 'outro',
 }
 
 
@@ -94,7 +100,7 @@ def generate_routine(profile):
     daily_time = int(profile.get('daily_time', 30))
     tool       = str(profile.get('preferred_tool', 'aimlab')).lower()
     weapon     = profile.get('main_weapon', '')
-    server     = profile.get('server_type', '')
+    server     = LEGACY_SERVER_ALIASES.get(profile.get('server_type', ''), profile.get('server_type', ''))
     weakness   = profile.get('specific_weakness', '')
 
     if tool not in ('kovaak', 'aimlab'):

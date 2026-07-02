@@ -65,19 +65,11 @@ const PLAYLISTS = {
 // ── FiveM server links ─────────────────────────────────────────────────────────
 //
 // cfx.re/join/<código> dos servidores, usado como fallback de navegador quando o
-// FiveM não está instalado. Não foi possível descobrir esses códigos de forma
-// automática: a API pública de listagem de servidores da FiveM
-// (servers-frontend.fivem.net/api/servers/) não responde mais externamente e o
-// site atual (servers.fivem.net) busca os dados via um backend interno sem rota
-// pública documentada.
-//
-// Para preencher manualmente: abra https://servers.fivem.net/servers, procure
-// pelo nome do servidor (ex.: "Goat PvP" / "1v99"), abra a página de detalhes e
-// copie o código que aparece na URL "cfx.re/join/XXXXXX". Enquanto ficar null,
-// o Discord do servidor (webUrl) é usado como fallback de navegador.
+// FiveM não está instalado. Descoberto manualmente em https://servers.fivem.net/servers
+// (a API pública de listagem de servidores não responde mais externamente, então
+// para novos servidores o código precisa ser conferido ali e preenchido aqui).
 const CFX_JOIN_CODES = {
-  goat: null,
-  '1v99': null,
+  goat: 'q93zep',
 }
 
 function webConnectUrlFor(id, discordUrl) {
@@ -85,6 +77,7 @@ function webConnectUrlFor(id, discordUrl) {
   return code ? `https://cfx.re/join/${code}` : discordUrl
 }
 
+// Adicione novos servidores acrescentando um objeto a este array.
 const FIVEM_SERVERS = [
   {
     id:            'goat',
@@ -95,16 +88,6 @@ const FIVEM_SERVERS = [
     webConnectUrl: webConnectUrlFor('goat', 'https://discord.com/invite/goatgg'),
     webUrl:        'https://discord.com/invite/goatgg',
     color:         '#00d4ff',
-  },
-  {
-    id:            '1v99',
-    name:          '1v99',
-    desc:          'Arena PvP competitiva brasileira',
-    icon:          '⚔️',
-    connectUrl:    'fivem://connect/jogar.1v99.gg',
-    webConnectUrl: webConnectUrlFor('1v99', 'https://discord.gg/1v99'),
-    webUrl:        'https://discord.gg/1v99',
-    color:         '#ff4757',
   },
 ]
 
