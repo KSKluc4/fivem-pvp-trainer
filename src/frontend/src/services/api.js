@@ -99,9 +99,4 @@ export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
 export const getAdminStats = () => api.get('/admin/stats')
 export const getAdminUsers = () => api.get('/admin/users')
 
-// ── Custom FiveM servers ──────────────────────────────────────────────────────
-export const getUserServers   = ()     => api.get('/servers')
-export const addUserServer    = (data) => api.post('/servers', data)
-export const deleteUserServer = (id)   => api.delete(`/servers/${id}`)
-
 export default api

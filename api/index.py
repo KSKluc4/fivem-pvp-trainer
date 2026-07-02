@@ -10,7 +10,6 @@ from routes.training      import training_bp
 from routes.progress      import progress_bp
 from routes.sensitivity   import sensitivity_bp
 from routes.admin         import admin_bp
-from routes.servers       import servers_bp
 
 _STATIC = os.path.join(os.path.dirname(__file__), 'static')
 
@@ -33,7 +32,6 @@ app.register_blueprint(training_bp,       url_prefix='/api')
 app.register_blueprint(progress_bp,       url_prefix='/api')
 app.register_blueprint(sensitivity_bp,    url_prefix='/api')
 app.register_blueprint(admin_bp,          url_prefix='/api')
-app.register_blueprint(servers_bp,        url_prefix='/api')
 
 
 @app.route('/api/health')

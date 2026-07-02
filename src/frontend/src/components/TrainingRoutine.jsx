@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
-import { saveProgress, getUserServers, deleteUserServer } from '../services/api'
+import { useState } from 'react'
+import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
-import AddServerModal from './AddServerModal'
 
 const DIFFICULTY_LABELS = {
   beginner:     { label: 'Iniciante',    color: '#2ed573' },
@@ -63,45 +62,30 @@ const PLAYLISTS = {
   ],
 }
 
-// ── FiveM server links ─────────────────────────────────────────────────────────
-//
-// Servidores oficiais (fixos). O cfxCode é o código da URL cfx.re/join/XXXXXX —
-// conecta pelo FiveM (fivem://connect/cfx.re/join/<code>) e serve de fallback de
-// navegador (https://cfx.re/join/<code>) quando o FiveM.exe não é encontrado.
-// Adicione novos servidores oficiais acrescentando um objeto a este array.
-const FIVEM_SERVERS = [
-  {
-    id:       'goat',
-    name:     'Goat PvP',
-    desc:     'Servidor brasileiro focado em PvP tático',
-    icon:     '🐐',
-    cfxCode:  'q93zep',
-    webUrl:   'https://discord.com/invite/goatgg',
-    color:    '#00d4ff',
-    official: true,
-  },
-  {
-    id:       'plf',
-    name:     'PLF',
-    desc:     'Servidor brasileiro de PvP',
-    icon:     '🛡️',
-    cfxCode:  'oemxzx',
-    color:    '#7b2fd4',
-    official: true,
-  },
+// ── Training tips ──────────────────────────────────────────────────────────────
+const TRAINING_TIPS = [
+  { name: 'GOAT', desc: 'ideal para treinar mata-mata', cfxLink: 'cfx.re/join/q93zep' },
+  { name: 'PLF',  desc: 'ideal para melhorar seus drops', cfxLink: 'cfx.re/join/oemxzx' },
 ]
 
-const MAX_CUSTOM_SERVERS = 5
+function CopyLink({ value }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard?.writeText(value).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <button type="button" className="tip-copy-btn" onClick={copy} title="Copiar link">
+      {value} <span className="tip-copy-icon">{copied ? '✓' : '📋'}</span>
+    </button>
+  )
+}
 
 export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
   const [saved, setSaved]             = useState(false)
-  const [connectingId, setConnectingId] = useState(null)
-  const [customServers, setCustomServers]           = useState([])
-  const [customServersError, setCustomServersError] = useState(false)
-  const [showAddServer, setShowAddServer]           = useState(false)
-  const [removingId, setRemovingId]                 = useState(null)
 
   const mainExercises  = routine.sections[1]?.exercises || []
   const completedCount = Object.values(completed).filter(Boolean).length
@@ -109,82 +93,7 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   const toolClass      = routine.tool === 'kovaak' ? 'tool--kovaak' : 'tool--aimlab'
   const playlists      = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
 
-  const customServerCards = customServers.map((s) => ({
-    id:       s.id,
-    name:     s.name,
-    desc:     null,
-    icon:     '🎮',
-    cfxCode:  s.cfx_code,
-    color:    '#8892a4',
-    official: false,
-  }))
-  const allServers = [...FIVEM_SERVERS, ...customServerCards]
-
-  useEffect(() => {
-    let cancelled = false
-    getUserServers()
-      .then((res) => { if (!cancelled) setCustomServers(res.data || []) })
-      .catch(() => { if (!cancelled) setCustomServersError(true) })
-    return () => { cancelled = true }
-  }, [])
-
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
-
-  const handleConnect = async (srv) => {
-    if (connectingId) return
-    setConnectingId(srv.id)
-    try {
-      if (window.electronAPI?.connectFivem) {
-        const result = await window.electronAPI.connectFivem(srv.cfxCode)
-        if (result?.ok) {
-          if (result.method === 'registry' || result.method === 'path') {
-            toast.success('Abrindo FiveM e conectando ao servidor...')
-          } else if (result.method === 'protocol') {
-            toast.info('Solicitando conexão ao FiveM...')
-          } else if (result.method === 'browser') {
-            toast.info('FiveM não encontrado. Abrimos a página do servidor no navegador.')
-          }
-        } else {
-          toast.error(
-            <>
-              Não foi possível abrir o FiveM. Verifique se ele está instalado.{' '}
-              <a href="https://fivem.net" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-                Baixar FiveM
-              </a>
-            </>,
-            6000
-          )
-        }
-      } else {
-        window.location.href = `fivem://connect/cfx.re/join/${srv.cfxCode}`
-      }
-    } catch (e) {
-      console.error(e)
-      toast.error('Não foi possível abrir o FiveM. Verifique se ele está instalado.')
-    } finally {
-      setConnectingId(null)
-    }
-  }
-
-  const handleServerAdded = (row) => {
-    setCustomServers((prev) => [...prev, row])
-    setShowAddServer(false)
-    toast.success('Servidor adicionado!')
-  }
-
-  const handleRemoveServer = async (srv) => {
-    if (!window.confirm(`Remover o servidor "${srv.name}"?`)) return
-    setRemovingId(srv.id)
-    try {
-      await deleteUserServer(srv.id)
-      setCustomServers((prev) => prev.filter((s) => s.id !== srv.id))
-      toast.success('Servidor removido.')
-    } catch (e) {
-      toast.error(e.response?.data?.error || 'Erro ao remover servidor.')
-    } finally {
-      setRemovingId(null)
-    }
-  }
 
   const handleFinish = async () => {
     setSaving(true)
@@ -348,71 +257,18 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
         </div>
       </div>
 
-      {/* ── FiveM Server Links ── */}
-      <div className="server-links-section">
-        <div className="server-links-header">
-          <h3>Praticar no Servidor</h3>
-          <p>Aplique o treino em servidores PvP reais do FiveM</p>
-        </div>
-        <div className="server-btns">
-          {allServers.map((srv) => (
-            <div
-              key={srv.official ? srv.id : `custom-${srv.id}`}
-              className={`server-card ${srv.official ? '' : 'server-card--custom'}`}
-              style={{ '--srv-color': srv.color }}
-            >
-              {!srv.official && <span className="server-card-badge">Personalizado</span>}
-              <div className="server-card-icon">{srv.icon}</div>
-              <div className="server-card-info">
-                <div className="server-card-name">{srv.name}</div>
-                {srv.desc && <div className="server-card-desc">{srv.desc}</div>}
-              </div>
-              <div className="server-card-actions">
-                <button
-                  className="btn-server btn-server--connect"
-                  title="Conectar direto no FiveM"
-                  disabled={connectingId === srv.id}
-                  onClick={() => handleConnect(srv)}
-                >
-                  {connectingId === srv.id ? 'Conectando…' : 'Conectar'}
-                </button>
-                {srv.webUrl && (
-                  <a href={srv.webUrl} target="_blank" rel="noreferrer" className="btn-server btn-server--discord">
-                    Discord
-                  </a>
-                )}
-                {!srv.official && (
-                  <button
-                    className="server-card-remove"
-                    title="Remover servidor"
-                    disabled={removingId === srv.id}
-                    onClick={() => handleRemoveServer(srv)}
-                  >
-                    🗑️
-                  </button>
-                )}
-              </div>
+      {/* ── Training Tip ── */}
+      <div className="training-tip-card">
+        <div className="training-tip-header">💡 Onde treinar no FiveM</div>
+        <div className="training-tip-list">
+          {TRAINING_TIPS.map((tip) => (
+            <div className="training-tip-row" key={tip.name}>
+              <span><strong>{tip.name}</strong> — {tip.desc}</span>
+              <CopyLink value={tip.cfxLink} />
             </div>
           ))}
-
-          {customServers.length < MAX_CUSTOM_SERVERS && (
-            <button type="button" className="server-card server-card--add" onClick={() => setShowAddServer(true)}>
-              <span className="server-card-add-icon">➕</span>
-              <span>Adicionar servidor</span>
-            </button>
-          )}
         </div>
-
-        {customServersError && (
-          <div className="server-links-warning">
-            ⚠️ Não foi possível carregar seus servidores personalizados no momento.
-          </div>
-        )}
       </div>
-
-      {showAddServer && (
-        <AddServerModal onClose={() => setShowAddServer(false)} onAdded={handleServerAdded} />
-      )}
     </div>
   )
 }

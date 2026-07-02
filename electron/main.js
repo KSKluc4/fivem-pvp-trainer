@@ -1,11 +1,9 @@
 'use strict'
 
 const { app, BrowserWindow, Menu, shell, ipcMain, safeStorage, session } = require('electron')
-const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs   = require('fs')
-const { resolveFivemExePath } = require('./fivemLocator')
 
 // ── Vercel URL ────────────────────────────────────────────────────────────────
 const VERCEL_URL = 'https://fivem-pvp-trainer.vercel.app'
@@ -66,66 +64,6 @@ autoUpdater.on('error', (err) => {
 ipcMain.on('update:restart', () => {
   log.info('User requested restart to apply update')
   autoUpdater.quitAndInstall(false, true) // isSilent=false, isForceRunAfter=true
-})
-
-// Allow renderer to connect to a FiveM server with a robust fallback chain:
-//   1. Spawn FiveM.exe directly (path found via Windows registry, or fixed install paths)
-//   2. shell.openExternal(fivem://...) — relies on the protocol being registered
-//   3. Open the server's cfx.re page in the default browser
-// This exists because shell.openExternal fails silently on machines where the
-// fivem:// protocol handler in the Windows registry is incomplete (URL Protocol
-// key exists but shell\open\command is missing or broken).
-//
-// SECURITY: the renderer never supplies a URL — only a short cfx.re join code
-// (as used by user-added custom servers too), validated here against the same
-// regex as the API. Main builds both the fivem:// and https://cfx.re/ URLs
-// itself, so there is no path for the renderer to make this process spawn or
-// open an arbitrary URL.
-const CFX_CODE_RE = /^[a-z0-9]{4,10}$/
-
-ipcMain.handle('fivem:connect', async (_event, cfxCode) => {
-  if (typeof cfxCode !== 'string' || !CFX_CODE_RE.test(cfxCode)) {
-    log.warn('fivem:connect blocked — invalid cfx code:', cfxCode)
-    return { ok: false, method: null, error: 'invalid-code' }
-  }
-
-  const fivemUrl = `fivem://connect/cfx.re/join/${cfxCode}`
-  const webUrl   = `https://cfx.re/join/${cfxCode}`
-
-  log.info('fivem:connect requested for cfx code:', cfxCode)
-
-  // 1) Spawn FiveM.exe directly
-  const resolved = await resolveFivemExePath(log)
-  if (resolved) {
-    try {
-      log.info(`fivem:connect — spawning FiveM.exe (source=${resolved.source}):`, resolved.path)
-      spawn(resolved.path, [fivemUrl], { detached: true, stdio: 'ignore' }).unref()
-      return { ok: true, method: resolved.source }
-    } catch (e) {
-      log.error('fivem:connect — spawning FiveM.exe failed:', e?.message || e)
-    }
-  } else {
-    log.warn('fivem:connect — FiveM.exe not found via registry or fixed paths')
-  }
-
-  // 2) shell.openExternal with the fivem:// protocol
-  try {
-    await shell.openExternal(fivemUrl)
-    log.info('fivem:connect — opened via shell.openExternal (protocol)')
-    return { ok: true, method: 'protocol' }
-  } catch (e) {
-    log.warn('fivem:connect — shell.openExternal(fivem://) failed:', e?.message || e)
-  }
-
-  // 3) Last resort — open the server's cfx.re page in the default browser
-  try {
-    await shell.openExternal(webUrl)
-    log.info('fivem:connect — opened web fallback in browser:', webUrl)
-    return { ok: true, method: 'browser' }
-  } catch (e) {
-    log.error('fivem:connect — shell.openExternal(webUrl) failed:', e?.message || e)
-    return { ok: false, method: null, error: e?.message || 'browser-open-failed' }
-  }
 })
 
 // ── Secure storage ────────────────────────────────────────────────────────────
