@@ -1,6 +1,6 @@
 {
   "name": "fivem-pvp-trainer",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "FiveM PvP Trainer — Desktop App",
   "main": "electron/main.js",
   "author": "KSKluc4",
