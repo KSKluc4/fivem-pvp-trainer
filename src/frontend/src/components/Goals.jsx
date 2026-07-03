@@ -1,29 +1,32 @@
 import { useState, useEffect } from 'react'
+import { Card, SimpleGrid, Group, Stack, Text, Checkbox, RingProgress, Badge, Skeleton, Alert } from '@mantine/core'
+import { IconTarget, IconCalendarWeek, IconTrophy, IconInfoCircle } from '@tabler/icons-react'
 import { getGoals, toggleGoal } from '../services/api'
 import { toast } from '../services/toast'
 
-function GoalRing({ completed, total }) {
-  const pct = total ? (completed / total) * 100 : 0
+function GoalRow({ goal, onToggle, busy }) {
   return (
-    <div className="goal-ring" style={{ '--pct': `${pct}%` }}>
-      <span>{completed}/{total}</span>
-    </div>
+    <Group
+      wrap="nowrap"
+      align="flex-start"
+      gap="sm"
+      className={`goal-row ${busy ? 'busy' : ''}`}
+      onClick={() => !busy && onToggle(goal)}
+    >
+      <Checkbox checked={goal.completed} readOnly tabIndex={-1} mt={2} style={{ pointerEvents: 'none' }} />
+      <Box_ done={goal.completed}>
+        <Text size="sm" fw={600} td={goal.completed ? 'line-through' : undefined} c={goal.completed ? 'dimmed' : undefined}>
+          {goal.title}
+        </Text>
+        {goal.description && <Text size="xs" c="dimmed">{goal.description}</Text>}
+      </Box_>
+    </Group>
   )
 }
 
-function GoalRow({ goal, onToggle, busy }) {
-  return (
-    <div
-      className={`goal-row ${goal.completed ? 'done' : ''} ${busy ? 'busy' : ''}`}
-      onClick={() => !busy && onToggle(goal)}
-    >
-      <div className={`checkbox ${goal.completed ? 'checked' : ''}`}>{goal.completed ? '✓' : ''}</div>
-      <div className="goal-row-body">
-        <div className="goal-row-title">{goal.title}</div>
-        {goal.description && <div className="goal-row-desc">{goal.description}</div>}
-      </div>
-    </div>
-  )
+// Tiny wrapper so we don't need an extra import just for a flex-basis box
+function Box_({ children }) {
+  return <Stack gap={2} style={{ flex: 1 }}>{children}</Stack>
 }
 
 function formatDayMonth(dateStr) {
@@ -81,54 +84,83 @@ export default function Goals() {
 
   if (error) {
     return (
-      <div className="goals-notice">⚠️ Metas indisponíveis no momento — o resto do treino segue normal.</div>
+      <Alert color="gray" variant="light" icon={<IconInfoCircle size={16} />} mb="lg">
+        Metas indisponíveis no momento — o resto do treino segue normal.
+      </Alert>
     )
   }
 
   if (!data) {
     return (
-      <div className="goals-section">
-        <div className="goals-card"><div className="skeleton skeleton-text w60" /></div>
-        <div className="goals-card"><div className="skeleton skeleton-text w60" /></div>
-      </div>
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="lg">
+        <Card><Skeleton height={80} /></Card>
+        <Card><Skeleton height={80} /></Card>
+      </SimpleGrid>
     )
   }
 
   if (!data.available) {
     return (
-      <div className="goals-notice">💡 Sistema de metas chegando em breve por aqui.</div>
+      <Alert color="brandCyan" variant="light" icon={<IconInfoCircle size={16} />} mb="lg">
+        Sistema de metas chegando em breve por aqui.
+      </Alert>
     )
   }
 
   const dailyDone = data.daily_progress.total > 0 && data.daily_progress.completed === data.daily_progress.total
 
   return (
-    <div className="goals-section">
-      <div className={`goals-card ${dailyDone ? 'goals-card--complete' : ''} ${pulse ? 'goals-card--pulse' : ''}`}>
-        <div className="goals-card-header">
-          <h3>🎯 Metas de hoje</h3>
-          <GoalRing completed={data.daily_progress.completed} total={data.daily_progress.total} />
-        </div>
-        <div className="goals-list">
+    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="lg">
+      <Card className={pulse ? 'goals-card--pulse' : ''} style={dailyDone ? { borderColor: 'var(--mantine-color-green-6)' } : undefined}>
+        <Group justify="space-between" mb="sm">
+          <Group gap={6}>
+            <IconTarget size={18} color="var(--mantine-color-brandCyan-5)" />
+            <Text fw={700} size="sm">Metas de hoje</Text>
+          </Group>
+          <RingProgress
+            size={48}
+            thickness={5}
+            roundCaps
+            sections={[{ value: data.daily_progress.total ? (data.daily_progress.completed / data.daily_progress.total) * 100 : 0, color: 'green' }]}
+            label={<Text size="xs" fw={800} ta="center">{data.daily_progress.completed}/{data.daily_progress.total}</Text>}
+          />
+        </Group>
+        <Stack gap="xs">
           {data.daily.map((g) => (
             <GoalRow key={g.id} goal={g} onToggle={handleToggle} busy={busyId === g.id} />
           ))}
-        </div>
-        {dailyDone && <div className="goals-celebrate-msg">🏆 Todas as metas de hoje concluídas!</div>}
-      </div>
+        </Stack>
+        {dailyDone && (
+          <Group gap={6} mt="sm" justify="center">
+            <IconTrophy size={16} color="var(--mantine-color-yellow-5)" />
+            <Text size="sm" fw={700} c="green">Todas as metas de hoje concluídas!</Text>
+          </Group>
+        )}
+      </Card>
 
-      <div className="goals-card">
-        <div className="goals-card-header">
-          <h3>📅 Metas da semana</h3>
-          <GoalRing completed={data.weekly_progress.completed} total={data.weekly_progress.total} />
-        </div>
-        <div className="goals-list">
+      <Card>
+        <Group justify="space-between" mb="sm">
+          <Group gap={6}>
+            <IconCalendarWeek size={18} color="var(--mantine-color-brandPurple-4)" />
+            <Text fw={700} size="sm">Metas da semana</Text>
+          </Group>
+          <RingProgress
+            size={48}
+            thickness={5}
+            roundCaps
+            sections={[{ value: data.weekly_progress.total ? (data.weekly_progress.completed / data.weekly_progress.total) * 100 : 0, color: 'brandPurple' }]}
+            label={<Text size="xs" fw={800} ta="center">{data.weekly_progress.completed}/{data.weekly_progress.total}</Text>}
+          />
+        </Group>
+        <Stack gap="xs">
           {data.weekly.map((g) => (
             <GoalRow key={g.id} goal={g} onToggle={handleToggle} busy={busyId === g.id} />
           ))}
-        </div>
-        <div className="goals-reset-note">Reseta segunda-feira ({formatDayMonth(data.weekly_resets_at)})</div>
-      </div>
-    </div>
+        </Stack>
+        <Group justify="flex-end" mt="sm">
+          <Badge variant="light" color="gray" size="sm">Reseta segunda-feira ({formatDayMonth(data.weekly_resets_at)})</Badge>
+        </Group>
+      </Card>
+    </SimpleGrid>
   )
 }

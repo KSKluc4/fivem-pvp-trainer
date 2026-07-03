@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { Alert, Group, Text, Button } from '@mantine/core'
+import { IconRocket } from '@tabler/icons-react'
 
 export default function UpdateBanner() {
-  const [updateInfo, setUpdateInfo]     = useState(null)
-  const [restarting, setRestarting]     = useState(false)
-  const [dismissed,  setDismissed]      = useState(false)
+  const [updateInfo, setUpdateInfo] = useState(null)
+  const [restarting, setRestarting] = useState(false)
+  const [dismissed,  setDismissed]  = useState(false)
 
   useEffect(() => {
     if (!window.electronAPI?.onUpdateReady) return
@@ -16,27 +18,31 @@ export default function UpdateBanner() {
   if (!updateInfo || dismissed) return null
 
   return (
-    <div className="update-banner" role="alert">
-      <span className="update-banner-icon">🚀</span>
-      <span className="update-banner-text">
-        Versão <strong>{updateInfo.version}</strong> disponível — baixada e pronta para instalar
-      </span>
-      <div className="update-banner-actions">
-        <button
-          className="update-banner-btn update-banner-btn--primary"
-          onClick={() => { setRestarting(true); window.electronAPI.restartNow() }}
-          disabled={restarting}
-        >
-          {restarting ? 'Reiniciando…' : 'Reiniciar agora'}
-        </button>
-        <button
-          className="update-banner-btn update-banner-btn--dismiss"
-          onClick={() => setDismissed(true)}
-          title="Será instalado ao fechar o app"
-        >
-          Depois
-        </button>
-      </div>
-    </div>
+    <Alert
+      color="brandCyan"
+      variant="light"
+      icon={<IconRocket size={18} />}
+      mb="md"
+      onClose={() => setDismissed(true)}
+      withCloseButton={false}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm">
+          Versão <Text span fw={700}>{updateInfo.version}</Text> disponível — baixada e pronta para instalar
+        </Text>
+        <Group gap="xs">
+          <Button
+            size="xs"
+            loading={restarting}
+            onClick={() => { setRestarting(true); window.electronAPI.restartNow() }}
+          >
+            Reiniciar agora
+          </Button>
+          <Button size="xs" variant="subtle" color="gray" onClick={() => setDismissed(true)} title="Será instalado ao fechar o app">
+            Depois
+          </Button>
+        </Group>
+      </Group>
+    </Alert>
   )
 }

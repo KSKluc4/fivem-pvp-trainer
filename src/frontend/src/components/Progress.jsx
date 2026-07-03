@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react'
+import {
+  Box, Group, Stack, Title, Text, Button, Card, Paper, Badge, Progress as MProgress,
+  SimpleGrid, Skeleton, Grid,
+} from '@mantine/core'
+import { BarChart } from '@mantine/charts'
+import {
+  IconArrowLeft, IconCalendar, IconFlame, IconClipboardList, IconCircleCheck,
+  IconChartPie, IconTrendingUp, IconMedal, IconArchive,
+} from '@tabler/icons-react'
 import { getProgress, getGoals } from '../services/api'
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -13,9 +22,9 @@ const ACHIEVEMENTS = [
 ]
 
 export default function Progress({ userId, username, onBack }) {
-  const [data, setData]                 = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [weeklyGoals, setWeeklyGoals]   = useState(null)
+  const [data, setData]               = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [weeklyGoals, setWeeklyGoals] = useState(null)
 
   useEffect(() => {
     getProgress(userId)
@@ -29,43 +38,14 @@ export default function Progress({ userId, username, onBack }) {
 
   if (loading) {
     return (
-      <div className="progress-view">
-        <div className="progress-header">
-          <div>
-            <div className="skeleton skeleton-title" />
-            <div className="skeleton skeleton-text w60" />
-          </div>
-        </div>
-        {/* Week calendar skeleton */}
-        <div className="skeleton-card">
-          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-            {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="skeleton skeleton-stat" style={{ height: 56 }} />
-            ))}
-          </div>
-        </div>
-        {/* Stats skeleton */}
-        <div className="skeleton-grid-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="skeleton skeleton-stat" />
-          ))}
-        </div>
-        {/* Chart skeleton */}
-        <div className="skeleton-card">
-          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="skeleton skeleton-bar" style={{ marginBottom: '0.7rem' }} />
-          ))}
-        </div>
-        {/* History skeleton */}
-        <div className="skeleton-card">
-          <div className="skeleton skeleton-text w60" style={{ marginBottom: '1rem' }} />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="skeleton skeleton-row" />
-          ))}
-        </div>
-      </div>
+      <Box className="progress-view">
+        <Skeleton height={36} width="40%" mb="lg" />
+        <Card mb="lg"><Skeleton height={90} /></Card>
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={90} />)}
+        </SimpleGrid>
+        <Card><Skeleton height={160} /></Card>
+      </Box>
     )
   }
 
@@ -78,160 +58,179 @@ export default function Progress({ userId, username, onBack }) {
   const stats          = { completed, streak }
 
   return (
-    <div className="progress-view">
-      <div className="progress-header">
-        <div>
-          <h1>Seu Progresso</h1>
-          <p className="routine-meta">{username}</p>
-        </div>
-        <button className="btn-secondary" onClick={onBack}>← Voltar ao Treino</button>
-      </div>
+    <Box className="progress-view">
+      <Group justify="space-between" mb="lg">
+        <Box>
+          <Title order={1}>Seu Progresso</Title>
+          <Text c="dimmed" size="sm">{username}</Text>
+        </Box>
+        <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
+          Voltar ao Treino
+        </Button>
+      </Group>
 
-      {/* ── Weekly Calendar ── */}
-      <div className="section-card section-card--calendar">
-        <div className="section-header">
-          <h2><span className="section-icon">📅</span> Últimos 7 Dias</h2>
-          {streak > 0 && (
-            <span className="streak-badge">🔥 {streak} dia{streak !== 1 ? 's' : ''} seguido{streak !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-        <div className="week-calendar">
-          {weekCalendar.map((day, i) => (
-            <div key={i} className={`week-day ${day.completed ? 'completed' : ''} ${day.today ? 'today' : ''}`}>
-              <div className="week-day-label">{day.label}</div>
-              <div className="week-day-dot">{day.completed ? '✓' : day.today ? '◉' : '○'}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Grid mb="lg" align="stretch">
+        {/* ── Streak spotlight ── */}
+        <Grid.Col span={{ base: 12, sm: 4 }}>
+          <Paper p="lg" h="100%" style={{ background: 'linear-gradient(135deg, rgba(255,165,2,0.12), transparent)' }}>
+            <Stack align="center" justify="center" h="100%" gap={4}>
+              <IconFlame size={36} color="var(--mantine-color-orange-5)" />
+              <Text fw={900} size="48px" lh={1}>{streak}</Text>
+              <Text size="sm" c="dimmed">dia{streak !== 1 ? 's' : ''} seguido{streak !== 1 ? 's' : ''}</Text>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+
+        {/* ── Weekly Calendar ── */}
+        <Grid.Col span={{ base: 12, sm: 8 }}>
+          <Card h="100%">
+            <Group gap={6} mb="sm">
+              <IconCalendar size={18} color="var(--mantine-color-brandCyan-5)" />
+              <Text fw={700} size="sm">Últimos 7 Dias</Text>
+            </Group>
+            <SimpleGrid cols={7} spacing={6}>
+              {weekCalendar.map((day, i) => (
+                <Paper
+                  key={i}
+                  p={6}
+                  withBorder
+                  ta="center"
+                  style={{
+                    borderColor: day.completed ? 'var(--mantine-color-green-6)' : undefined,
+                    background: day.completed ? 'rgba(46,213,115,0.08)' : undefined,
+                  }}
+                >
+                  <Text size="xs" c="dimmed">{day.label}</Text>
+                  <Text size="sm" fw={700} c={day.completed ? 'green' : day.today ? 'brandCyan' : 'dimmed'}>
+                    {day.completed ? '✓' : day.today ? '◉' : '○'}
+                  </Text>
+                </Paper>
+              ))}
+            </SimpleGrid>
+          </Card>
+        </Grid.Col>
+      </Grid>
 
       {/* ── Stats Grid ── */}
-      <div className="stats-grid">
-        <StatCard number={total}          label="Sessões geradas"   icon="📋" color="var(--color-primary)"   />
-        <StatCard number={completed}      label="Sessões completas" icon="✅" color="var(--color-success)"   />
-        <StatCard number={streak}         label="Dias seguidos"     icon="🔥" color="var(--color-warning)"   />
-        <StatCard number={`${completionRate}%`} label="Conclusão"   icon="📊" color="var(--color-secondary)" />
+      <SimpleGrid cols={{ base: 2, sm: weeklyGoals ? 5 : 4 }} spacing="md" mb="lg">
+        <StatCard number={total}          label="Sessões geradas"   icon={IconClipboardList} color="brandCyan"   />
+        <StatCard number={completed}      label="Sessões completas" icon={IconCircleCheck}   color="green"       />
+        <StatCard number={`${completionRate}%`} label="Conclusão"   icon={IconChartPie}      color="brandPurple" />
+        <StatCard number={weeklyData.length} label="Semanas ativas" icon={IconTrendingUp}    color="orange"      />
         {weeklyGoals && (
-          <StatCard
-            number={`${weeklyGoals.completed}/${weeklyGoals.total}`}
-            label="Metas da semana"
-            icon="🎯"
-            color="var(--color-success)"
-          />
+          <StatCard number={`${weeklyGoals.completed}/${weeklyGoals.total}`} label="Metas da semana" icon={IconMedal} color="green" />
         )}
-      </div>
+      </SimpleGrid>
 
       {/* ── Weekly Evolution Chart ── */}
       {weeklyData.length > 0 && (
-        <div className="section-card">
-          <div className="section-header">
-            <h2><span className="section-icon">📈</span> Evolução Semanal</h2>
-          </div>
-          <div className="weekly-chart">
-            {weeklyData.map((week, i) => (
-              <div key={i} className="chart-row">
-                <div className="chart-row-label">{week.label}</div>
-                <div className="chart-row-bar">
-                  <div className="chart-bar-track">
-                    <div className="chart-bar-total"  style={{ width: `${(week.total    / 7) * 100}%` }} />
-                    <div className="chart-bar-filled" style={{ width: `${(week.completed / 7) * 100}%` }} />
-                  </div>
-                </div>
-                <div className="chart-row-stat">
-                  <span className="chart-completed">{week.completed}</span>
-                  <span className="chart-sep">/</span>
-                  <span className="chart-total">{week.total}</span>
-                  {week.completed === week.total && week.total > 0 && (
-                    <span className="chart-star">★</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card mb="lg">
+          <Group gap={6} mb="md">
+            <IconTrendingUp size={18} color="var(--mantine-color-brandCyan-5)" />
+            <Text fw={700} size="sm">Evolução Semanal</Text>
+          </Group>
+          <BarChart
+            h={220}
+            data={weeklyData}
+            dataKey="label"
+            series={[
+              { name: 'total',     color: 'gray.6',  label: 'Sessões geradas' },
+              { name: 'completed', color: 'green.6', label: 'Sessões completas' },
+            ]}
+            tickLine="y"
+            withLegend
+            legendProps={{ verticalAlign: 'bottom' }}
+          />
+        </Card>
       )}
 
       {/* ── Completion Rate Bar ── */}
       {total > 0 && (
-        <div className="section-card">
-          <div className="section-header">
-            <h2><span className="section-icon">📊</span> Taxa de Conclusão</h2>
-            <span className="section-duration">{completionRate}%</span>
-          </div>
-          <div className="rate-bar-track">
-            <div className="rate-bar-fill" style={{ width: `${completionRate}%` }} />
-          </div>
-          <div className="rate-labels">
-            <span>{completed} completa{completed !== 1 ? 's' : ''}</span>
-            <span>{total - completed} em andamento</span>
-          </div>
-        </div>
+        <Card mb="lg">
+          <Group justify="space-between" mb="xs">
+            <Group gap={6}>
+              <IconChartPie size={18} color="var(--mantine-color-brandCyan-5)" />
+              <Text fw={700} size="sm">Taxa de Conclusão</Text>
+            </Group>
+            <Badge variant="light">{completionRate}%</Badge>
+          </Group>
+          <MProgress value={completionRate} radius="xl" size="lg" mb={6} />
+          <Group justify="space-between">
+            <Text size="xs" c="dimmed">{completed} completa{completed !== 1 ? 's' : ''}</Text>
+            <Text size="xs" c="dimmed">{total - completed} em andamento</Text>
+          </Group>
+        </Card>
       )}
 
       {/* ── Achievements ── */}
-      <div className="section-card section-card--achievements">
-        <h2 style={{ marginBottom: '1rem', fontSize: '1.12rem', fontWeight: 800, letterSpacing: '-0.2px' }}>
-          <span className="section-icon">🏅</span> Conquistas
-        </h2>
-        <div className="achievements-grid">
+      <Card mb="lg">
+        <Group gap={6} mb="md">
+          <IconMedal size={18} color="var(--mantine-color-orange-5)" />
+          <Text fw={700} size="sm">Conquistas</Text>
+        </Group>
+        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
           {ACHIEVEMENTS.map((ach) => {
-            const current = stats[ach.key] ?? 0
+            const current  = stats[ach.key] ?? 0
             const unlocked = current >= ach.goal
             const pct      = Math.min((current / ach.goal) * 100, 100)
             return (
-              <div key={ach.id} className={`achievement-card ${unlocked ? 'unlocked' : ''}`}>
-                <div className="ach-icon">{ach.icon}</div>
-                <div className="ach-name">{ach.name}</div>
-                <div className="ach-desc">{ach.desc}</div>
+              <Paper
+                key={ach.id}
+                p="sm"
+                withBorder
+                ta="center"
+                style={unlocked ? { borderColor: 'var(--mantine-color-orange-5)', background: 'rgba(255,165,2,0.06)' } : undefined}
+              >
+                <Text size="xl">{ach.icon}</Text>
+                <Text fw={700} size="sm">{ach.name}</Text>
+                <Text size="xs" c="dimmed" mb={6}>{ach.desc}</Text>
                 {unlocked ? (
-                  <div className="ach-status unlocked">✓ Desbloqueado</div>
+                  <Badge color="orange" variant="light">✓ Desbloqueado</Badge>
                 ) : (
                   <>
-                    <div className="ach-bar-track">
-                      <div className="ach-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="ach-progress">{current}/{ach.goal}</div>
+                    <MProgress value={pct} size="sm" radius="xl" mb={4} />
+                    <Text size="xs" c="dimmed">{current}/{ach.goal}</Text>
                   </>
                 )}
-              </div>
+              </Paper>
             )
           })}
-        </div>
-      </div>
+        </SimpleGrid>
+      </Card>
 
       {/* ── Session History ── */}
-      <div className="section-card">
-        <h2 style={{ fontSize: '1.12rem', fontWeight: 800, letterSpacing: '-0.2px', marginBottom: '1rem' }}><span className="section-icon">🗂️</span> Histórico de Sessões</h2>
+      <Card>
+        <Group gap={6} mb="md">
+          <IconArchive size={18} color="var(--mantine-color-brandCyan-5)" />
+          <Text fw={700} size="sm">Histórico de Sessões</Text>
+        </Group>
         {data.length === 0 ? (
-          <div className="empty-section">
-            <span>📭</span>
-            <span>Nenhuma sessão registrada ainda. Complete sua primeira rotina!</span>
-          </div>
+          <Text size="sm" c="dimmed" fs="italic">📭 Nenhuma sessão registrada ainda. Complete sua primeira rotina!</Text>
         ) : (
-          <div className="history-list">
+          <Stack gap={6}>
             {data.map((session, i) => (
-              <div key={i} className={`history-item ${session.completed ? 'completed' : ''}`}>
-                <div className="history-date">{formatDate(session.date)}</div>
-                <div className="history-exercises">{session.exercises_logged} exercício(s)</div>
-                <div className={`history-status ${session.completed ? 'done' : 'pending'}`}>
+              <Group key={i} justify="space-between" p={8} className="history-item">
+                <Text size="sm">{formatDate(session.date)}</Text>
+                <Text size="sm" c="dimmed">{session.exercises_logged} exercício(s)</Text>
+                <Badge color={session.completed ? 'green' : 'gray'} variant="light">
                   {session.completed ? '✓ Completo' : '● Em andamento'}
-                </div>
-              </div>
+                </Badge>
+              </Group>
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
-    </div>
+      </Card>
+    </Box>
   )
 }
 
-function StatCard({ number, label, icon, color }) {
+function StatCard({ number, label, icon: Icon, color }) {
   return (
-    <div className="stat-card">
-      <div className="stat-icon">{icon}</div>
-      <div className="stat-number" style={{ color }}>{number}</div>
-      <div className="stat-label">{label}</div>
-    </div>
+    <Paper p="md" ta="center">
+      <Icon size={22} color={`var(--mantine-color-${color}-5)`} />
+      <Text fw={900} size="1.4rem" c={color}>{number}</Text>
+      <Text size="xs" c="dimmed">{label}</Text>
+    </Paper>
   )
 }
 

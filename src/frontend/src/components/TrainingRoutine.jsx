@@ -1,4 +1,12 @@
 import { useState } from 'react'
+import {
+  Box, Group, Stack, Title, Text, Badge, Button, Card, Checkbox, Progress,
+  SimpleGrid, Anchor, CopyButton, ActionIcon, Tooltip,
+} from '@mantine/core'
+import {
+  IconChartBar, IconDeviceGamepad2, IconSettings, IconFlame, IconBolt,
+  IconClipboardList, IconCopy, IconCheck, IconTrophy,
+} from '@tabler/icons-react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
 import Goals from './Goals'
@@ -11,7 +19,7 @@ const DIFFICULTY_LABELS = {
 
 const FOCUS_LABELS = { aim: 'Mira', reflex: 'Reflexo', movement: 'Movimento' }
 
-const SECTION_ICONS = { 'Aquecimento': '🔥', 'Treino Principal': '⚡', 'Revisão': '📋' }
+const SECTION_ICONS = { 'Aquecimento': IconFlame, 'Treino Principal': IconBolt, 'Revisão': IconClipboardList }
 
 // ── Recommended playlists ─────────────────────────────────────────────────────
 const PLAYLISTS = {
@@ -69,20 +77,6 @@ const TRAINING_TIPS = [
   { name: 'PLF',  desc: 'ideal para melhorar seus drops', cfxLink: 'cfx.re/join/oemxzx' },
 ]
 
-function CopyLink({ value }) {
-  const [copied, setCopied] = useState(false)
-  const copy = () => {
-    navigator.clipboard?.writeText(value).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-  return (
-    <button type="button" className="tip-copy-btn" onClick={copy} title="Copiar link">
-      {value} <span className="tip-copy-icon">{copied ? '✓' : '📋'}</span>
-    </button>
-  )
-}
-
 export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
@@ -91,8 +85,8 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   const mainExercises  = routine.sections[1]?.exercises || []
   const completedCount = Object.values(completed).filter(Boolean).length
   const toolLabel      = routine.tool === 'kovaak' ? "KovaaK's" : 'Aim Lab'
-  const toolClass      = routine.tool === 'kovaak' ? 'tool--kovaak' : 'tool--aimlab'
-  const playlists      = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
+  const toolColor      = routine.tool === 'kovaak' ? 'orange' : 'green'
+  const playlists       = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
 
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
 
@@ -118,161 +112,188 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   }
 
   return (
-    <div className="routine">
+    <Box className="routine">
       {/* ── Header ── */}
-      <div className="routine-header">
-        <div>
-          <h1>Rotina de Hoje</h1>
-          <p className="routine-meta">
-            Olá, <strong>{username}</strong>&nbsp;•&nbsp;
-            Foco: <span className="tag">{FOCUS_LABELS[routine.focus_area] || routine.focus_area}</span>
-            &nbsp;•&nbsp;<span className={`tag ${toolClass}`}>{toolLabel}</span>
-            &nbsp;•&nbsp;<span className="tag">{routine.total_duration} min</span>
-          </p>
-        </div>
-        <div className="routine-header-btns">
-          <button className="btn-secondary" onClick={onViewProgress}>📊 Progresso</button>
-          <button className="btn-ghost" onClick={onConverter} title="Conversor de sensibilidade GTA V → KovaaK / Aim Lab">
-            🎮 Conversor
-          </button>
-          <button className="btn-ghost" onClick={onChangeProfile} title="Refazer questionário de perfil">
-            ⚙️ Alterar perfil
-          </button>
-        </div>
-      </div>
+      <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap">
+        <Box>
+          <Title order={1}>Rotina de Hoje</Title>
+          <Group gap={6} mt={4}>
+            <Text size="sm" c="dimmed">Olá, <Text span fw={700} c="var(--mantine-color-text)">{username}</Text> • Foco:</Text>
+            <Badge variant="light">{FOCUS_LABELS[routine.focus_area] || routine.focus_area}</Badge>
+            <Badge variant="light" color={toolColor}>{toolLabel}</Badge>
+            <Badge variant="light" color="gray">{routine.total_duration} min</Badge>
+          </Group>
+        </Box>
+        <Group gap="xs">
+          <Button variant="light" leftSection={<IconChartBar size={16} />} onClick={onViewProgress}>
+            Progresso
+          </Button>
+          <Button
+            variant="subtle" color="gray"
+            leftSection={<IconDeviceGamepad2 size={16} />}
+            onClick={onConverter}
+            title="Conversor de sensibilidade GTA V → KovaaK / Aim Lab"
+          >
+            Conversor
+          </Button>
+          <Button
+            variant="subtle" color="gray"
+            leftSection={<IconSettings size={16} />}
+            onClick={onChangeProfile}
+            title="Refazer questionário de perfil"
+          >
+            Alterar perfil
+          </Button>
+        </Group>
+      </Group>
 
       {/* ── Goals ── */}
       <Goals />
 
       {/* ── Exercise sections ── */}
-      {routine.sections.map((section, si) => (
-        <div key={si} className={`section-card section-card--${si}`}>
-          <div className="section-header">
-            <h2>
-              <span className="section-icon">{SECTION_ICONS[section.name] || '📌'}</span>
-              {section.name}
-            </h2>
-            <span className="section-duration">{section.duration} min</span>
-          </div>
-          <div className="section-tip">
-            <span className="tip-icon">💡</span>
-            <span>{section.tip}</span>
-          </div>
+      <Stack gap="md" mb="lg">
+        {routine.sections.map((section, si) => {
+          const SectionIcon = SECTION_ICONS[section.name] || IconClipboardList
+          return (
+            <Card key={si} className={`section-card--${si}`}>
+              <Group justify="space-between" mb="xs">
+                <Group gap={6}>
+                  <SectionIcon size={18} color="var(--mantine-color-brandCyan-5)" />
+                  <Title order={3} size="h4">{section.name}</Title>
+                </Group>
+                <Badge variant="default">{section.duration} min</Badge>
+              </Group>
+              <Text size="sm" c="dimmed" mb="md">💡 {section.tip}</Text>
 
-          {section.exercises.length > 0 ? (
-            <div className="exercises-list">
-              {section.exercises.map((ex, idx) => {
-                const diff   = DIFFICULTY_LABELS[ex.difficulty] || { label: ex.difficulty, color: '#8892a4' }
-                const isMain = section.name === 'Treino Principal'
-                const isDone = !!completed[ex.name]
+              {section.exercises.length > 0 ? (
+                <Stack gap="xs">
+                  {section.exercises.map((ex, idx) => {
+                    const diff   = DIFFICULTY_LABELS[ex.difficulty] || { label: ex.difficulty, color: '#8892a4' }
+                    const isMain = section.name === 'Treino Principal'
+                    const isDone = !!completed[ex.name]
 
-                return (
-                  <div
-                    key={ex.name}
-                    className={`exercise-card ${isDone ? 'done' : ''} ${isMain ? 'clickable' : ''}`}
-                    onClick={isMain ? () => toggleExercise(ex.name) : undefined}
-                  >
-                    <div className={`exercise-accent-bar ${toolClass}`} />
-                    <div className="exercise-num">{String(idx + 1).padStart(2, '0')}</div>
-                    <div className="exercise-body">
-                      <div className="exercise-name-row">
-                        <span className="exercise-name">{ex.name}</span>
-                      </div>
-                      <div className="exercise-desc">{ex.description}</div>
-                      <div className="exercise-tags">
-                        <span className={`tool-badge ${toolClass}`}>{toolLabel}</span>
-                        <span className="difficulty-badge" style={{ color: diff.color, borderColor: diff.color }}>
-                          {diff.label}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="exercise-right">
-                      <span className="exercise-duration">{ex.duration} min</span>
-                      {isMain && (
-                        <div className={`checkbox ${isDone ? 'checked' : ''}`}>{isDone ? '✓' : ''}</div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="empty-section">
-              <span>📝</span>
-              <span>Sessão de reflexão — anote suas observações e identifique o que melhorou hoje.</span>
-            </div>
-          )}
-        </div>
-      ))}
+                    return (
+                      <Card
+                        key={ex.name}
+                        withBorder
+                        radius="md"
+                        p="sm"
+                        className={`exercise-card ${isDone ? 'done' : ''}`}
+                        onClick={isMain ? () => toggleExercise(ex.name) : undefined}
+                        style={{ cursor: isMain ? 'pointer' : 'default' }}
+                      >
+                        <Group wrap="nowrap" justify="space-between">
+                          <Group wrap="nowrap" gap="sm">
+                            <Text c="dimmed" size="sm" fw={700} w={22}>{String(idx + 1).padStart(2, '0')}</Text>
+                            <Box>
+                              <Text fw={700} size="sm" td={isDone ? 'line-through' : undefined} c={isDone ? 'dimmed' : undefined}>
+                                {ex.name}
+                              </Text>
+                              <Text size="xs" c="dimmed">{ex.description}</Text>
+                              <Group gap={6} mt={4}>
+                                <Badge size="xs" variant="light" color={toolColor}>{toolLabel}</Badge>
+                                <Badge size="xs" variant="outline" style={{ color: diff.color, borderColor: diff.color }}>
+                                  {diff.label}
+                                </Badge>
+                              </Group>
+                            </Box>
+                          </Group>
+                          <Group wrap="nowrap" gap="sm">
+                            <Text size="xs" c="dimmed">{ex.duration} min</Text>
+                            {isMain && <Checkbox checked={isDone} readOnly tabIndex={-1} style={{ pointerEvents: 'none' }} />}
+                          </Group>
+                        </Group>
+                      </Card>
+                    )
+                  })}
+                </Stack>
+              ) : (
+                <Text size="sm" c="dimmed" fs="italic">
+                  📝 Sessão de reflexão — anote suas observações e identifique o que melhorou hoje.
+                </Text>
+              )}
+            </Card>
+          )
+        })}
+      </Stack>
 
       {/* ── Footer ── */}
-      <div className="routine-footer">
-        <div className="footer-progress">
-          <div className="progress-summary">
-            {completedCount}/{mainExercises.length} exercícios concluídos
-          </div>
-          <div className="footer-bar-track">
-            <div
-              className="footer-bar-fill"
-              style={{ width: mainExercises.length ? `${(completedCount / mainExercises.length) * 100}%` : '0%' }}
-            />
-          </div>
-        </div>
-        {!saved ? (
-          <button
-            className="btn-primary"
-            onClick={handleFinish}
-            disabled={saving || completedCount === 0}
-            title={completedCount === 0 ? 'Marque pelo menos um exercício para finalizar' : ''}
-          >
-            {saving
-              ? <><span style={{ opacity: 0.7 }}>Salvando</span><span className="saving-dots">...</span></>
-              : 'Finalizar Sessão ✓'}
-          </button>
-        ) : (
-          <div className="success-msg">🏆 Sessão salva! Bom treino, {username}!</div>
-        )}
-      </div>
+      <Card mb="lg">
+        <Group justify="space-between" wrap="wrap" gap="md">
+          <Box style={{ flex: 1, minWidth: 220 }}>
+            <Text size="sm" mb={6}>{completedCount}/{mainExercises.length} exercícios concluídos</Text>
+            <Progress value={mainExercises.length ? (completedCount / mainExercises.length) * 100 : 0} radius="xl" />
+          </Box>
+          {!saved ? (
+            <Button
+              onClick={handleFinish}
+              loading={saving}
+              disabled={completedCount === 0}
+              title={completedCount === 0 ? 'Marque pelo menos um exercício para finalizar' : ''}
+            >
+              Finalizar Sessão ✓
+            </Button>
+          ) : (
+            <Group gap={6}>
+              <IconTrophy size={18} color="var(--mantine-color-yellow-5)" />
+              <Text fw={700} c="green">Sessão salva! Bom treino, {username}!</Text>
+            </Group>
+          )}
+        </Group>
+      </Card>
 
       {/* ── Recommended Playlists ── */}
-      <div className="playlists-section">
-        <div className="playlists-header">
-          <h3>Playlists Recomendadas — {toolLabel}</h3>
-          <p>Coleções curadas para acelerar sua evolução</p>
-        </div>
-        <div className="playlists-grid">
+      <Box mb="lg">
+        <Title order={3} size="h4">Playlists Recomendadas — {toolLabel}</Title>
+        <Text size="sm" c="dimmed" mb="sm">Coleções curadas para acelerar sua evolução</Text>
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
           {playlists.map((pl) => (
-            <a
+            <Card
               key={pl.name}
+              component="a"
               href={pl.url}
               target="_blank"
               rel="noreferrer"
               className="playlist-card"
-              style={{ '--pl-color': pl.color }}
+              style={{ '--pl-color': pl.color, cursor: 'pointer' }}
             >
-              <div className="playlist-tag" style={{ color: pl.color, borderColor: pl.color }}>
+              <Badge variant="outline" style={{ color: pl.color, borderColor: pl.color }} mb="xs">
                 {pl.tag}
-              </div>
-              <div className="playlist-name">{pl.name}</div>
-              <div className="playlist-desc">{pl.desc}</div>
-              <div className="playlist-cta">Acessar →</div>
-            </a>
+              </Badge>
+              <Text fw={700} size="sm">{pl.name}</Text>
+              <Text size="xs" c="dimmed" mb="xs">{pl.desc}</Text>
+              <Text size="xs" fw={700} c="var(--mantine-color-brandCyan-5)">Acessar →</Text>
+            </Card>
           ))}
-        </div>
-      </div>
+        </SimpleGrid>
+      </Box>
 
       {/* ── Training Tip ── */}
-      <div className="training-tip-card">
-        <div className="training-tip-header">💡 Onde treinar no FiveM</div>
-        <div className="training-tip-list">
+      <Card>
+        <Text fw={700} mb="sm">💡 Onde treinar no FiveM</Text>
+        <Stack gap="xs">
           {TRAINING_TIPS.map((tip) => (
-            <div className="training-tip-row" key={tip.name}>
-              <span><strong>{tip.name}</strong> — {tip.desc}</span>
-              <CopyLink value={tip.cfxLink} />
-            </div>
+            <Group justify="space-between" key={tip.name} wrap="wrap">
+              <Text size="sm" c="dimmed"><Text span fw={700} c="var(--mantine-color-text)">{tip.name}</Text> — {tip.desc}</Text>
+              <CopyButton value={tip.cfxLink}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? 'Copiado!' : 'Copiar link'} withArrow>
+                    <Button
+                      variant="light"
+                      size="xs"
+                      color={copied ? 'green' : 'brandCyan'}
+                      rightSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      onClick={copy}
+                    >
+                      {tip.cfxLink}
+                    </Button>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            </Group>
           ))}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Card>
+    </Box>
   )
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { AppShell, Group, Text, Center, Stack } from '@mantine/core'
+import { IconTargetArrow } from '@tabler/icons-react'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { secureStorage } from './services/storage'
 import LoginForm       from './components/LoginForm'
@@ -8,7 +10,6 @@ import TrainingRoutine from './components/TrainingRoutine'
 import Progress        from './components/Progress'
 import SensConverter   from './components/SensConverter'
 import UserMenu        from './components/UserMenu'
-import ToastContainer  from './components/Toast'
 import UpdateBanner    from './components/UpdateBanner'
 import AdminPanel      from './components/AdminPanel'
 
@@ -110,99 +111,95 @@ export default function App() {
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
     const msg = authState === 'loading' ? 'Iniciando...' : 'Carregando rotina...'
     return (
-      <div className="loading-screen">
-        <div className="loading-crosshair">
-          <div className="lc-ring lc-ring-1" />
-          <div className="lc-ring lc-ring-2" />
-          <div className="lc-dot" />
-        </div>
-        <span className="loading-sub">{msg}</span>
-      </div>
+      <Center className="loading-screen">
+        <Stack align="center" gap="md">
+          <div className="loading-crosshair">
+            <div className="lc-ring lc-ring-1" />
+            <div className="lc-ring lc-ring-2" />
+            <div className="lc-dot" />
+          </div>
+          <Text c="dimmed" size="sm">{msg}</Text>
+        </Stack>
+      </Center>
     )
   }
 
   if (authState === 'login') {
-    return (
-      <>
-        <ToastContainer />
-        <LoginForm
-          onSuccess={handleAuthSuccess}
-          onGoRegister={() => setAuthState('register')}
-        />
-      </>
-    )
+    return <LoginForm onSuccess={handleAuthSuccess} onGoRegister={() => setAuthState('register')} />
   }
 
   if (authState === 'register') {
-    return (
-      <>
-        <ToastContainer />
-        <RegisterForm
-          onSuccess={handleAuthSuccess}
-          onGoLogin={() => setAuthState('login')}
-        />
-      </>
-    )
+    return <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
   }
 
   return (
-    <div className="app">
-      <UpdateBanner />
-      <ToastContainer />
-      {user && (
-        <UserMenu
-          user={user}
-          onLogout={handleLogout}
-          onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
-          onChangeProfile={handleChangeProfile}
-          onConverter={() => setView('converter')}
-          onAdmin={() => setView('admin')}
-        />
-      )}
+    <AppShell header={{ height: 60 }}>
+      <AppShell.Header>
+        <Group h="100%" px="md" justify="space-between">
+          <Group gap="xs">
+            <IconTargetArrow size={26} color="var(--mantine-color-brandCyan-5)" />
+            <Text fw={800} size="lg">FiveM PvP Trainer</Text>
+          </Group>
+          {user && (
+            <UserMenu
+              user={user}
+              onLogout={handleLogout}
+              onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+              onChangeProfile={handleChangeProfile}
+              onConverter={() => setView('converter')}
+              onAdmin={() => setView('admin')}
+            />
+          )}
+        </Group>
+      </AppShell.Header>
 
-      {view === 'questionnaire' && (
-        <Questionnaire
-          key="questionnaire"
-          username={user?.name || ''}
-          onComplete={handleQuestionnaireComplete}
-        />
-      )}
+      <AppShell.Main>
+        <UpdateBanner />
 
-      {view === 'routine' && routine && (
-        <TrainingRoutine
-          key={`routine-${sessionId}`}
-          userId={user?.id}
-          sessionId={sessionId}
-          routine={routine}
-          username={user?.name || ''}
-          onViewProgress={() => setView('progress')}
-          onChangeProfile={handleChangeProfile}
-          onConverter={() => setView('converter')}
-        />
-      )}
+        {view === 'questionnaire' && (
+          <Questionnaire
+            key="questionnaire"
+            username={user?.name || ''}
+            onComplete={handleQuestionnaireComplete}
+          />
+        )}
 
-      {view === 'progress' && (
-        <Progress
-          key="progress"
-          userId={user?.id}
-          username={user?.name || ''}
-          onBack={() => setView('routine')}
-        />
-      )}
+        {view === 'routine' && routine && (
+          <TrainingRoutine
+            key={`routine-${sessionId}`}
+            userId={user?.id}
+            sessionId={sessionId}
+            routine={routine}
+            username={user?.name || ''}
+            onViewProgress={() => setView('progress')}
+            onChangeProfile={handleChangeProfile}
+            onConverter={() => setView('converter')}
+          />
+        )}
 
-      {view === 'converter' && (
-        <SensConverter
-          key="converter"
-          onBack={() => setView('routine')}
-        />
-      )}
+        {view === 'progress' && (
+          <Progress
+            key="progress"
+            userId={user?.id}
+            username={user?.name || ''}
+            onBack={() => setView('routine')}
+          />
+        )}
 
-      {view === 'admin' && user?.is_admin && (
-        <AdminPanel
-          key="admin"
-          onBack={() => setView('routine')}
-        />
-      )}
-    </div>
+        {view === 'converter' && (
+          <SensConverter
+            key="converter"
+            onBack={() => setView('routine')}
+          />
+        )}
+
+        {view === 'admin' && user?.is_admin && (
+          <AdminPanel
+            key="admin"
+            onBack={() => setView('routine')}
+          />
+        )}
+      </AppShell.Main>
+    </AppShell>
   )
 }

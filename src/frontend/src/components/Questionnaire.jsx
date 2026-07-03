@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import {
+  Box, Stepper, Progress, Radio, SimpleGrid, Text, Title, Button,
+  Group, Stack, Center, Alert, Transition,
+} from '@mantine/core'
+import { IconAlertCircle, IconChevronLeft, IconTargetArrow } from '@tabler/icons-react'
 import { submitQuestionnaire } from '../services/api'
 
 const QUESTIONS = [
@@ -100,7 +105,6 @@ const QUESTIONS = [
 
 export default function Questionnaire({ username, onComplete }) {
   const [step, setStep]       = useState(0)
-  const [animDir, setAnimDir] = useState('right')
   const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
@@ -109,11 +113,12 @@ export default function Questionnaire({ username, onComplete }) {
   const progress = (step / QUESTIONS.length) * 100
 
   const handleSelect = async (value) => {
-    const newAnswers = { ...answers, [current.id]: value }
+    // Radio values arrive as strings — coerce back to number for daily_time
+    const coerced   = current.id === 'daily_time' ? Number(value) : value
+    const newAnswers = { ...answers, [current.id]: coerced }
     setAnswers(newAnswers)
 
     if (step < QUESTIONS.length - 1) {
-      setAnimDir('right')
       setStep(step + 1)
       return
     }
@@ -130,79 +135,83 @@ export default function Questionnaire({ username, onComplete }) {
     }
   }
 
-  const handleBack = () => {
-    setAnimDir('left')
-    setStep(step - 1)
-  }
+  const handleBack = () => setStep(step - 1)
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="loading-crosshair">
-          <div className="lc-ring lc-ring-1" />
-          <div className="lc-ring lc-ring-2" />
-          <div className="lc-dot" />
-        </div>
-        <p>Gerando sua rotina personalizada...</p>
-        <span className="loading-sub">Analisando perfil de {username}</span>
-      </div>
+      <Center className="loading-screen">
+        <Stack align="center" gap="md">
+          <div className="loading-crosshair">
+            <div className="lc-ring lc-ring-1" />
+            <div className="lc-ring lc-ring-2" />
+            <div className="lc-dot" />
+          </div>
+          <Text fw={600}>Gerando sua rotina personalizada...</Text>
+          <Text c="dimmed" size="sm">Analisando perfil de {username}</Text>
+        </Stack>
+      </Center>
     )
   }
 
   return (
-    <div className="questionnaire">
-      <div className="q-header">
-        <div className="q-logo-small">🎯 FiveM PvP Trainer</div>
-        <div className="step-indicator">
-          {Array.from({ length: QUESTIONS.length }, (_, i) => (
-            <div
-              key={i}
-              className={`step-dot ${i < step ? 'done' : ''} ${i === step ? 'active' : ''}`}
-            />
-          ))}
-        </div>
-      </div>
+    <Box className="questionnaire">
+      <Group justify="space-between" mb="sm">
+        <Group gap={6}>
+          <IconTargetArrow size={18} color="var(--mantine-color-brandCyan-5)" />
+          <Text fw={800} size="sm">FiveM PvP Trainer</Text>
+        </Group>
+        <Text size="xs" c="dimmed">Pergunta <strong>{step + 1}</strong> de {QUESTIONS.length}</Text>
+      </Group>
 
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
-      </div>
+      <Progress value={progress} size="sm" radius="xl" mb="md" />
 
-      <div className="q-step-label">
-        Pergunta <strong>{step + 1}</strong> de {QUESTIONS.length}
-      </div>
+      <Stepper active={step} size="xs" iconSize={26} mb="xl" wrap>
+        {QUESTIONS.map((q) => <Stepper.Step key={q.id} />)}
+      </Stepper>
 
-      <div key={step} className={`question-card anim-${animDir}`}>
-        <h2 className="question-title">{current.question}</h2>
-        <p className="question-subtitle">{current.subtitle}</p>
+      <Transition mounted transition="slide-left" duration={250} timingFunction="ease">
+        {(styles) => (
+          <div key={step} style={styles}>
+            <Title order={2} mb={4}>{current.question}</Title>
+            <Text c="dimmed" mb="lg">{current.subtitle}</Text>
 
-        <div className="options-grid">
-          {current.options.map((opt, i) => (
-            <button
-              key={opt.value}
-              className={`option-card ${answers[current.id] === opt.value ? 'selected' : ''}`}
-              onClick={() => handleSelect(opt.value)}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="option-card-inner">
-                <span className="option-icon">{opt.icon}</span>
-                <div className="option-text">
-                  <span className="option-label">{opt.label}</span>
-                  <span className="option-desc">{opt.description}</span>
-                </div>
-                <span className="option-arrow">›</span>
-              </div>
-            </button>
-          ))}
-        </div>
+            <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
+              <SimpleGrid cols={{ base: 1, sm: current.options.length > 3 ? 2 : 1 }} spacing="sm">
+                {current.options.map((opt) => (
+                  <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
+                    <Group wrap="nowrap" align="flex-start" gap="sm">
+                      <Radio.Indicator />
+                      <Text size="xl" style={{ lineHeight: 1 }}>{opt.icon}</Text>
+                      <Box style={{ flex: 1 }}>
+                        <Text fw={700} size="sm">{opt.label}</Text>
+                        <Text size="xs" c="dimmed">{opt.description}</Text>
+                      </Box>
+                    </Group>
+                  </Radio.Card>
+                ))}
+              </SimpleGrid>
+            </Radio.Group>
 
-        {error && <p className="error-msg">⚠️ {error}</p>}
+            {error && (
+              <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />} mt="md">
+                {error}
+              </Alert>
+            )}
 
-        {step > 0 && (
-          <button className="btn-back" onClick={handleBack}>
-            ← Pergunta anterior
-          </button>
+            {step > 0 && (
+              <Button
+                variant="subtle"
+                color="gray"
+                leftSection={<IconChevronLeft size={16} />}
+                onClick={handleBack}
+                mt="lg"
+              >
+                Pergunta anterior
+              </Button>
+            )}
+          </div>
         )}
-      </div>
-    </div>
+      </Transition>
+    </Box>
   )
 }

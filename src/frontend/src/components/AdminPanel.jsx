@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
+import {
+  Box, Group, Stack, Title, Text, Button, Card, Paper, Badge, TextInput,
+  Table, SimpleGrid, Skeleton, Alert,
+} from '@mantine/core'
+import { IconArrowLeft, IconChartBar, IconUsers, IconSearch, IconAlertCircle } from '@tabler/icons-react'
 import { getAdminStats, getAdminUsers } from '../services/api'
 
-const FOCUS_ICONS  = { Mira: '🎯', Reflexo: '⚡', Movimento: '🏃' }
-const SERVER_ICONS = { 'Goat PvP': '🐐', Ambos: '🌐', Outro: '🎮' }
-
-function StatCard({ label, value, sub, accent }) {
+function StatCard({ label, value, sub, color }) {
   return (
-    <div className="admin-stat-card" style={{ '--accent': accent }}>
-      <div className="admin-stat-value">{value ?? '—'}</div>
-      <div className="admin-stat-label">{label}</div>
-      {sub && <div className="admin-stat-sub">{sub}</div>}
-    </div>
+    <Paper p="md" ta="center">
+      <Text fw={900} size="1.6rem" c={color}>{value ?? '—'}</Text>
+      <Text size="xs" c="dimmed">{label}</Text>
+      {sub && <Text size="10px" c="dimmed">{sub}</Text>}
+    </Paper>
   )
 }
 
@@ -18,37 +20,17 @@ function DistBar({ distribution }) {
   if (!distribution || Object.keys(distribution).length === 0) return null
   const entries = Object.entries(distribution).sort((a, b) => b[1] - a[1])
   return (
-    <div className="admin-dist-bars">
+    <Stack gap={6}>
       {entries.map(([key, pct]) => (
-        <div key={key} className="admin-dist-row">
-          <span className="admin-dist-label">{key}</span>
-          <div className="admin-dist-track">
-            <div className="admin-dist-fill" style={{ width: `${pct}%` }} />
+        <Group key={key} wrap="nowrap" gap="sm">
+          <Text size="xs" w={90} truncate>{key}</Text>
+          <div style={{ flex: 1, height: 8, background: 'var(--mantine-color-dark-6)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--mantine-color-brandCyan-5)' }} />
           </div>
-          <span className="admin-dist-pct">{pct}%</span>
-        </div>
+          <Text size="xs" w={36} ta="right">{pct}%</Text>
+        </Group>
       ))}
-    </div>
-  )
-}
-
-function UserRow({ u, idx }) {
-  const joined   = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'
-  const lastTrain = u.last_session
-    ? new Date(u.last_session + 'T12:00:00').toLocaleDateString('pt-BR')
-    : '—'
-  return (
-    <tr className={`admin-user-row ${u.is_admin ? 'admin-user-row--admin' : ''}`}>
-      <td className="admin-td admin-td--idx">{idx + 1}</td>
-      <td className="admin-td">
-        <span className="admin-user-name">{u.name}</span>
-        {u.is_admin && <span className="admin-badge">admin</span>}
-      </td>
-      <td className="admin-td admin-td--mono">@{u.username}</td>
-      <td className="admin-td admin-td--date">{joined}</td>
-      <td className="admin-td admin-td--date">{lastTrain}</td>
-      <td className="admin-td admin-td--num">{u.total_sessions}</td>
-    </tr>
+    </Stack>
   )
 }
 
@@ -78,117 +60,124 @@ export default function AdminPanel({ onBack }) {
     : []
 
   return (
-    <div className="admin-view">
-      {/* Header */}
-      <div className="admin-header">
-        <div>
-          <h1>⚙️ Painel de Admin</h1>
-          <p className="routine-meta">Visão geral da plataforma</p>
-        </div>
-        <button className="btn-secondary" onClick={onBack}>← Voltar</button>
-      </div>
+    <Box className="admin-view">
+      <Group justify="space-between">
+        <Box>
+          <Title order={1}>⚙️ Painel de Admin</Title>
+          <Text c="dimmed" size="sm">Visão geral da plataforma</Text>
+        </Box>
+        <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>Voltar</Button>
+      </Group>
 
       {loading && (
-        <div className="admin-loading">
-          <div className="skeleton skeleton-title" style={{ width: '40%' }} />
-          <div className="skeleton-grid-4" style={{ marginTop: '1rem' }}>
-            {[...Array(4)].map((_, i) => <div key={i} className="skeleton skeleton-stat" />)}
-          </div>
-        </div>
+        <Stack gap="md">
+          <Skeleton height={30} width="40%" />
+          <SimpleGrid cols={4} spacing="md">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} height={90} />)}
+          </SimpleGrid>
+        </Stack>
       )}
 
       {error && (
-        <div className="section-card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-accent)' }}>
-          ⚠️ {error}
-        </div>
+        <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />}>{error}</Alert>
       )}
 
       {stats && !loading && (
         <>
           {/* ── Main stats ── */}
-          <div className="section-card">
-            <div className="section-header">
-              <h2><span className="section-icon">📊</span> Visão Geral</h2>
-            </div>
-            <div className="admin-stats-grid">
-              <StatCard label="Total de usuários"    value={stats.total_users}              accent="var(--color-primary)" />
-              <StatCard label="Ativos (7 dias)"      value={stats.active_users_7d}           accent="var(--color-success)" />
-              <StatCard label="Novos (7 dias)"       value={stats.new_users_7d}              accent="var(--color-warning)" />
-              <StatCard label="Novos (30 dias)"      value={stats.new_users_30d}             accent="#a78bfa" />
-              <StatCard
-                label="Sessões completadas"
-                value={stats.total_sessions_completed}
-                accent="var(--color-secondary)"
-              />
-            </div>
-          </div>
+          <Card>
+            <Group gap={6} mb="md">
+              <IconChartBar size={18} color="var(--mantine-color-brandCyan-5)" />
+              <Text fw={700} size="sm">Visão Geral</Text>
+            </Group>
+            <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="md">
+              <StatCard label="Total de usuários" value={stats.total_users}             color="brandCyan" />
+              <StatCard label="Ativos (7 dias)"    value={stats.active_users_7d}         color="green" />
+              <StatCard label="Novos (7 dias)"     value={stats.new_users_7d}            color="orange" />
+              <StatCard label="Novos (30 dias)"    value={stats.new_users_30d}           color="brandPurple" />
+              <StatCard label="Sessões completadas" value={stats.total_sessions_completed} color="brandPurple" />
+            </SimpleGrid>
+          </Card>
 
           {/* ── Distributions ── */}
-          <div className="admin-dist-grid">
-            <div className="section-card">
-              <div className="section-header">
-                <h2><span className="section-icon">{FOCUS_ICONS[stats.top_focus_label] || '🎯'}</span> Foco de Treino</h2>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <Card>
+              <Group justify="space-between" mb="md">
+                <Text fw={700} size="sm">🎯 Foco de Treino</Text>
                 {stats.top_focus_label && (
-                  <span className="tag" style={{ background: 'rgba(0,212,255,0.1)', color: 'var(--color-primary)' }}>
-                    {stats.top_focus_label} {stats.top_focus_pct}%
-                  </span>
+                  <Badge variant="light" color="brandCyan">{stats.top_focus_label} {stats.top_focus_pct}%</Badge>
                 )}
-              </div>
+              </Group>
               <DistBar distribution={stats.focus_distribution} />
-              {!stats.top_focus_label && <p className="admin-empty">Nenhum questionário respondido ainda</p>}
-            </div>
+              {!stats.top_focus_label && <Text size="sm" c="dimmed">Nenhum questionário respondido ainda</Text>}
+            </Card>
 
-            <div className="section-card">
-              <div className="section-header">
-                <h2><span className="section-icon">{SERVER_ICONS[stats.top_server_label] || '🎮'}</span> Servidor Preferido</h2>
+            <Card>
+              <Group justify="space-between" mb="md">
+                <Text fw={700} size="sm">🎮 Servidor Preferido</Text>
                 {stats.top_server_label && (
-                  <span className="tag" style={{ background: 'rgba(123,47,212,0.1)', color: 'var(--color-secondary)' }}>
-                    {stats.top_server_label} {stats.top_server_pct}%
-                  </span>
+                  <Badge variant="light" color="brandPurple">{stats.top_server_label} {stats.top_server_pct}%</Badge>
                 )}
-              </div>
+              </Group>
               <DistBar distribution={stats.server_distribution} />
-              {!stats.top_server_label && <p className="admin-empty">Nenhum questionário respondido ainda</p>}
-            </div>
-          </div>
+              {!stats.top_server_label && <Text size="sm" c="dimmed">Nenhum questionário respondido ainda</Text>}
+            </Card>
+          </SimpleGrid>
 
           {/* ── User list ── */}
-          <div className="section-card">
-            <div className="section-header">
-              <h2><span className="section-icon">👥</span> Usuários ({users?.length ?? 0})</h2>
-              <input
-                className="admin-search"
-                type="text"
+          <Card>
+            <Group justify="space-between" mb="md">
+              <Group gap={6}>
+                <IconUsers size={18} color="var(--mantine-color-brandCyan-5)" />
+                <Text fw={700} size="sm">Usuários ({users?.length ?? 0})</Text>
+              </Group>
+              <TextInput
+                size="xs"
                 placeholder="Buscar nome ou username…"
+                leftSection={<IconSearch size={14} />}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-            </div>
+            </Group>
 
             {filtered.length === 0 ? (
-              <p className="admin-empty">{search ? 'Nenhum usuário encontrado.' : 'Sem usuários.'}</p>
+              <Text size="sm" c="dimmed">{search ? 'Nenhum usuário encontrado.' : 'Sem usuários.'}</Text>
             ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th className="admin-th">#</th>
-                      <th className="admin-th">Nome</th>
-                      <th className="admin-th">Username</th>
-                      <th className="admin-th">Cadastro</th>
-                      <th className="admin-th">Último treino</th>
-                      <th className="admin-th">Sessões</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((u, i) => <UserRow key={u.id} u={u} idx={i} />)}
-                  </tbody>
-                </table>
-              </div>
+              <Table.ScrollContainer minWidth={640}>
+                <Table striped highlightOnHover verticalSpacing="xs">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>#</Table.Th>
+                      <Table.Th>Nome</Table.Th>
+                      <Table.Th>Username</Table.Th>
+                      <Table.Th>Cadastro</Table.Th>
+                      <Table.Th>Último treino</Table.Th>
+                      <Table.Th>Sessões</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {filtered.map((u, i) => (
+                      <Table.Tr key={u.id}>
+                        <Table.Td>{i + 1}</Table.Td>
+                        <Table.Td>
+                          <Group gap={6}>
+                            <Text size="sm">{u.name}</Text>
+                            {u.is_admin && <Badge size="xs" color="brandPurple">admin</Badge>}
+                          </Group>
+                        </Table.Td>
+                        <Table.Td><Text size="sm" c="dimmed">@{u.username}</Text></Table.Td>
+                        <Table.Td>{u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}</Table.Td>
+                        <Table.Td>{u.last_session ? new Date(u.last_session + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</Table.Td>
+                        <Table.Td>{u.total_sessions}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
             )}
-          </div>
+          </Card>
         </>
       )}
-    </div>
+    </Box>
   )
 }
