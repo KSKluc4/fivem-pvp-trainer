@@ -149,26 +149,23 @@ export default function App() {
   return (
     <AppShell header={{ height: 96 }}>
       <AppShell.Header>
-        <div className="titlebar">
-          <Group gap={6}>
-            <IconTargetArrow size={15} color="var(--mantine-color-brandCyan-5)" />
-            <Text fw={700} size="xs" c="dimmed">FiveM PvP Trainer</Text>
-          </Group>
-        </div>
-        <Group h={60} px="md" justify="space-between">
+        <TitleBar bare />
+        <Group h={60} px="md" justify="space-between" className="app-header-drag">
           <Group gap="xs">
             <IconTargetArrow size={26} color="var(--mantine-color-brandCyan-5)" />
             <Text fw={800} size="lg">FiveM PvP Trainer</Text>
           </Group>
           {user && (
-            <UserMenu
-              user={user}
-              onLogout={handleLogout}
-              onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
-              onChangeProfile={handleChangeProfile}
-              onConverter={() => setView('converter')}
-              onAdmin={() => setView('admin')}
-            />
+            <div className="titlebar-clickable">
+              <UserMenu
+                user={user}
+                onLogout={handleLogout}
+                onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+                onChangeProfile={handleChangeProfile}
+                onConverter={() => setView('converter')}
+                onAdmin={() => setView('admin')}
+              />
+            </div>
           )}
         </Group>
       </AppShell.Header>

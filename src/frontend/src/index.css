@@ -67,9 +67,14 @@ body {
      Windows on the right — see titleBarOverlay in electron/main.js. */
   padding-right: 140px;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
+/* Standalone screens (loading/login/register) have no AppShell header right
+   below them, so the strip keeps a border to separate it from that content. */
+.titlebar--standalone { border-bottom: 1px solid var(--border); }
+/* Makes the rest of the AppShell header draggable too (Discord/Slack-style) —
+   paired with .titlebar-clickable on the interactive bits inside it. */
+.app-header-drag { -webkit-app-region: drag; }
 .titlebar-clickable { -webkit-app-region: no-drag; }
 
 /* ─── Auth screens (Login/Register) — full-bleed gradient background ─────── */
