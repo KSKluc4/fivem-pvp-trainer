@@ -108,18 +108,8 @@ ipcMain.handle('ss:remove', (_, key) => {
 let mainWindow = null
 
 async function createWindow() {
-  const devMenu = Menu.buildFromTemplate([
-    {
-      label: 'Dev',
-      submenu: [
-        { label: 'Abrir DevTools', accelerator: 'F12', click: () => mainWindow?.webContents.openDevTools() },
-        { label: 'Abrir pasta de logs', click: () => shell.openPath(LOG_DIR) },
-        { type: 'separator' },
-        { label: 'Recarregar', accelerator: 'F5', click: () => mainWindow?.webContents.reload() },
-      ],
-    },
-  ])
-  Menu.setApplicationMenu(devMenu)
+  // No native application menu — the app draws its own drag-region title bar.
+  Menu.setApplicationMenu(null)
 
   mainWindow = new BrowserWindow({
     width: 1200, height: 800, minWidth: 900, minHeight: 600,
@@ -127,12 +117,31 @@ async function createWindow() {
     title:           'FiveM PvP Trainer',
     backgroundColor: '#080810',
     show:            false,
+    // Hides the native Windows title bar but keeps the min/max/close overlay
+    // buttons, drawn in colors matching the Mantine dark theme (theme.js:
+    // dark[7] header background, dark[0] text/symbol color).
+    titleBarStyle:    'hidden',
+    titleBarOverlay: {
+      color:       '#16162a',
+      symbolColor: '#e8e8f0',
+      height:      36,
+    },
     webPreferences: {
       nodeIntegration:  false,
       contextIsolation: true,
       preload:          path.join(__dirname, 'preload.js'),
     },
   })
+
+  // DevTools stay reachable in development builds only (Ctrl+Shift+I) — no
+  // menu item exists for it anymore since the application menu is gone.
+  if (!app.isPackaged) {
+    mainWindow.webContents.on('before-input-event', (_event, input) => {
+      if (input.type === 'keyDown' && input.control && input.shift && input.key.toLowerCase() === 'i') {
+        mainWindow.webContents.toggleDevTools()
+      }
+    })
+  }
 
   mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
     if (level >= 2) log.error(`[Renderer] ${message}  (${sourceId}:${line})`)

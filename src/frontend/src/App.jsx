@@ -3,15 +3,16 @@ import { AppShell, Group, Text, Center, Stack } from '@mantine/core'
 import { IconTargetArrow } from '@tabler/icons-react'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { secureStorage } from './services/storage'
-import LoginForm       from './components/LoginForm'
-import RegisterForm    from './components/RegisterForm'
-import Questionnaire   from './components/Questionnaire'
-import TrainingRoutine from './components/TrainingRoutine'
-import Progress        from './components/Progress'
-import SensConverter   from './components/SensConverter'
-import UserMenu        from './components/UserMenu'
-import UpdateBanner    from './components/UpdateBanner'
-import AdminPanel      from './components/AdminPanel'
+import TitleBar         from './components/TitleBar'
+import LoginForm        from './components/LoginForm'
+import RegisterForm     from './components/RegisterForm'
+import Questionnaire    from './components/Questionnaire'
+import TrainingRoutine  from './components/TrainingRoutine'
+import Progress         from './components/Progress'
+import SensConverter    from './components/SensConverter'
+import UserMenu         from './components/UserMenu'
+import UpdateBanner     from './components/UpdateBanner'
+import AdminPanel       from './components/AdminPanel'
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -111,31 +112,50 @@ export default function App() {
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
     const msg = authState === 'loading' ? 'Iniciando...' : 'Carregando rotina...'
     return (
-      <Center className="loading-screen">
-        <Stack align="center" gap="md">
-          <div className="loading-crosshair">
-            <div className="lc-ring lc-ring-1" />
-            <div className="lc-ring lc-ring-2" />
-            <div className="lc-dot" />
-          </div>
-          <Text c="dimmed" size="sm">{msg}</Text>
-        </Stack>
-      </Center>
+      <>
+        <TitleBar />
+        <Center className="loading-screen">
+          <Stack align="center" gap="md">
+            <div className="loading-crosshair">
+              <div className="lc-ring lc-ring-1" />
+              <div className="lc-ring lc-ring-2" />
+              <div className="lc-dot" />
+            </div>
+            <Text c="dimmed" size="sm">{msg}</Text>
+          </Stack>
+        </Center>
+      </>
     )
   }
 
   if (authState === 'login') {
-    return <LoginForm onSuccess={handleAuthSuccess} onGoRegister={() => setAuthState('register')} />
+    return (
+      <>
+        <TitleBar />
+        <LoginForm onSuccess={handleAuthSuccess} onGoRegister={() => setAuthState('register')} />
+      </>
+    )
   }
 
   if (authState === 'register') {
-    return <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
+    return (
+      <>
+        <TitleBar />
+        <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
+      </>
+    )
   }
 
   return (
-    <AppShell header={{ height: 60 }}>
+    <AppShell header={{ height: 96 }}>
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
+        <div className="titlebar">
+          <Group gap={6}>
+            <IconTargetArrow size={15} color="var(--mantine-color-brandCyan-5)" />
+            <Text fw={700} size="xs" c="dimmed">FiveM PvP Trainer</Text>
+          </Group>
+        </div>
+        <Group h={60} px="md" justify="space-between">
           <Group gap="xs">
             <IconTargetArrow size={26} color="var(--mantine-color-brandCyan-5)" />
             <Text fw={800} size="lg">FiveM PvP Trainer</Text>
