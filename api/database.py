@@ -216,6 +216,73 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
     return res.data or []
 
 
+# ── Goals ─────────────────────────────────────────────────────────────────────
+
+def list_goals(user_id: int, period: str, period_start: str) -> list:
+    sb = get_supabase()
+    res = (sb.table('goals')
+             .select('id,period,category,title,description,period_start,completed,completed_at')
+             .eq('user_id', user_id)
+             .eq('period', period)
+             .eq('period_start', period_start)
+             .order('id')
+             .execute())
+    return res.data or []
+
+
+def create_goals(user_id: int, goals: list) -> list:
+    if not goals:
+        return []
+    sb   = get_supabase()
+    rows = [{**goal, 'user_id': user_id} for goal in goals]
+    try:
+        res = sb.table('goals').insert(rows).execute()
+        return res.data or []
+    except Exception:
+        # Race: another request already generated goals for this period —
+        # fall back to whatever is already persisted instead of erroring.
+        return list_goals(user_id, rows[0]['period'], rows[0]['period_start'])
+
+
+def get_goal(goal_id: int, user_id: int):
+    sb = get_supabase()
+    res = (sb.table('goals')
+             .select('id,period,category,title,description,period_start,completed,completed_at')
+             .eq('id', goal_id)
+             .eq('user_id', user_id)
+             .limit(1)
+             .execute())
+    return res.data[0] if res.data else None
+
+
+def toggle_goal(goal_id: int, user_id: int):
+    from datetime import datetime, timezone
+    goal = get_goal(goal_id, user_id)
+    if not goal:
+        return None
+    sb            = get_supabase()
+    new_completed = not goal['completed']
+    completed_at  = datetime.now(timezone.utc).isoformat() if new_completed else None
+    res = (sb.table('goals')
+             .update({'completed': new_completed, 'completed_at': completed_at})
+             .eq('id', goal_id).eq('user_id', user_id)
+             .execute())
+    return res.data[0] if res.data else None
+
+
+def get_daily_goal_complete_dates(user_id: int) -> set:
+    from collections import Counter
+    sb = get_supabase()
+    res = (sb.table('goals')
+             .select('period_start')
+             .eq('user_id', user_id)
+             .eq('period', 'daily')
+             .eq('completed', True)
+             .execute())
+    counts = Counter(r['period_start'] for r in (res.data or []))
+    return {d for d, c in counts.items() if c >= 3}
+
+
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
 def get_admin_stats() -> dict:
@@ -346,11 +413,16 @@ def get_user_stats(user_id: int) -> dict:
              .neq('exercise_name', '__session__')
              .execute())
 
-    # Calculate streak from completed sessions' dates, descending
-    completed_dates = sorted(
-        {r['date'] for r in completed_sessions},
-        reverse=True,
-    )
+    # Calculate streak from completed sessions' dates, descending. A day also
+    # counts as active if all 3 daily goals were completed that day — same
+    # streak, no double counting (dates are merged into a set).
+    active_dates = {r['date'] for r in completed_sessions}
+    try:
+        active_dates |= get_daily_goal_complete_dates(user_id)
+    except Exception:
+        pass  # goals table not migrated yet — streak still works from sessions alone
+
+    completed_dates = sorted(active_dates, reverse=True)
     streak = 0
     today  = date.today()
     prev   = today

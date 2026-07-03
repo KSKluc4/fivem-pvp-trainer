@@ -847,6 +847,113 @@ body {
   font-weight: 700;
 }
 
+/* ─── Goals ───────────────────────────────────────── */
+.goals-notice {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  animation: fadeInUp 0.4s ease both;
+}
+
+.goals-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+  margin-bottom: 1.1rem;
+}
+
+.goals-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  animation: fadeInUp 0.4s ease both;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.goals-card--complete {
+  border-color: rgba(46, 213, 115, 0.35);
+  box-shadow: 0 0 0 1px rgba(46, 213, 115, 0.12);
+}
+.goals-card--pulse { animation: fadeInUp 0.4s ease both, goalsPulse 1.2s ease; }
+@keyframes goalsPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.5); }
+  60%  { box-shadow: 0 0 0 14px rgba(46, 213, 115, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0); }
+}
+
+.goals-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+.goals-card-header h3 { font-size: 1.02rem; font-weight: 700; }
+
+.goal-ring {
+  --pct: 0%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-success) var(--pct), var(--bg-card) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.3s ease;
+}
+.goal-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+.goal-ring span {
+  position: relative;
+  z-index: 1;
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+.goals-list { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.goal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.goal-row:hover { background: var(--bg-card); }
+.goal-row.busy { cursor: wait; opacity: 0.7; }
+.goal-row .checkbox { margin-top: 0.1rem; }
+.goal-row-body { flex: 1; min-width: 0; }
+.goal-row-title { font-size: 0.88rem; font-weight: 600; }
+.goal-row.done .goal-row-title { text-decoration: line-through; opacity: 0.6; }
+.goal-row-desc { font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.1rem; }
+
+.goals-celebrate-msg {
+  margin-top: 0.9rem;
+  text-align: center;
+  color: var(--color-success);
+  font-weight: 700;
+  font-size: 0.85rem;
+  animation: fadeInUp 0.3s ease;
+}
+
+.goals-reset-note {
+  margin-top: 0.9rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
 /* ─── Training Tip ───────────────────────────────── */
 .training-tip-card {
   background: var(--bg-secondary);
@@ -1947,6 +2054,7 @@ body {
   .progress-header    { flex-direction: column; }
   .sens-header        { flex-direction: column; }
   .sens-layout        { grid-template-columns: 1fr; }
+  .goals-section      { grid-template-columns: 1fr; }
   .stats-grid         { grid-template-columns: repeat(2, 1fr); }
   .playlists-grid     { grid-template-columns: 1fr 1fr; }
   .skeleton-grid-4    { grid-template-columns: repeat(2, 1fr); }

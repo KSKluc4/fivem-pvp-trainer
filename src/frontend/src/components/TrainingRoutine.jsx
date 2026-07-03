@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
+import Goals from './Goals'
 
 const DIFFICULTY_LABELS = {
   beginner:     { label: 'Iniciante',    color: '#2ed573' },
@@ -139,6 +140,9 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           </button>
         </div>
       </div>
+
+      {/* ── Goals ── */}
+      <Goals />
 
       {/* ── Exercise sections ── */}
       {routine.sections.map((section, si) => (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getProgress } from '../services/api'
+import { getProgress, getGoals } from '../services/api'
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -13,14 +13,18 @@ const ACHIEVEMENTS = [
 ]
 
 export default function Progress({ userId, username, onBack }) {
-  const [data, setData]       = useState([])
-  const [loading, setLoading] = useState(true)
+  const [data, setData]                 = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [weeklyGoals, setWeeklyGoals]   = useState(null)
 
   useEffect(() => {
     getProgress(userId)
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false))
+    getGoals()
+      .then((res) => { if (res.data.available) setWeeklyGoals(res.data.weekly_progress) })
+      .catch(() => {})
   }, [userId])
 
   if (loading) {
@@ -107,6 +111,14 @@ export default function Progress({ userId, username, onBack }) {
         <StatCard number={completed}      label="Sessões completas" icon="✅" color="var(--color-success)"   />
         <StatCard number={streak}         label="Dias seguidos"     icon="🔥" color="var(--color-warning)"   />
         <StatCard number={`${completionRate}%`} label="Conclusão"   icon="📊" color="var(--color-secondary)" />
+        {weeklyGoals && (
+          <StatCard
+            number={`${weeklyGoals.completed}/${weeklyGoals.total}`}
+            label="Metas da semana"
+            icon="🎯"
+            color="var(--color-success)"
+          />
+        )}
       </div>
 
       {/* ── Weekly Evolution Chart ── */}
