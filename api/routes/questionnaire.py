@@ -20,7 +20,6 @@ def submit_questionnaire():
         'movement_quality':  data.get('movement_quality', ''),
         'daily_time':        int(data.get('daily_time', 30)),
         'preferred_tool':    data.get('preferred_tool', 'aimlab'),
-        'server_type':       data.get('server_type', ''),
         'main_weapon':       data.get('main_weapon', ''),
         'specific_weakness': data.get('specific_weakness', ''),
     }

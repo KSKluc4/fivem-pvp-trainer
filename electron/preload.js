@@ -11,4 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Auto-updater bridge
   onUpdateReady:   (cb)  => ipcRenderer.on('update:ready', (_event, info) => cb(info)),
   restartNow:      ()    => ipcRenderer.send('update:restart'),
+  // External links — renderer only ever sends a known identifier, never a URL
+  openLink:        (key) => ipcRenderer.invoke('links:open', key),
 })

@@ -8,6 +8,16 @@ const fs   = require('fs')
 // ── Vercel URL ────────────────────────────────────────────────────────────────
 const VERCEL_URL = 'https://fivem-pvp-trainer.vercel.app'
 
+// ── External link allowlist ───────────────────────────────────────────────────
+//
+// The renderer never sends URLs to the main process — only an identifier from
+// this map. This keeps shell.openExternal() (a privileged OS-level call) from
+// ever being reachable with an attacker- or renderer-controlled URL.
+const EXTERNAL_LINKS = {
+  'discord-goat': 'https://discord.gg/goatgg',
+  'discord-plf':  'https://discord.gg/plfpvp',
+}
+
 // ── File logger ───────────────────────────────────────────────────────────────
 
 const LOG_DIR  = path.join(app.getPath('appData'), '..', 'Local', 'FiveM-PvP-Trainer', 'logs')
@@ -101,6 +111,18 @@ ipcMain.handle('ss:remove', (_, key) => {
   const store = readStore()
   delete store[key]
   writeStore(store)
+})
+
+// ── External links ────────────────────────────────────────────────────────────
+
+ipcMain.handle('links:open', (_event, key) => {
+  const url = EXTERNAL_LINKS[key]
+  if (!url) {
+    log.warn('links:open — unknown key:', key)
+    return { ok: false }
+  }
+  shell.openExternal(url).catch((e) => log.error('links:open failed:', e?.message || e))
+  return { ok: true }
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

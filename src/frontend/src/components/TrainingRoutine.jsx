@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
   Box, Group, Stack, Title, Text, Badge, Button, Card, Checkbox, Progress,
-  SimpleGrid, Anchor, CopyButton, ActionIcon, Tooltip,
+  SimpleGrid,
 } from '@mantine/core'
 import {
   IconChartBar, IconDeviceGamepad2, IconSettings, IconFlame, IconBolt,
-  IconClipboardList, IconCopy, IconCheck, IconTrophy,
+  IconClipboardList, IconBrandDiscord, IconTrophy,
 } from '@tabler/icons-react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
@@ -71,10 +71,16 @@ const PLAYLISTS = {
   ],
 }
 
-// ── Training tips ──────────────────────────────────────────────────────────────
-const TRAINING_TIPS = [
-  { name: 'GOAT', desc: 'ideal para treinar mata-mata', cfxLink: 'cfx.re/join/q93zep' },
-  { name: 'PLF',  desc: 'ideal para melhorar seus drops', cfxLink: 'cfx.re/join/oemxzx' },
+// ── FiveM servers ──────────────────────────────────────────────────────────────
+//
+// Connecting happens through each server's Discord, not a direct cfx.re join
+// link. discordKey is sent to the Electron main process (never the URL itself)
+// which resolves it against a hardcoded allowlist before opening it — see
+// electron/main.js EXTERNAL_LINKS. discordUrl is only used as a fallback when
+// the app is opened in a plain browser (no Electron bridge available).
+const FIVEM_SERVERS = [
+  { name: 'GOAT', desc: 'ideal para treinar mata-mata',   discordKey: 'discord-goat', discordUrl: 'https://discord.gg/goatgg' },
+  { name: 'PLF',  desc: 'ideal para melhorar seus drops', discordKey: 'discord-plf',  discordUrl: 'https://discord.gg/plfpvp' },
 ]
 
 export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
@@ -89,6 +95,14 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   const playlists       = PLAYLISTS[routine.tool] || PLAYLISTS.aimlab
 
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
+
+  const openDiscord = (server) => {
+    if (window.electronAPI?.openLink) {
+      window.electronAPI.openLink(server.discordKey)
+    } else {
+      window.open(server.discordUrl, '_blank', 'noopener,noreferrer')
+    }
+  }
 
   const handleFinish = async () => {
     setSaving(true)
@@ -271,25 +285,20 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
       {/* ── Training Tip ── */}
       <Card>
         <Text fw={700} mb="sm">💡 Onde treinar no FiveM</Text>
+        <Text size="xs" c="dimmed" mb="sm">Entre no Discord do servidor para ver como conectar e jogar</Text>
         <Stack gap="xs">
-          {TRAINING_TIPS.map((tip) => (
-            <Group justify="space-between" key={tip.name} wrap="wrap">
-              <Text size="sm" c="dimmed"><Text span fw={700} c="var(--mantine-color-text)">{tip.name}</Text> — {tip.desc}</Text>
-              <CopyButton value={tip.cfxLink}>
-                {({ copied, copy }) => (
-                  <Tooltip label={copied ? 'Copiado!' : 'Copiar link'} withArrow>
-                    <Button
-                      variant="light"
-                      size="xs"
-                      color={copied ? 'green' : 'brandCyan'}
-                      rightSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                      onClick={copy}
-                    >
-                      {tip.cfxLink}
-                    </Button>
-                  </Tooltip>
-                )}
-              </CopyButton>
+          {FIVEM_SERVERS.map((server) => (
+            <Group justify="space-between" key={server.name} wrap="wrap">
+              <Text size="sm" c="dimmed"><Text span fw={700} c="var(--mantine-color-text)">{server.name}</Text> — {server.desc}</Text>
+              <Button
+                variant="light"
+                size="xs"
+                color="indigo"
+                leftSection={<IconBrandDiscord size={14} />}
+                onClick={() => openDiscord(server)}
+              >
+                Discord
+              </Button>
             </Group>
           ))}
         </Stack>

@@ -1,23 +1,10 @@
 import random
 from datetime import date, timedelta
 
-# Legacy value handling — matches routine_generator.LEGACY_SERVER_ALIASES.
-# questionnaire_results rows created before the FiveM server-connect feature
-# was removed can still have server_type = '1v99'; treat it as neutral.
-LEGACY_SERVER_ALIASES = {
-    '1v99': 'outro',
-}
-
 LEVEL_MAP = {
     'iniciante':     'beginner',
     'intermediario': 'intermediate',
     'avancado':      'advanced',
-}
-
-SERVER_LABELS = {
-    'goat':  'no GOAT',
-    'ambos': 'no seu servidor de preferência',
-    'outro': 'no seu servidor',
 }
 
 DAILY_GOAL_COUNT  = 3
@@ -67,7 +54,7 @@ DAILY_DEATHMATCH_TEMPLATES = [
     ('Pratique posicionamento em {n} partidas de mata-mata',
      'Bom posicionamento evita duelos desnecessários.',
      {'beginner': 2, 'intermediate': 3, 'advanced': 4}),
-    ('Encerre o dia com {n} partida(s) {server}',
+    ('Encerre o dia com {n} partida(s) no seu servidor',
      'Aplique o treino direto onde você joga de verdade.',
      {'beginner': 1, 'intermediate': 2, 'advanced': 3}),
 ]
@@ -130,12 +117,6 @@ def _level(profile: dict) -> str:
 def _tool_label(profile_or_routine: dict) -> str:
     tool = str(profile_or_routine.get('tool') or profile_or_routine.get('preferred_tool') or 'aimlab').lower()
     return "KovaaK's" if tool == 'kovaak' else 'Aim Lab'
-
-
-def _server_label(profile: dict) -> str:
-    raw        = profile.get('server_type', '')
-    normalized = LEGACY_SERVER_ALIASES.get(raw, raw)
-    return SERVER_LABELS.get(normalized, 'no seu servidor')
 
 
 def _seeded_rng(user_id: int, period: str, period_start: str) -> random.Random:
@@ -210,7 +191,7 @@ def generate_daily_goals(user_id: int, profile: dict, routine: dict, period_star
     dm_template = rng.choice(DAILY_DEATHMATCH_TEMPLATES)
     title_tpl, desc, n_by_level = dm_template
     n     = n_by_level[level]
-    title = title_tpl.format(n=n, server=_server_label(profile))
+    title = title_tpl.format(n=n)
     goals.append({
         'period': 'daily', 'category': 'deathmatch',
         'title': title, 'description': desc, 'period_start': period_start,

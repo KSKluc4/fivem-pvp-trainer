@@ -80,27 +80,12 @@ WEAKNESS_NOTES = {
     'reaction':      'Pressão: pré-mire ângulos antes de virar. Quem chega preparado atira primeiro.',
 }
 
-SERVER_NOTES = {
-    'goat':  'Goat PvP: combates táticos de médio range. Pre-aim de corners é fundamental.',
-    'ambos': 'Múltiplos servidores: treine adaptabilidade — mude a sensibilidade de cenário para cenário.',
-    'outro': 'Adapte o treino ao ritmo do seu servidor.',
-}
-
-# Servidores desativados — questionnaire_results existentes no Supabase podem
-# ainda ter esses valores gravados. Trate como o comportamento mais neutro
-# ('outro') em vez de quebrar ou ignorar a dica de servidor.
-LEGACY_SERVER_ALIASES = {
-    '1v99': 'outro',
-}
-
-
 def generate_routine(profile):
     focus      = profile.get('focus_area', 'aim')
     experience = profile.get('experience_level', 'iniciante')
     daily_time = int(profile.get('daily_time', 30))
     tool       = str(profile.get('preferred_tool', 'aimlab')).lower()
     weapon     = profile.get('main_weapon', '')
-    server     = LEGACY_SERVER_ALIASES.get(profile.get('server_type', ''), profile.get('server_type', ''))
     weakness   = profile.get('specific_weakness', '')
 
     if tool not in ('kovaak', 'aimlab'):
@@ -131,15 +116,12 @@ def generate_routine(profile):
     main_tip = ' | '.join(tip_parts)
 
     review_tip = 'Anote seu desempenho. O que melhorou? O que ainda trava? Consistência supera intensidade.'
-    if server and server in SERVER_NOTES:
-        review_tip += f' Dica de servidor: {SERVER_NOTES[server]}'
 
     return {
         'focus_area':       focus,
         'experience_level': experience,
         'tool':             tool,
         'main_weapon':      weapon,
-        'server_type':      server,
         'total_duration':   warmup_time + sum(e['duration'] for e in main) + 5,
         'sections': [
             {

@@ -9,16 +9,6 @@ import { submitQuestionnaire } from '../services/api'
 const QUESTIONS = [
   // ── FiveM context ──────────────────────────────────────────────────────────
   {
-    id: 'server_type',
-    question: 'Qual servidor FiveM você joga?',
-    subtitle: 'Isso calibra o treino para o meta e ritmo do seu servidor',
-    options: [
-      { value: 'goat',  label: 'Goat PvP',  description: 'Combates táticos, range médio-longo, muito pre-aim', icon: '🐐' },
-      { value: 'ambos', label: 'Ambos',      description: 'Jogo em múltiplos servidores e estilos',              icon: '🌐' },
-      { value: 'outro', label: 'Outro',      description: 'Servidor diferente ou privado',                       icon: '🎮' },
-    ],
-  },
-  {
     id: 'specific_weakness',
     question: 'Qual é sua maior dificuldade específica?',
     subtitle: 'Vamos focar no seu maior gargalo técnico',
