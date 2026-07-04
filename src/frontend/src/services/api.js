@@ -101,4 +101,8 @@ export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
 export const getAdminStats = () => api.get('/admin/stats')
 export const getAdminUsers = () => api.get('/admin/users')
 
+// ── Aim trainer scores ────────────────────────────────────────────────────────
+export const postTrainerScore = (data) => api.post('/trainer/scores', data)
+export const getTrainerScores = (exercise) => api.get('/trainer/scores', { params: { exercise } })
+
 export default api

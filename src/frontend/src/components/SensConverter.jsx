@@ -6,22 +6,7 @@ import {
 import { IconArrowLeft, IconDeviceGamepad2, IconBolt, IconTarget, IconRuler2, IconCopy, IconCheck, IconChevronDown, IconArchive } from '@tabler/icons-react'
 import { convertSensitivity, getSensitivityHistory } from '../services/api'
 import { toast } from '../services/toast'
-
-// Community-validated yaw values (mirrors backend constants)
-const GTA_YAW    = 0.0009  // GTA V scale 0–100 (in-game slider)
-const KOVAAK_YAW = 0.022
-const AIMLAB_YAW = 0.022
-
-function calcLocal(gtaSens, dpi) {
-  const abs = Math.abs(gtaSens)
-  const cm  = (360 / (dpi * abs * GTA_YAW)) * 2.54
-  return {
-    cm_per_360:         +cm.toFixed(4),
-    kovaak_sensitivity: +((360 * 2.54) / (dpi * KOVAAK_YAW * cm)).toFixed(4),
-    aimlab_sensitivity: +((360 * 2.54) / (dpi * AIMLAB_YAW * cm)).toFixed(4),
-    inverted:           gtaSens < 0,
-  }
-}
+import { calcLocal } from '../services/sensitivityMath'
 
 const DPI_PRESETS = [400, 800, 1200, 1600, 3200]
 

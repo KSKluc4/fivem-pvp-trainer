@@ -5,7 +5,7 @@ import {
 } from '@mantine/core'
 import {
   IconPencil, IconSettings, IconDeviceGamepad2, IconShieldLock, IconLogout,
-  IconAlertCircle,
+  IconAlertCircle, IconTargetArrow,
 } from '@tabler/icons-react'
 import { getMe, updateProfile } from '../services/api'
 import { toast } from '../services/toast'
@@ -32,7 +32,7 @@ function avatarHue(username) {
   return hues[h % hues.length]
 }
 
-export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter, onAdmin }) {
+export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin }) {
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -157,6 +157,9 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
             </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onChangeProfile?.() }}>
               <Group gap="xs"><IconSettings size={15} /><Text size="sm">Alterar perfil de treino</Text></Group>
+            </UnstyledButton>
+            <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onTrainer?.() }}>
+              <Group gap="xs"><IconTargetArrow size={15} /><Text size="sm">Treinar agora</Text></Group>
             </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onConverter?.() }}>
               <Group gap="xs"><IconDeviceGamepad2 size={15} /><Text size="sm">Conversor de sensibilidade</Text></Group>

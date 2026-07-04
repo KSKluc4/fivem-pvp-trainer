@@ -15,6 +15,7 @@ import SensConverter    from './components/SensConverter'
 import UserMenu         from './components/UserMenu'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
+import TrainerView      from './trainer/TrainerView'
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -181,6 +182,7 @@ export default function App() {
                 onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
                 onChangeProfile={handleChangeProfile}
                 onConverter={() => setView('converter')}
+                onTrainer={() => setView('trainer')}
                 onAdmin={() => setView('admin')}
               />
             </div>
@@ -209,6 +211,14 @@ export default function App() {
             onViewProgress={() => setView('progress')}
             onChangeProfile={handleChangeProfile}
             onConverter={() => setView('converter')}
+            onTrainer={() => setView('trainer')}
+          />
+        )}
+
+        {view === 'trainer' && (
+          <TrainerView
+            key="trainer"
+            onBack={() => setView('routine')}
           />
         )}
 

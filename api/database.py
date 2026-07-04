@@ -243,6 +243,33 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
     return res.data or []
 
 
+# ── Aim trainer scores ────────────────────────────────────────────────────────
+
+def save_trainer_score(user_id: int, exercise: str, difficulty: str,
+                        score: int, accuracy: float, duration_s: int):
+    sb = get_supabase()
+    res = sb.table('trainer_scores').insert({
+        'user_id':    user_id,
+        'exercise':   exercise,
+        'difficulty': difficulty,
+        'score':      score,
+        'accuracy':   accuracy,
+        'duration_s': duration_s,
+    }).execute()
+    return res.data[0] if res.data else None
+
+
+def get_trainer_scores(user_id: int, exercise: str = None, limit: int = 50):
+    sb = get_supabase()
+    query = (sb.table('trainer_scores')
+               .select('id,exercise,difficulty,score,accuracy,duration_s,created_at')
+               .eq('user_id', user_id))
+    if exercise:
+        query = query.eq('exercise', exercise)
+    res = query.order('created_at', desc=True).limit(limit).execute()
+    return res.data or []
+
+
 # ── Adaptive mata-mata level ──────────────────────────────────────────────────
 #
 # The `goals` table itself is no longer written to (the Metas feature was

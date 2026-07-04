@@ -5,7 +5,7 @@ import {
 } from '@mantine/core'
 import {
   IconChartBar, IconDeviceGamepad2, IconSettings, IconFlame, IconBolt,
-  IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords,
+  IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords, IconTargetArrow,
 } from '@tabler/icons-react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
@@ -95,7 +95,7 @@ const FIVEM_SERVERS = [
   { name: 'PLF',  desc: 'ideal para melhorar seus drops', discordKey: 'discord-plf',  discordUrl: 'https://discord.gg/plfpvp' },
 ]
 
-export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter }) {
+export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter, onTrainer }) {
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
   const [saved, setSaved]             = useState(false)
@@ -185,7 +185,18 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                   <Title order={3} size="h4">{section.name}</Title>
                   {section.level != null && <Badge size="xs" variant="light" color="gray">Nível {section.level}</Badge>}
                 </Group>
-                <Badge variant="default">{section.duration} min</Badge>
+                <Group gap="xs">
+                  {section.name === 'Treino Principal' && routine.focus_area === 'aim' && onTrainer && (
+                    <Button
+                      size="xs" variant="light" color="brandCyan"
+                      leftSection={<IconTargetArrow size={14} />}
+                      onClick={onTrainer}
+                    >
+                      Treinar no app
+                    </Button>
+                  )}
+                  <Badge variant="default">{section.duration} min</Badge>
+                </Group>
               </Group>
               <Text size="sm" c="dimmed" mb={section.level_note ? 4 : 'md'}>💡 {section.tip}</Text>
               {section.level_note && (

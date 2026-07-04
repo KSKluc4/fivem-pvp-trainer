@@ -1,0 +1,41 @@
+// Raw, unsmoothed mouse-look: applies movementX/movementY directly to camera
+// rotation every mousemove event — no lerp/easing/acceleration curve. This
+// is deliberate: any smoothing would break 1:1 fidelity with the sensitivity
+// the player is used to from GTA V.
+const PITCH_LIMIT = Math.PI / 2 - 0.01 // just under 90° — avoids gimbal flip at the poles
+
+// getDegPerCount is a function (not a fixed number) so a live fine-tune
+// slider can change sensitivity mid-session without re-attaching listeners.
+export function createPointerLook(camera, { getDegPerCount, getInvertY } = {}) {
+  let yaw   = 0
+  let pitch = 0
+
+  function onMouseMove(e) {
+    const radPerCount = getDegPerCount() * (Math.PI / 180)
+    const dy = getInvertY?.() ? -e.movementY : e.movementY
+
+    yaw   -= e.movementX * radPerCount
+    pitch -= dy * radPerCount
+    pitch  = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch))
+
+    camera.rotation.x = pitch
+    camera.rotation.y = yaw
+  }
+
+  function attach() {
+    document.addEventListener('mousemove', onMouseMove)
+  }
+
+  function detach() {
+    document.removeEventListener('mousemove', onMouseMove)
+  }
+
+  function reset() {
+    yaw = 0
+    pitch = 0
+    camera.rotation.x = 0
+    camera.rotation.y = 0
+  }
+
+  return { attach, detach, reset }
+}

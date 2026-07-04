@@ -1,0 +1,43 @@
+.trainer-view { display: flex; flex-direction: column; height: 100%; }
+
+.trainer-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  background: #080810;
+  border: 1px solid var(--mantine-color-dark-5);
+}
+
+.trainer-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.trainer-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 16, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.trainer-overlay--clickable { cursor: pointer; flex-direction: column; gap: 4px; }
+
+.trainer-setup-card { width: 100%; max-width: 380px; }
+
+.trainer-overlay--countdown { background: rgba(8, 8, 16, 0.25); }
+
+.trainer-countdown-number {
+  font-size: 96px;
+  font-weight: 900;
+  color: var(--mantine-color-brandCyan-5);
+  text-shadow: 0 4px 24px rgba(0, 212, 255, 0.4);
+}

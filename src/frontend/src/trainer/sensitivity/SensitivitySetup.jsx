@@ -1,0 +1,154 @@
+import { useState, useEffect, useRef } from 'react'
+import { Box, Stack, Group, Text, Title, NumberInput, Slider, Button, Card, Badge } from '@mantine/core'
+import { IconTarget, IconDeviceGamepad2 } from '@tabler/icons-react'
+import { getSensitivityHistory } from '../../services/api'
+import { calcLocal } from '../../services/sensitivityMath'
+import { loadTrainerSensSettings, saveTrainerSensSettings, effectiveDegPerCount } from './trainerSensitivity'
+
+// Live preview needs *some* rotation speed even before the real value loads.
+const FALLBACK_DEG_PER_COUNT = 0.03
+
+export default function SensitivitySetup({ onDone }) {
+  const [gtaSens, setGtaSens] = useState(50)
+  const [dpi, setDpi]         = useState(800)
+  const [fineTune, setFineTune] = useState(1.0)
+  const [loadedFromHistory, setLoadedFromHistory] = useState(false)
+  const previewRef  = useRef(null)
+  const previewAngle = useRef(0)
+
+  useEffect(() => {
+    const existing = loadTrainerSensSettings()
+    if (existing.gtaSens != null) {
+      setGtaSens(existing.gtaSens)
+      setDpi(existing.dpi)
+      setFineTune(existing.fineTuneMultiplier)
+      return
+    }
+    // First run — try to prefill from the sensitivity converter's history
+    getSensitivityHistory()
+      .then((res) => {
+        const last = res.data?.[0]
+        if (last) {
+          setGtaSens(last.gta_sensitivity)
+          setDpi(last.dpi)
+          setLoadedFromHistory(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const preview = (() => {
+    const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
+    const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
+    if (isNaN(s) || s === 0 || isNaN(d) || d <= 0) return null
+    return calcLocal(s, d)
+  })()
+
+  const degPerCount = (() => {
+    const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
+    if (isNaN(s) || s === 0) return FALLBACK_DEG_PER_COUNT
+    return effectiveDegPerCount({ gtaSens: s, fineTuneMultiplier: fineTune })
+  })()
+
+  // Live preview: while hovering the box, raw mouse movement rotates the
+  // indicator by the exact same deg/count the 3D camera would use — lets
+  // the player feel the fine-tune adjustment before ever entering the arena.
+  const handlePreviewMouseMove = (e) => {
+    previewAngle.current += e.movementX * degPerCount
+    if (previewRef.current) previewRef.current.style.transform = `rotate(${previewAngle.current}deg)`
+  }
+
+  const handleSave = () => {
+    const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
+    const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
+    saveTrainerSensSettings({ gtaSens: s, dpi: d, fineTuneMultiplier: fineTune })
+    onDone()
+  }
+
+  const canSave = preview != null
+
+  return (
+    <Box className="trainer-sens-setup">
+      <Group gap={6} mb="md">
+        <IconDeviceGamepad2 size={20} color="var(--mantine-color-brandCyan-5)" />
+        <Title order={2} size="h3">Configurar sensibilidade</Title>
+      </Group>
+      <Text size="sm" c="dimmed" mb="lg">
+        O treino usa a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.
+        {loadedFromHistory && ' Preenchido a partir do seu último conversor salvo.'}
+      </Text>
+
+      <Group align="flex-start" gap="lg" wrap="wrap">
+        <Card style={{ flex: 1, minWidth: 260 }}>
+          <Stack gap="md">
+            <NumberInput
+              label="Sensibilidade GTA V"
+              description="Escala 0–100 · a mesma que você usa no jogo"
+              value={gtaSens}
+              onChange={setGtaSens}
+              min={-100}
+              max={100}
+              step={1}
+            />
+            <NumberInput
+              label="DPI do Mouse"
+              value={dpi}
+              onChange={setDpi}
+              min={1}
+              step={1}
+            />
+
+            <Box>
+              <Group justify="space-between" mb={4}>
+                <Text size="sm">Ajuste fino</Text>
+                <Badge variant="light" color="brandCyan">{fineTune.toFixed(2)}×</Badge>
+              </Group>
+              <Slider
+                min={0.5}
+                max={1.5}
+                step={0.01}
+                value={fineTune}
+                onChange={setFineTune}
+                label={(v) => `${v.toFixed(2)}×`}
+                marks={[{ value: 1.0, label: '1.00×' }]}
+              />
+              <Text size="xs" c="dimmed" mt={4}>
+                Multiplica a sensibilidade convertida — use se precisar de um pequeno ajuste sem mexer no GTA V.
+              </Text>
+            </Box>
+
+            <Button onClick={handleSave} disabled={!canSave} leftSection={<IconTarget size={16} />}>
+              Salvar e continuar
+            </Button>
+          </Stack>
+        </Card>
+
+        <Card style={{ flex: '0 0 220px' }} ta="center">
+          <Text size="xs" c="dimmed" mb="sm">Prévia ao vivo — mova o mouse aqui</Text>
+          <Box
+            onMouseMove={handlePreviewMouseMove}
+            style={{
+              width: 160, height: 160, margin: '0 auto', borderRadius: '50%',
+              background: 'var(--mantine-color-dark-8)',
+              border: '1px solid var(--mantine-color-dark-5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'crosshair', position: 'relative', overflow: 'hidden',
+            }}
+          >
+            <div
+              ref={previewRef}
+              style={{
+                width: 4, height: 70, background: 'var(--mantine-color-brandCyan-5)',
+                position: 'absolute', top: '50%', left: '50%',
+                transformOrigin: 'top center', marginLeft: -2,
+              }}
+            />
+          </Box>
+          {preview && (
+            <Text size="xs" c="dimmed" mt="sm">{preview.cm_per_360.toFixed(1)} cm/360°</Text>
+          )}
+        </Card>
+      </Group>
+    </Box>
+  )
+}
