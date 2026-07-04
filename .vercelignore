@@ -12,8 +12,4 @@ __pycache__
 .venv
 venv
 env
-fivem_backend.spec
-fivem_pvp_trainer.spec
-launcher.py
-launcher_backend.py
 create_icon.py

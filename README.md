@@ -9,26 +9,27 @@ O FiveM PvP Trainer é uma ferramenta de apoio para jogadores que desejam melhor
 ## Tecnologias
 
 - **Frontend:** React
-- **Backend:** Python / Flask
-- **Plataforma:** Desktop (Electron ou similar)
+- **Backend:** Python / Flask (serverless, via Vercel), Supabase
+- **Plataforma:** Desktop (Electron, carrega o app web hospedado na Vercel)
 
 ## Estrutura do Projeto
 
 ```
 fivem-pvp-trainer/
+├── api/                 # Backend Flask serverless (Vercel + Supabase)
 ├── src/
-│   ├── frontend/        # Interface React
-│   └── backend/         # API Flask (Python)
+│   └── frontend/        # Interface React
+├── electron/            # Wrapper desktop (Electron)
 ├── assets/              # Imagens, ícones e recursos estáticos
 ├── docs/                # Documentação
-├── requirements.txt     # Dependências Python
+├── requirements.txt     # Dependências Python (api/)
 ├── README.md
 └── .gitignore
 ```
 
 ## Como Executar
 
-### Backend (Python/Flask)
+### Backend (Python/Flask, api/)
 
 ```bash
 # Criar e ativar ambiente virtual
@@ -39,8 +40,8 @@ source venv/bin/activate   # Linux/Mac
 # Instalar dependências
 pip install -r requirements.txt
 
-# Iniciar servidor
-python src/backend/app.py
+# Iniciar servidor (requer variáveis de ambiente do Supabase)
+python api/index.py
 ```
 
 ### Frontend (React)
