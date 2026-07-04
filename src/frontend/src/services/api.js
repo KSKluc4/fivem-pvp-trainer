@@ -101,8 +101,4 @@ export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
 export const getAdminStats = () => api.get('/admin/stats')
 export const getAdminUsers = () => api.get('/admin/users')
 
-// ── Goals ─────────────────────────────────────────────────────────────────────
-export const getGoals   = ()   => api.get('/goals')
-export const toggleGoal = (id) => api.post(`/goals/${id}/toggle`)
-
 export default api

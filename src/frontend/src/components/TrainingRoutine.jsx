@@ -9,7 +9,6 @@ import {
 } from '@tabler/icons-react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
-import Goals from './Goals'
 
 const DIFFICULTY_LABELS = {
   beginner:     { label: 'Iniciante',    color: '#2ed573' },
@@ -174,9 +173,6 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
         </Group>
       </Group>
 
-      {/* ── Goals ── */}
-      <Goals />
-
       {/* ── Exercise sections ── */}
       <Stack gap="md" mb="lg">
         {routine.sections.map((section, si) => {
@@ -187,10 +183,16 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 <Group gap={6}>
                   <SectionIcon size={18} color="var(--mantine-color-brandCyan-5)" />
                   <Title order={3} size="h4">{section.name}</Title>
+                  {section.level != null && <Badge size="xs" variant="light" color="gray">Nível {section.level}</Badge>}
                 </Group>
                 <Badge variant="default">{section.duration} min</Badge>
               </Group>
-              <Text size="sm" c="dimmed" mb="md">💡 {section.tip}</Text>
+              <Text size="sm" c="dimmed" mb={section.level_note ? 4 : 'md'}>💡 {section.tip}</Text>
+              {section.level_note && (
+                <Text size="xs" fw={600} mb="md" c={section.level_note.startsWith('Meta aumentou') ? 'green' : 'orange'}>
+                  {section.level_note}
+                </Text>
+              )}
 
               {section.exercises.length > 0 ? (
                 <Stack gap="xs">

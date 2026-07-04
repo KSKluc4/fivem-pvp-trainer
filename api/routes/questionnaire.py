@@ -2,6 +2,7 @@ from datetime import date
 from flask import Blueprint, request, jsonify, g
 from database import get_user_by_id, save_questionnaire, create_training_session
 from services.routine_generator import generate_routine
+from services.level_service import resolve_action_level
 from utils import require_auth
 
 questionnaire_bp = Blueprint('questionnaire', __name__)
@@ -25,7 +26,8 @@ def submit_questionnaire():
     }
 
     save_questionnaire(g.user_id, profile)
-    routine    = generate_routine(profile)
+    action_level, action_level_note = resolve_action_level(g.user_id, profile)
+    routine    = generate_routine(profile, action_level=action_level, action_level_note=action_level_note)
     session_id = create_training_session(g.user_id, date.today().isoformat(), routine)
 
     user = get_user_by_id(g.user_id)

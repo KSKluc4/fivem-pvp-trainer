@@ -1,4 +1,7 @@
+import random
 from datetime import date
+
+from services.level_service import initial_level_for_experience, kill_quota_for_level
 
 EXERCISES = {
     'aim': {
@@ -85,10 +88,8 @@ WEAKNESS_NOTES = {
 # ── In-game application block (mata-mata) ───────────────────────────────────
 #
 # Closes the daily routine with real matches instead of a passive review —
-# the number of matches scales with how much time the profile has, and
-# match_count_for_daily_time is also the source of truth the goal generator
-# uses to cap "partidas"-based daily goals (never ask for more matches than
-# the routine itself suggests).
+# each match is its own challenge: a kill quota (scaled by the user's
+# adaptive level, see services.level_service) and a distinct focus.
 MATCH_DURATION = 15
 
 MATCH_COUNT_BY_DAILY_TIME = [
@@ -105,30 +106,52 @@ def match_count_for_daily_time(daily_time: int) -> int:
     return MATCH_COUNT_MAX
 
 
-# Focus rotates day-to-day (deterministic by day-of-year) so the in-game
-# block doesn't read identically every day.
-INGAME_FOCUS_VARIANTS = [
+# Each match in the day's in-game block gets its own focus — never the same
+# focus twice in one day. The daily order is deterministic (seeded by date)
+# so a page refresh doesn't reshuffle an already-generated routine, but two
+# different days read differently.
+FOCUS_OPTIONS = [
     {
-        'label': 'tracking',
-        'desc':  'Aplique o tracking treinado hoje contra jogadores reais — mantenha o crosshair sobre o alvo em movimento.',
+        'id':          'duelos_1x1',
+        'label':       'duelos 1x1',
+        'instruction': 'Busque confrontos diretos 1x1 e feche cada duelo com decisão.',
     },
     {
-        'label': 'posicionamento',
-        'desc':  'Use ângulos e cover para evitar duelos desnecessários — vença antes mesmo de atirar.',
+        'id':          'tracking_combate',
+        'label':       'tracking em combate',
+        'instruction': 'Mantenha o crosshair no inimigo mesmo quando ele — ou você — está em movimento.',
     },
     {
-        'label': 'duelos',
-        'desc':  'Busque confrontos diretos 1x1 e meça sua consistência sob pressão.',
+        'id':          'posicionamento',
+        'label':       'posicionamento',
+        'instruction': 'Use ângulos e cover para vencer o duelo antes mesmo de atirar.',
+    },
+    {
+        'id':          'movement_strafe',
+        'label':       'movement/strafe',
+        'instruction': 'Mova-se de forma imprevisível enquanto atira — nunca fique parado.',
+    },
+    {
+        'id':          'game_sense',
+        'label':       'game sense',
+        'instruction': 'Preste atenção em som e posicionamento do inimigo antes de engajar.',
     },
 ]
 
+# Quota grows slightly across the day's matches — only the 3rd match gets a
+# bump, giving a sense of progression within the session (see spec: partida
+# 1 = X, partida 2 = X, partida 3 = X+10%).
+MATCH_QUOTA_MULTIPLIERS = {2: 1.1}
 
-def _ingame_focus(today: date):
-    idx = int(today.strftime('%j')) % len(INGAME_FOCUS_VARIANTS)
-    return INGAME_FOCUS_VARIANTS[idx]
+
+def _daily_focus_order(today: date) -> list:
+    rng   = random.Random(today.isoformat())
+    order = list(FOCUS_OPTIONS)
+    rng.shuffle(order)
+    return order
 
 
-def generate_routine(profile, today: date = None):
+def generate_routine(profile, today: date = None, action_level: int = None, action_level_note: str = ''):
     focus      = profile.get('focus_area', 'aim')
     experience = profile.get('experience_level', 'iniciante')
     daily_time = int(profile.get('daily_time', 30))
@@ -165,17 +188,22 @@ def generate_routine(profile, today: date = None):
     main_tip = ' | '.join(tip_parts)
 
     match_count = match_count_for_daily_time(daily_time)
-    focus_variant = _ingame_focus(today)
-    matches = [
-        {
-            'name':        f'Partida {i + 1} de mata-mata — foco em {focus_variant["label"]}' if match_count > 1
-                            else f'Partida de mata-mata — foco em {focus_variant["label"]}',
+    focus_order = _daily_focus_order(today)[:match_count]
+    level       = action_level if action_level is not None else initial_level_for_experience(experience)
+    base_quota  = kill_quota_for_level(level)
+
+    matches = []
+    for i in range(match_count):
+        focus_opt = focus_order[i]
+        quota     = round(base_quota * MATCH_QUOTA_MULTIPLIERS.get(i, 1.0))
+        matches.append({
+            'name':        f'Partida {i + 1} — Mate {quota} inimigos · Foco: {focus_opt["label"]}',
             'duration':    MATCH_DURATION,
-            'description': focus_variant['desc'],
+            'description': focus_opt['instruction'],
             'category':    'in-game',
-        }
-        for i in range(match_count)
-    ]
+            'kill_quota':  quota,
+            'focus':       focus_opt['id'],
+        })
 
     return {
         'focus_area':       focus,
@@ -199,11 +227,13 @@ def generate_routine(profile, today: date = None):
                 'tip':       main_tip,
             },
             {
-                'name':      'Aplicação em Jogo (Mata-mata)',
-                'duration':  match_count * MATCH_DURATION,
-                'exercises': matches,
-                'checkable': True,
-                'tip':       f'Jogue no servidor GOAT — leve para o combate real o que você treinou. Foco de hoje: {focus_variant["label"]}.',
+                'name':       'Aplicação em Jogo (Mata-mata)',
+                'duration':   match_count * MATCH_DURATION,
+                'exercises':  matches,
+                'checkable':  True,
+                'level':      level,
+                'level_note': action_level_note or '',
+                'tip':        'Jogue no servidor GOAT — cada partida tem sua própria cota e foco. Bata a cota de cada uma.',
             },
         ],
     }

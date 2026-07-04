@@ -243,73 +243,11 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
     return res.data or []
 
 
-# ── Goals ─────────────────────────────────────────────────────────────────────
-
-def list_goals(user_id: int, period: str, period_start: str) -> list:
-    sb = get_supabase()
-    res = (sb.table('goals')
-             .select('id,period,category,title,description,period_start,completed,completed_at,level,level_note')
-             .eq('user_id', user_id)
-             .eq('period', period)
-             .eq('period_start', period_start)
-             .order('id')
-             .execute())
-    return res.data or []
-
-
-def create_goals(user_id: int, goals: list) -> list:
-    if not goals:
-        return []
-    sb   = get_supabase()
-    rows = [{**goal, 'user_id': user_id} for goal in goals]
-    try:
-        res = sb.table('goals').insert(rows).execute()
-        return res.data or []
-    except Exception:
-        # Race: another request already generated goals for this period —
-        # fall back to whatever is already persisted instead of erroring.
-        return list_goals(user_id, rows[0]['period'], rows[0]['period_start'])
-
-
-def get_goal(goal_id: int, user_id: int):
-    sb = get_supabase()
-    res = (sb.table('goals')
-             .select('id,period,category,title,description,period_start,completed,completed_at,level,level_note')
-             .eq('id', goal_id)
-             .eq('user_id', user_id)
-             .limit(1)
-             .execute())
-    return res.data[0] if res.data else None
-
-
-def toggle_goal(goal_id: int, user_id: int):
-    from datetime import datetime, timezone
-    goal = get_goal(goal_id, user_id)
-    if not goal:
-        return None
-    sb            = get_supabase()
-    new_completed = not goal['completed']
-    completed_at  = datetime.now(timezone.utc).isoformat() if new_completed else None
-    res = (sb.table('goals')
-             .update({'completed': new_completed, 'completed_at': completed_at})
-             .eq('id', goal_id).eq('user_id', user_id)
-             .execute())
-    return res.data[0] if res.data else None
-
-
-def get_recent_category_completions(user_id: int, category: str, limit: int = 2) -> list:
-    """Last `limit` daily goals of this category, most-recent first, as booleans."""
-    sb = get_supabase()
-    res = (sb.table('goals')
-             .select('period_start,completed')
-             .eq('user_id', user_id)
-             .eq('period', 'daily')
-             .eq('category', category)
-             .order('period_start', desc=True)
-             .limit(limit)
-             .execute())
-    return [bool(r['completed']) for r in (res.data or [])]
-
+# ── Adaptive mata-mata level ──────────────────────────────────────────────────
+#
+# The `goals` table itself is no longer written to (the Metas feature was
+# removed) — existing rows are left untouched. `goal_levels` is still used,
+# now to track the mata-mata (category='action') difficulty level.
 
 def get_goal_level(user_id: int, category: str):
     sb = get_supabase()
@@ -333,17 +271,58 @@ def upsert_goal_level(user_id: int, category: str, level: int):
     }, on_conflict='user_id,category').execute()
 
 
-def get_daily_goal_complete_dates(user_id: int) -> set:
-    from collections import Counter
+def get_recent_ingame_completion(user_id: int, limit: int = 2) -> list:
+    """Whether ALL in-game (mata-mata) matches were completed, for the last
+    `limit` days that had an in-game block — most-recent first.
+
+    Legacy sessions predating the mata-mata block (no exercises tagged
+    category='in-game', e.g. old 'Revisão' routines) are skipped entirely —
+    they neither help nor hurt the adaptive level.
+    """
+    from collections import defaultdict
+    from datetime import date
     sb = get_supabase()
-    res = (sb.table('goals')
-             .select('period_start')
-             .eq('user_id', user_id)
-             .eq('period', 'daily')
-             .eq('completed', True)
-             .execute())
-    counts = Counter(r['period_start'] for r in (res.data or []))
-    return {d for d, c in counts.items() if c >= 3}
+
+    today        = date.today().isoformat()
+    sessions_res = (sb.table('training_sessions')
+                      .select('id,date,routine')
+                      .eq('user_id', user_id)
+                      .neq('date', today)
+                      .order('date', desc=True)
+                      .limit(limit + 5)  # buffer for legacy sessions we'll skip
+                      .execute())
+    sessions = sessions_res.data or []
+    if not sessions:
+        return []
+
+    session_ids  = [s['id'] for s in sessions]
+    progress_res = (sb.table('progress')
+                      .select('session_id,exercise_name')
+                      .in_('session_id', session_ids)
+                      .eq('completed', True)
+                      .execute())
+    completed_by_session = defaultdict(set)
+    for p in (progress_res.data or []):
+        completed_by_session[p['session_id']].add(p['exercise_name'])
+
+    results = []
+    for s in sessions:
+        if len(results) >= limit:
+            break
+        routine = s['routine']
+        if isinstance(routine, str):
+            routine = json.loads(routine)
+        ingame_names = {
+            ex['name']
+            for section in (routine.get('sections') or [])
+            for ex in (section.get('exercises') or [])
+            if ex.get('category') == 'in-game'
+        }
+        if not ingame_names:
+            continue
+        done = completed_by_session.get(s['id'], set())
+        results.append(ingame_names.issubset(done))
+    return results
 
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
@@ -513,15 +492,10 @@ def get_user_stats(user_id: int) -> dict:
              .neq('exercise_name', '__session__')
              .execute())
 
-    # Calculate streak from completed sessions' dates, descending. A day also
-    # counts as active if all 3 daily goals were completed that day — same
-    # streak, no double counting (dates are merged into a set).
-    active_dates = {r['date'] for r in completed_sessions}
-    try:
-        active_dates |= get_daily_goal_complete_dates(user_id)
-    except Exception:
-        pass  # goals table not migrated yet — streak still works from sessions alone
-
+    # Calculate streak from completed sessions' dates, descending. Finishing
+    # the daily routine (which includes the mata-mata matches) is the only
+    # criterion for an active day.
+    active_dates    = {r['date'] for r in completed_sessions}
     completed_dates = sorted(active_dates, reverse=True)
     streak = 0
     today  = date.today()

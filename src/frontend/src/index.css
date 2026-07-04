@@ -50,11 +50,6 @@ body {
   0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
   50%       { transform: translate(-50%, -50%) scale(1.3); opacity: 0.3; }
 }
-@keyframes goalsPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.5); }
-  60%  { box-shadow: 0 0 0 14px rgba(46, 213, 115, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(46, 213, 115, 0); }
-}
 
 /* ─── Custom title bar (native Windows title bar is hidden) ───────────────── */
 .titlebar {
@@ -210,12 +205,6 @@ body {
   transform: translateY(-4px) scale(1.01);
   box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--pl-color, var(--color-primary)) 20%, transparent);
 }
-
-/* ─── Goals — daily-complete pulse + clickable row ─────────────────────────── */
-.goals-card--pulse { animation: goalsPulse 1.2s ease; }
-.goal-row { cursor: pointer; border-radius: 8px; transition: background 0.15s; }
-.goal-row:hover { background: var(--bg-card); }
-.goal-row.busy { cursor: wait; opacity: 0.7; }
 
 /* ─── Questionnaire — Radio.Card option hover ──────────────────────────────── */
 .q-option-card { transition: border-color 0.15s, transform 0.1s; }
