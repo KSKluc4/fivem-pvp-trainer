@@ -1,10 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Card, SimpleGrid, Group, Stack, Text, Checkbox, RingProgress, Badge, Skeleton, Alert } from '@mantine/core'
-import { IconTarget, IconCalendarWeek, IconTrophy, IconInfoCircle } from '@tabler/icons-react'
+import { Card, Group, Stack, Text, Checkbox, RingProgress, Badge, Skeleton, Alert } from '@mantine/core'
+import { IconTarget, IconTrophy, IconInfoCircle } from '@tabler/icons-react'
 import { getGoals, toggleGoal } from '../services/api'
 import { toast } from '../services/toast'
 
+// Emoji + label per goal category. 'exercise'/'deathmatch' are kept for
+// daily goals generated before the categories reform (they only linger
+// until that day rolls over).
+const CATEGORY_META = {
+  aim:        { emoji: '🎯', label: 'Aim' },
+  action:     { emoji: '⚔️', label: 'Ação' },
+  movement:   { emoji: '⚡', label: 'Movement' },
+  game_sense: { emoji: '🧠', label: 'Game Sense' },
+  analysis:   { emoji: '🎥', label: 'Análise' },
+  exercise:   { emoji: '🎯', label: 'Exercício' },
+  deathmatch: { emoji: '⚔️', label: 'Mata-mata' },
+}
+
 function GoalRow({ goal, onToggle, busy }) {
+  const meta = CATEGORY_META[goal.category] || { emoji: '✓', label: goal.category }
   return (
     <Group
       wrap="nowrap"
@@ -14,25 +28,22 @@ function GoalRow({ goal, onToggle, busy }) {
       onClick={() => !busy && onToggle(goal)}
     >
       <Checkbox checked={goal.completed} readOnly tabIndex={-1} mt={2} style={{ pointerEvents: 'none' }} />
-      <Box_ done={goal.completed}>
-        <Text size="sm" fw={600} td={goal.completed ? 'line-through' : undefined} c={goal.completed ? 'dimmed' : undefined}>
-          {goal.title}
-        </Text>
+      <Stack gap={2} style={{ flex: 1 }}>
+        <Group gap={6} wrap="wrap">
+          <Text size="sm" fw={600} td={goal.completed ? 'line-through' : undefined} c={goal.completed ? 'dimmed' : undefined}>
+            {meta.emoji} {goal.title}
+          </Text>
+          {goal.level != null && <Badge size="xs" variant="light" color="gray">Nível {goal.level}</Badge>}
+        </Group>
         {goal.description && <Text size="xs" c="dimmed">{goal.description}</Text>}
-      </Box_>
+        {goal.level_note && (
+          <Text size="xs" fw={600} c={goal.level_note.startsWith('Meta aumentou') ? 'green' : 'orange'}>
+            {goal.level_note}
+          </Text>
+        )}
+      </Stack>
     </Group>
   )
-}
-
-// Tiny wrapper so we don't need an extra import just for a flex-basis box
-function Box_({ children }) {
-  return <Stack gap={2} style={{ flex: 1 }}>{children}</Stack>
-}
-
-function formatDayMonth(dateStr) {
-  if (!dateStr) return ''
-  const [, m, d] = dateStr.split('-')
-  return `${d}/${m}`
 }
 
 export default function Goals() {
@@ -53,23 +64,21 @@ export default function Goals() {
     if (busyId || !data) return
     setBusyId(goal.id)
 
-    const period       = goal.period
-    const currentList  = data[period]
-    const total        = currentList.length
-    const wasComplete  = data[`${period}_progress`].completed === total && total > 0
-    const newList      = currentList.map((g) => (g.id === goal.id ? { ...g, completed: !g.completed } : g))
-    const newCount     = newList.filter((g) => g.completed).length
-    const isNowComplete = newCount === total && total > 0
+    const total          = data.daily.length
+    const wasComplete    = data.daily_progress.completed === total && total > 0
+    const newList        = data.daily.map((g) => (g.id === goal.id ? { ...g, completed: !g.completed } : g))
+    const newCount       = newList.filter((g) => g.completed).length
+    const isNowComplete  = newCount === total && total > 0
 
     setData((prev) => ({
       ...prev,
-      [period]: newList,
-      [`${period}_progress`]: { ...prev[`${period}_progress`], completed: newCount },
+      daily:          newList,
+      daily_progress: { ...prev.daily_progress, completed: newCount },
     }))
 
     try {
       await toggleGoal(goal.id)
-      if (period === 'daily' && isNowComplete && !wasComplete) {
+      if (isNowComplete && !wasComplete) {
         toast.success('🎉 Metas do dia completas! Isso conta como um dia ativo no seu streak.')
         setPulse(true)
         setTimeout(() => setPulse(false), 1200)
@@ -92,10 +101,7 @@ export default function Goals() {
 
   if (!data) {
     return (
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="lg">
-        <Card><Skeleton height={80} /></Card>
-        <Card><Skeleton height={80} /></Card>
-      </SimpleGrid>
+      <Card mb="lg"><Skeleton height={80} /></Card>
     )
   }
 
@@ -110,57 +116,31 @@ export default function Goals() {
   const dailyDone = data.daily_progress.total > 0 && data.daily_progress.completed === data.daily_progress.total
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="lg">
-      <Card className={pulse ? 'goals-card--pulse' : ''} style={dailyDone ? { borderColor: 'var(--mantine-color-green-6)' } : undefined}>
-        <Group justify="space-between" mb="sm">
-          <Group gap={6}>
-            <IconTarget size={18} color="var(--mantine-color-brandCyan-5)" />
-            <Text fw={700} size="sm">Metas de hoje</Text>
-          </Group>
-          <RingProgress
-            size={48}
-            thickness={5}
-            roundCaps
-            sections={[{ value: data.daily_progress.total ? (data.daily_progress.completed / data.daily_progress.total) * 100 : 0, color: 'green' }]}
-            label={<Text size="xs" fw={800} ta="center">{data.daily_progress.completed}/{data.daily_progress.total}</Text>}
-          />
+    <Card mb="lg" className={pulse ? 'goals-card--pulse' : ''} style={dailyDone ? { borderColor: 'var(--mantine-color-green-6)' } : undefined}>
+      <Group justify="space-between" mb="sm">
+        <Group gap={6}>
+          <IconTarget size={18} color="var(--mantine-color-brandCyan-5)" />
+          <Text fw={700} size="sm">Metas de hoje</Text>
         </Group>
-        <Stack gap="xs">
-          {data.daily.map((g) => (
-            <GoalRow key={g.id} goal={g} onToggle={handleToggle} busy={busyId === g.id} />
-          ))}
-        </Stack>
-        {dailyDone && (
-          <Group gap={6} mt="sm" justify="center">
-            <IconTrophy size={16} color="var(--mantine-color-yellow-5)" />
-            <Text size="sm" fw={700} c="green">Todas as metas de hoje concluídas!</Text>
-          </Group>
-        )}
-      </Card>
-
-      <Card>
-        <Group justify="space-between" mb="sm">
-          <Group gap={6}>
-            <IconCalendarWeek size={18} color="var(--mantine-color-brandPurple-4)" />
-            <Text fw={700} size="sm">Metas da semana</Text>
-          </Group>
-          <RingProgress
-            size={48}
-            thickness={5}
-            roundCaps
-            sections={[{ value: data.weekly_progress.total ? (data.weekly_progress.completed / data.weekly_progress.total) * 100 : 0, color: 'brandPurple' }]}
-            label={<Text size="xs" fw={800} ta="center">{data.weekly_progress.completed}/{data.weekly_progress.total}</Text>}
-          />
+        <RingProgress
+          size={48}
+          thickness={5}
+          roundCaps
+          sections={[{ value: data.daily_progress.total ? (data.daily_progress.completed / data.daily_progress.total) * 100 : 0, color: 'green' }]}
+          label={<Text size="xs" fw={800} ta="center">{data.daily_progress.completed}/{data.daily_progress.total}</Text>}
+        />
+      </Group>
+      <Stack gap="xs">
+        {data.daily.map((g) => (
+          <GoalRow key={g.id} goal={g} onToggle={handleToggle} busy={busyId === g.id} />
+        ))}
+      </Stack>
+      {dailyDone && (
+        <Group gap={6} mt="sm" justify="center">
+          <IconTrophy size={16} color="var(--mantine-color-yellow-5)" />
+          <Text size="sm" fw={700} c="green">Todas as metas de hoje concluídas!</Text>
         </Group>
-        <Stack gap="xs">
-          {data.weekly.map((g) => (
-            <GoalRow key={g.id} goal={g} onToggle={handleToggle} busy={busyId === g.id} />
-          ))}
-        </Stack>
-        <Group justify="flex-end" mt="sm">
-          <Badge variant="light" color="gray" size="sm">Reseta segunda-feira ({formatDayMonth(data.weekly_resets_at)})</Badge>
-        </Group>
-      </Card>
-    </SimpleGrid>
+      )}
+    </Card>
   )
 }

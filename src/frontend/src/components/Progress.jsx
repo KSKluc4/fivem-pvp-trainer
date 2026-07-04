@@ -8,7 +8,7 @@ import {
   IconArrowLeft, IconCalendar, IconFlame, IconClipboardList, IconCircleCheck,
   IconChartPie, IconTrendingUp, IconMedal, IconArchive,
 } from '@tabler/icons-react'
-import { getProgress, getGoals } from '../services/api'
+import { getProgress } from '../services/api'
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -22,18 +22,14 @@ const ACHIEVEMENTS = [
 ]
 
 export default function Progress({ userId, username, onBack }) {
-  const [data, setData]               = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [weeklyGoals, setWeeklyGoals] = useState(null)
+  const [data, setData]       = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getProgress(userId)
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false))
-    getGoals()
-      .then((res) => { if (res.data.available) setWeeklyGoals(res.data.weekly_progress) })
-      .catch(() => {})
   }, [userId])
 
   if (loading) {
@@ -112,14 +108,11 @@ export default function Progress({ userId, username, onBack }) {
       </Grid>
 
       {/* ── Stats Grid ── */}
-      <SimpleGrid cols={{ base: 2, sm: weeklyGoals ? 5 : 4 }} spacing="md" mb="lg">
+      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
         <StatCard number={total}          label="Sessões geradas"   icon={IconClipboardList} color="brandCyan"   />
         <StatCard number={completed}      label="Sessões completas" icon={IconCircleCheck}   color="green"       />
         <StatCard number={`${completionRate}%`} label="Conclusão"   icon={IconChartPie}      color="brandPurple" />
         <StatCard number={weeklyData.length} label="Semanas ativas" icon={IconTrendingUp}    color="orange"      />
-        {weeklyGoals && (
-          <StatCard number={`${weeklyGoals.completed}/${weeklyGoals.total}`} label="Metas da semana" icon={IconMedal} color="green" />
-        )}
       </SimpleGrid>
 
       {/* ── Weekly Evolution Chart ── */}

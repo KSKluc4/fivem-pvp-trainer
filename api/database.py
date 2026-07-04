@@ -248,7 +248,7 @@ def get_sensitivity_history(user_id: int, limit: int = 15):
 def list_goals(user_id: int, period: str, period_start: str) -> list:
     sb = get_supabase()
     res = (sb.table('goals')
-             .select('id,period,category,title,description,period_start,completed,completed_at')
+             .select('id,period,category,title,description,period_start,completed,completed_at,level,level_note')
              .eq('user_id', user_id)
              .eq('period', period)
              .eq('period_start', period_start)
@@ -274,7 +274,7 @@ def create_goals(user_id: int, goals: list) -> list:
 def get_goal(goal_id: int, user_id: int):
     sb = get_supabase()
     res = (sb.table('goals')
-             .select('id,period,category,title,description,period_start,completed,completed_at')
+             .select('id,period,category,title,description,period_start,completed,completed_at,level,level_note')
              .eq('id', goal_id)
              .eq('user_id', user_id)
              .limit(1)
@@ -295,6 +295,42 @@ def toggle_goal(goal_id: int, user_id: int):
              .eq('id', goal_id).eq('user_id', user_id)
              .execute())
     return res.data[0] if res.data else None
+
+
+def get_recent_category_completions(user_id: int, category: str, limit: int = 2) -> list:
+    """Last `limit` daily goals of this category, most-recent first, as booleans."""
+    sb = get_supabase()
+    res = (sb.table('goals')
+             .select('period_start,completed')
+             .eq('user_id', user_id)
+             .eq('period', 'daily')
+             .eq('category', category)
+             .order('period_start', desc=True)
+             .limit(limit)
+             .execute())
+    return [bool(r['completed']) for r in (res.data or [])]
+
+
+def get_goal_level(user_id: int, category: str):
+    sb = get_supabase()
+    res = (sb.table('goal_levels')
+             .select('id,current_level')
+             .eq('user_id', user_id)
+             .eq('category', category)
+             .limit(1)
+             .execute())
+    return res.data[0] if res.data else None
+
+
+def upsert_goal_level(user_id: int, category: str, level: int):
+    from datetime import datetime, timezone
+    sb = get_supabase()
+    sb.table('goal_levels').upsert({
+        'user_id':       user_id,
+        'category':      category,
+        'current_level': level,
+        'updated_at':    datetime.now(timezone.utc).isoformat(),
+    }, on_conflict='user_id,category').execute()
 
 
 def get_daily_goal_complete_dates(user_id: int) -> set:

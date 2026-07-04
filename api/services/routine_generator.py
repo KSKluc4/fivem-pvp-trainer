@@ -1,3 +1,5 @@
+from datetime import date
+
 EXERCISES = {
     'aim': {
         'kovaak': [
@@ -80,13 +82,60 @@ WEAKNESS_NOTES = {
     'reaction':      'Pressão: pré-mire ângulos antes de virar. Quem chega preparado atira primeiro.',
 }
 
-def generate_routine(profile):
+# ── In-game application block (mata-mata) ───────────────────────────────────
+#
+# Closes the daily routine with real matches instead of a passive review —
+# the number of matches scales with how much time the profile has, and
+# match_count_for_daily_time is also the source of truth the goal generator
+# uses to cap "partidas"-based daily goals (never ask for more matches than
+# the routine itself suggests).
+MATCH_DURATION = 15
+
+MATCH_COUNT_BY_DAILY_TIME = [
+    (30, 1),   # até 30 min/dia → 1 partida
+    (60, 2),   # até 60 min/dia → 2 partidas
+]
+MATCH_COUNT_MAX = 3
+
+
+def match_count_for_daily_time(daily_time: int) -> int:
+    for threshold, count in MATCH_COUNT_BY_DAILY_TIME:
+        if daily_time <= threshold:
+            return count
+    return MATCH_COUNT_MAX
+
+
+# Focus rotates day-to-day (deterministic by day-of-year) so the in-game
+# block doesn't read identically every day.
+INGAME_FOCUS_VARIANTS = [
+    {
+        'label': 'tracking',
+        'desc':  'Aplique o tracking treinado hoje contra jogadores reais — mantenha o crosshair sobre o alvo em movimento.',
+    },
+    {
+        'label': 'posicionamento',
+        'desc':  'Use ângulos e cover para evitar duelos desnecessários — vença antes mesmo de atirar.',
+    },
+    {
+        'label': 'duelos',
+        'desc':  'Busque confrontos diretos 1x1 e meça sua consistência sob pressão.',
+    },
+]
+
+
+def _ingame_focus(today: date):
+    idx = int(today.strftime('%j')) % len(INGAME_FOCUS_VARIANTS)
+    return INGAME_FOCUS_VARIANTS[idx]
+
+
+def generate_routine(profile, today: date = None):
     focus      = profile.get('focus_area', 'aim')
     experience = profile.get('experience_level', 'iniciante')
     daily_time = int(profile.get('daily_time', 30))
     tool       = str(profile.get('preferred_tool', 'aimlab')).lower()
     weapon     = profile.get('main_weapon', '')
     weakness   = profile.get('specific_weakness', '')
+    today      = today or date.today()
 
     if tool not in ('kovaak', 'aimlab'):
         tool = 'aimlab'
@@ -115,32 +164,46 @@ def generate_routine(profile):
         tip_parts.append(WEAKNESS_NOTES[weakness])
     main_tip = ' | '.join(tip_parts)
 
-    review_tip = 'Anote seu desempenho. O que melhorou? O que ainda trava? Consistência supera intensidade.'
+    match_count = match_count_for_daily_time(daily_time)
+    focus_variant = _ingame_focus(today)
+    matches = [
+        {
+            'name':        f'Partida {i + 1} de mata-mata — foco em {focus_variant["label"]}' if match_count > 1
+                            else f'Partida de mata-mata — foco em {focus_variant["label"]}',
+            'duration':    MATCH_DURATION,
+            'description': focus_variant['desc'],
+            'category':    'in-game',
+        }
+        for i in range(match_count)
+    ]
 
     return {
         'focus_area':       focus,
         'experience_level': experience,
         'tool':             tool,
         'main_weapon':      weapon,
-        'total_duration':   warmup_time + sum(e['duration'] for e in main) + 5,
+        'total_duration':   warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
         'sections': [
             {
                 'name':      'Aquecimento',
                 'duration':  warmup_time,
                 'exercises': warmup_list,
+                'checkable': False,
                 'tip':       'Faça cada exercício sem pressão. O objetivo é ativar a musculatura e o reflexo.',
             },
             {
                 'name':      'Treino Principal',
                 'duration':  sum(e['duration'] for e in main),
                 'exercises': main,
+                'checkable': True,
                 'tip':       main_tip,
             },
             {
-                'name':      'Revisão',
-                'duration':  5,
-                'exercises': [],
-                'tip':       review_tip,
+                'name':      'Aplicação em Jogo (Mata-mata)',
+                'duration':  match_count * MATCH_DURATION,
+                'exercises': matches,
+                'checkable': True,
+                'tip':       f'Jogue no servidor GOAT — leve para o combate real o que você treinou. Foco de hoje: {focus_variant["label"]}.',
             },
         ],
     }

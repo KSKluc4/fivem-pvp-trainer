@@ -1,144 +1,159 @@
 import random
-from datetime import date, timedelta
+from datetime import date
 
-LEVEL_MAP = {
-    'iniciante':     'beginner',
-    'intermediario': 'intermediate',
-    'avancado':      'advanced',
+from services.routine_generator import match_count_for_daily_time
+
+DAILY_GOAL_COUNT = 3
+
+CATEGORIES          = ('aim', 'action', 'movement', 'game_sense', 'analysis')
+ROTATING_CATEGORIES = ('movement', 'game_sense', 'analysis')
+
+MIN_LEVEL = 1
+MAX_LEVEL = 5
+
+# ── Per-category difficulty scales (level 1 → 5) ────────────────────────────
+# All calibrated for GOAT-style 15 min deathmatch matches (high kill volume).
+KILLS_BY_LEVEL               = {1: 40, 2: 70, 3: 110, 4: 160, 5: 220}
+WINS_BY_LEVEL                = {1: 1,  2: 2,  3: 3,   4: 4,   5: 5}
+POSITIVE_KD_MATCHES_BY_LEVEL = {1: 1,  2: 1,  3: 2,   4: 2,   5: 3}
+SINGLE_MATCH_KILLS_BY_LEVEL  = {1: 15, 2: 25, 3: 35,  4: 45,  5: 60}
+AIM_REPS_BY_LEVEL            = {1: 1,  2: 1,  3: 2,   4: 3,   5: 4}
+MOVEMENT_DUELS_BY_LEVEL      = {1: 2,  2: 3,  3: 5,   4: 7,   5: 10}
+MOVEMENT_PEEK_BY_LEVEL       = {1: 3,  2: 5,  3: 8,   4: 12,  5: 16}
+# Inverted scale: higher level = stricter (fewer deaths allowed).
+GAME_SENSE_MAX_DEATHS_BY_LEVEL = {1: 5, 2: 4, 3: 3, 4: 2, 5: 1}
+ANALYSIS_CLIPS_BY_LEVEL         = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3}
+
+EXPERIENCE_INITIAL_LEVEL = {
+    'iniciante':     1,
+    'intermediario': 2,
+    'avancado':      3,
 }
 
-DAILY_GOAL_COUNT  = 3
-WEEKLY_GOAL_COUNT = 3
+LEVEL_UP_NOTE   = 'Meta aumentou — você está evoluindo! 📈'
+LEVEL_DOWN_NOTE = 'Meta ajustada para retomar o ritmo'
 
-# ── Daily: exercise-based templates ─────────────────────────────────────────
-# {exercise} and {tool} are filled from the user's routine of the day.
-DAILY_EXERCISE_TEMPLATES = [
-    ('Complete {exercise} no {tool}',
-     'Um treino completo e sem pressa fixa a técnica.'),
-    ('Faça 2 rodadas de {exercise} no {tool}',
-     'Repetição é o que transforma consciência em reflexo.'),
-    ('Bata seu recorde pessoal em {exercise}',
-     'Compare com sua última sessão e busque um pouco mais.'),
-    ('Treine {exercise} por 10 minutos sem pausas',
-     'Constância vence intensidade isolada.'),
-    ('Aqueça com {exercise} antes da sessão principal',
-     'Um bom aquecimento evita erros bobos no início.'),
-    ('Finalize {exercise} com o máximo de precisão possível',
-     'Precisão primeiro, velocidade depois.'),
-    ('Repita {exercise} até sentir o movimento natural',
+# ── Aim: tied to the day's main exercise ────────────────────────────────────
+AIM_TEMPLATES = [
+    ('Complete {exercise} com foco total, sem distrações',
+     'Presença total no exercício fixa a técnica mais rápido.'),
+    ('Faça {reps} rodada(s) de {exercise} tentando superar sua última tentativa',
+     'Comparar com você mesmo é o único placar que importa.'),
+    ('Repita {exercise} até sentir o movimento natural, sem pressa',
      'Fluidez é o objetivo, não perfeição imediata.'),
-    ('Feche o dia revisando {exercise}',
-     'Revisar consolida o aprendizado do dia.'),
 ]
 
-# ── Daily: deathmatch templates, calibrated by experience level ────────────
-DAILY_DEATHMATCH_TEMPLATES = [
-    ('Jogue {n} partidas de mata-mata',
-     'Aplique o que treinou hoje em combate real.',
-     {'beginner': 2, 'intermediate': 3, 'advanced': 5}),
-    ('Vença {n} duelos em sequência',
-     'Consistência em duelos mostra evolução de mira.',
-     {'beginner': 2, 'intermediate': 3, 'advanced': 5}),
-    ('Treine drops por {n} minutos',
-     'Loot rápido tira vantagem de tempo do inimigo.',
-     {'beginner': 10, 'intermediate': 15, 'advanced': 20}),
-    ('Sobreviva {n} minutos seguidos sem morrer',
-     'Posicionamento importa tanto quanto mira.',
-     {'beginner': 5, 'intermediate': 8, 'advanced': 12}),
-    ('Finalize {n} inimigos no mata-mata',
-     'Cada eliminação é uma repetição a mais de mira sob pressão.',
-     {'beginner': 5, 'intermediate': 10, 'advanced': 15}),
-    ('Jogue mata-mata focando só em headshots por {n} partida(s)',
-     'Isolar a mecânica acelera o aprendizado.',
-     {'beginner': 1, 'intermediate': 2, 'advanced': 3}),
-    ('Pratique posicionamento em {n} partidas de mata-mata',
-     'Bom posicionamento evita duelos desnecessários.',
-     {'beginner': 2, 'intermediate': 3, 'advanced': 4}),
-    ('Encerre o dia com {n} partida(s) no seu servidor',
-     'Aplique o treino direto onde você joga de verdade.',
-     {'beginner': 1, 'intermediate': 2, 'advanced': 3}),
+AIM_FALLBACK_TEMPLATE = (
+    'Complete o treino principal do dia no {tool} com foco total, sem distrações',
+    'Mesmo curto, um treino focado já fixa técnica.',
+)
+
+# ── Action (mata-mata): always present, numeric target scaled by level ─────
+# kind marks which scale + whether the target is capped by the day's match
+# count (routine never suggests more matches than this asks for).
+ACTION_TEMPLATES = [
+    ('kills_total', 'Faça {n} kills no mata-mata hoje',
+     'Acumule eliminações ao longo das suas partidas do dia.'),
+    ('wins', 'Vença {n} partida(s) hoje',
+     'Cada vitória é prova de que o treino virou resultado.'),
+    ('positive_kd_matches', 'Termine {n} partida(s) com K/D positivo',
+     'Mais eliminações do que mortes — meça sua consistência.'),
+    ('kills_single_match', 'Faça {n} kills em uma única partida',
+     'Um pico de desempenho mostra o teto do seu nível atual.'),
 ]
 
-# Fallback exercise-goal templates used when the routine has no main
+# ── Rotating third slot ──────────────────────────────────────────────────────
+MOVEMENT_TEMPLATES = [
+    ('Vença {n} duelo(s) usando strafe',
+     'Movimento lateral consciente confunde a mira do inimigo.', MOVEMENT_DUELS_BY_LEVEL),
+    ('Pratique peek esquerdo/direito em {n} duelo(s)',
+     'Alternar o lado do peek quebra o padrão que o inimigo espera.', MOVEMENT_PEEK_BY_LEVEL),
+]
+
+GAME_SENSE_TEMPLATES = [
+    ('Morra no máximo {n} vez(es) por erro de posicionamento em uma partida',
+     'No pós-partida, identifique se a morte foi por mira ou por posição.', GAME_SENSE_MAX_DEATHS_BY_LEVEL),
+    ('Identifique 1 erro seu e anote',
+     'Um erro nomeado é um erro que para de se repetir.', None),
+]
+
+ANALYSIS_TEMPLATES = [
+    ('Salve {n} clipe(s) de erro ou acerto seu para rever',
+     'Rever a própria gameplay acelera o que o treino sozinho não mostra.', ANALYSIS_CLIPS_BY_LEVEL),
+]
+
+ROTATING_TEMPLATE_POOL = {
+    'movement':   MOVEMENT_TEMPLATES,
+    'game_sense': GAME_SENSE_TEMPLATES,
+    'analysis':   ANALYSIS_TEMPLATES,
+}
+
+# Fallback exercise-goal template used when the routine has no main
 # exercises to reference (e.g. a very short daily_time budget).
-DAILY_EXERCISE_FALLBACK_TEMPLATES = [
-    ('Complete o treino principal do dia no {tool}',
-     'Mesmo curto, um treino focado já fixa técnica.'),
-    ('Faça um aquecimento completo no {tool}',
-     'Aquecer bem prepara mira e reflexo para o resto do dia.'),
-]
-
-# ── Weekly templates, calibrated by experience level ────────────────────────
-# category is 'exercise' or 'deathmatch' — matches the DB CHECK constraint.
-WEEKLY_TEMPLATES = [
-    ('exercise', 'Complete a rotina diária em {n} dos 7 dias',
-     'Frequência é o que constrói o hábito.',
-     {'beginner': 3, 'intermediate': 4, 'advanced': 5}),
-    ('exercise', 'Treine pelo menos {n} dias esta semana',
-     'Mais dias, menos cada sessão precisa ser perfeita.',
-     {'beginner': 3, 'intermediate': 4, 'advanced': 6}),
-    ('exercise', 'Complete os exercícios principais em {n} sessões',
-     'Foque no treino principal, não só no aquecimento.',
-     {'beginner': 3, 'intermediate': 4, 'advanced': 5}),
-    ('exercise', 'Pratique por {n} minutos acumulados na semana',
-     'Tempo de treino consciente supera tempo aleatório.',
-     {'beginner': 60, 'intermediate': 100, 'advanced': 150}),
-    ('exercise', 'Melhore seu score em um exercício de tracking',
-     'Escolha um cenário e busque evolução mensurável.',
-     None),
-    ('exercise', 'Finalize a semana com pelo menos {n} metas diárias completas',
-     'As metas diárias, somadas, constroem a semana.',
-     {'beginner': 9, 'intermediate': 12, 'advanced': 15}),
-    ('deathmatch', 'Acumule {n} partidas de mata-mata na semana',
-     'Aplique o treino em jogo real, repetidamente.',
-     {'beginner': 5, 'intermediate': 10, 'advanced': 15}),
-    ('deathmatch', 'Vença {n} duelos em sequência ao menos uma vez',
-     'Uma boa sequência prova consistência sob pressão.',
-     {'beginner': 3, 'intermediate': 5, 'advanced': 8}),
-    ('deathmatch', 'Jogue mata-mata em pelo menos {n} dias diferentes',
-     'Repetir em dias diferentes fixa o aprendizado.',
-     {'beginner': 2, 'intermediate': 3, 'advanced': 4}),
-    ('deathmatch', 'Grave sua melhor sequência de eliminações sem morrer',
-     'Acompanhe sua evolução comparando com semanas anteriores.',
-     None),
-    ('deathmatch', 'Finalize {n} inimigos ao longo da semana no mata-mata',
-     'Some as eliminações de todas as suas partidas.',
-     {'beginner': 15, 'intermediate': 30, 'advanced': 50}),
-    ('deathmatch', 'Treine drops em pelo menos {n} partidas na semana',
-     'Loot eficiente economiza segundos valiosos em combate.',
-     {'beginner': 3, 'intermediate': 5, 'advanced': 8}),
-]
 
 
-def _level(profile: dict) -> str:
-    return LEVEL_MAP.get(profile.get('experience_level', ''), 'intermediate')
+def initial_level_for_experience(experience_level: str) -> int:
+    return EXPERIENCE_INITIAL_LEVEL.get(experience_level, 2)
 
 
-def _tool_label(profile_or_routine: dict) -> str:
-    tool = str(profile_or_routine.get('tool') or profile_or_routine.get('preferred_tool') or 'aimlab').lower()
-    return "KovaaK's" if tool == 'kovaak' else 'Aim Lab'
+def _clamp_level(level) -> int:
+    try:
+        level = int(level)
+    except (TypeError, ValueError):
+        return 2
+    return max(MIN_LEVEL, min(MAX_LEVEL, level))
+
+
+def adjust_level(current_level: int, recent_results: list):
+    """Adaptive difficulty rule, evaluated per category at daily-goal generation.
+
+    recent_results: booleans (completed?) for the last up to 2 prior days this
+    category had a goal generated, most-recent first. Days without a goal for
+    this category don't count (they're simply absent from the list) — a
+    natural fit for the rotating slot, which only shows up every ~3 days.
+
+    Returns (new_level, change) where change is None | 'up' | 'down'.
+    """
+    current_level = _clamp_level(current_level)
+    if len(recent_results) < 2:
+        return current_level, None
+
+    last_two = recent_results[:2]
+    if all(last_two):
+        if current_level >= MAX_LEVEL:
+            return current_level, None
+        return current_level + 1, 'up'
+    if not any(last_two):
+        if current_level <= MIN_LEVEL:
+            return current_level, None
+        return current_level - 1, 'down'
+    return current_level, None
+
+
+def level_note_for(change: str) -> str:
+    if change == 'up':
+        return LEVEL_UP_NOTE
+    if change == 'down':
+        return LEVEL_DOWN_NOTE
+    return ''
+
+
+def rotating_category_for(period_start_date: date) -> str:
+    idx = period_start_date.toordinal() % len(ROTATING_CATEGORIES)
+    return ROTATING_CATEGORIES[idx]
 
 
 def _seeded_rng(user_id: int, period: str, period_start: str) -> random.Random:
     return random.Random(f'{user_id}:{period}:{period_start}')
 
 
-def monday_of(d: date) -> date:
-    return d - timedelta(days=d.weekday())
-
-
 def today_period_start(today: date = None) -> str:
     return (today or date.today()).isoformat()
 
 
-def week_period_start(today: date = None) -> str:
-    return monday_of(today or date.today()).isoformat()
-
-
-def next_reset_date(today: date = None) -> str:
-    d      = today or date.today()
-    monday = monday_of(d)
-    return (monday + timedelta(days=7)).isoformat()
+def _tool_label(profile_or_routine: dict) -> str:
+    tool = str(profile_or_routine.get('tool') or profile_or_routine.get('preferred_tool') or 'aimlab').lower()
+    return "KovaaK's" if tool == 'kovaak' else 'Aim Lab'
 
 
 def _main_exercise_names(routine: dict) -> list:
@@ -149,71 +164,87 @@ def _main_exercise_names(routine: dict) -> list:
     return [e['name'] for e in (main.get('exercises') or []) if e.get('name')]
 
 
-def generate_daily_goals(user_id: int, profile: dict, routine: dict, period_start: str = None) -> list:
-    """Returns exactly DAILY_GOAL_COUNT goal dicts: 2 exercise + 1 deathmatch."""
+def _routine_match_count(routine: dict, profile: dict) -> int:
+    if routine:
+        count = sum(
+            1
+            for section in (routine.get('sections') or [])
+            for ex in (section.get('exercises') or [])
+            if ex.get('category') == 'in-game'
+        )
+        if count:
+            return count
+    return match_count_for_daily_time(int((profile or {}).get('daily_time', 30)))
+
+
+def _action_target(kind: str, level: int, match_count: int) -> int:
+    if kind == 'kills_total':
+        return KILLS_BY_LEVEL[level]
+    if kind == 'kills_single_match':
+        return SINGLE_MATCH_KILLS_BY_LEVEL[level]
+    if kind == 'wins':
+        return min(WINS_BY_LEVEL[level], match_count)
+    if kind == 'positive_kd_matches':
+        return min(POSITIVE_KD_MATCHES_BY_LEVEL[level], match_count)
+    raise ValueError(f'unknown action goal kind: {kind}')
+
+
+def _goal(category: str, title: str, description: str, period_start: str, level: int, level_note: str = '') -> dict:
+    return {
+        'period':       'daily',
+        'category':     category,
+        'title':        title,
+        'description':  description,
+        'period_start': period_start,
+        'level':        level,
+        'level_note':   level_note or '',
+    }
+
+
+def generate_daily_goals(user_id: int, profile: dict, routine: dict, period_start: str = None,
+                          levels: dict = None, level_notes: dict = None) -> list:
+    """Returns exactly DAILY_GOAL_COUNT goals: 🎯 aim, ⚔️ action (always), + 1 rotating category."""
     profile      = profile or {}
     period_start = period_start or today_period_start()
-    level        = _level(profile)
+    period_date  = date.fromisoformat(period_start)
     tool_label   = _tool_label(routine or profile)
     exercises    = _main_exercise_names(routine)
+    match_count  = _routine_match_count(routine, profile)
     rng          = _seeded_rng(user_id, 'daily', period_start)
 
+    default_level = initial_level_for_experience(profile.get('experience_level', ''))
+    levels        = levels or {}
+    level_notes   = level_notes or {}
+
+    def lvl(category):
+        return _clamp_level(levels.get(category, default_level))
+
     goals = []
 
-    # 2 exercise-based goals
-    ex_template_pool = list(DAILY_EXERCISE_TEMPLATES)
-    rng.shuffle(ex_template_pool)
+    # 1. Aim — tied to today's main exercise
+    aim_level = lvl('aim')
     if exercises:
-        names = list(exercises)
-        rng.shuffle(names)
-        # Prefer 2 distinct exercises; if only 1 is available, reuse it with
-        # 2 different templates so the goals still read differently.
-        picks = (names * 2)[:2]
-        for i in range(2):
-            title_tpl, desc = ex_template_pool[i % len(ex_template_pool)]
-            title = title_tpl.format(exercise=picks[i], tool=tool_label)
-            goals.append({
-                'period': 'daily', 'category': 'exercise',
-                'title': title, 'description': desc, 'period_start': period_start,
-            })
+        exercise = rng.choice(exercises)
+        title_tpl, desc = rng.choice(AIM_TEMPLATES)
+        title = title_tpl.format(exercise=exercise, reps=AIM_REPS_BY_LEVEL[aim_level])
     else:
-        fallback_pool = list(DAILY_EXERCISE_FALLBACK_TEMPLATES)
-        rng.shuffle(fallback_pool)
-        for i in range(2):
-            title_tpl, desc = fallback_pool[i % len(fallback_pool)]
-            title = title_tpl.format(tool=tool_label)
-            goals.append({
-                'period': 'daily', 'category': 'exercise',
-                'title': title, 'description': desc, 'period_start': period_start,
-            })
+        title_tpl, desc = AIM_FALLBACK_TEMPLATE
+        title = title_tpl.format(tool=tool_label)
+    goals.append(_goal('aim', title, desc, period_start, aim_level, level_notes.get('aim')))
 
-    # 1 deathmatch goal, calibrated by level
-    dm_template = rng.choice(DAILY_DEATHMATCH_TEMPLATES)
-    title_tpl, desc, n_by_level = dm_template
-    n     = n_by_level[level]
+    # 2. Action (mata-mata) — always present, capped by the day's match count
+    action_level = lvl('action')
+    kind, title_tpl, desc = rng.choice(ACTION_TEMPLATES)
+    n = _action_target(kind, action_level, match_count)
     title = title_tpl.format(n=n)
-    goals.append({
-        'period': 'daily', 'category': 'deathmatch',
-        'title': title, 'description': desc, 'period_start': period_start,
-    })
+    goals.append(_goal('action', title, desc, period_start, action_level, level_notes.get('action')))
 
-    return goals
+    # 3. Rotating: movement / game_sense / analysis
+    category = rotating_category_for(period_date)
+    cat_level = lvl(category)
+    title_tpl, desc, scale = rng.choice(ROTATING_TEMPLATE_POOL[category])
+    n = scale[cat_level] if scale else None
+    title = title_tpl.format(n=n) if n is not None else title_tpl
+    goals.append(_goal(category, title, desc, period_start, cat_level, level_notes.get(category)))
 
-
-def generate_weekly_goals(user_id: int, profile: dict, period_start: str = None) -> list:
-    """Returns exactly WEEKLY_GOAL_COUNT goal dicts sampled from the weekly pool."""
-    profile      = profile or {}
-    period_start = period_start or week_period_start()
-    level        = _level(profile)
-    rng          = _seeded_rng(user_id, 'weekly', period_start)
-
-    picks = rng.sample(WEEKLY_TEMPLATES, WEEKLY_GOAL_COUNT)
-    goals = []
-    for category, title_tpl, desc, n_by_level in picks:
-        n     = n_by_level[level] if n_by_level else None
-        title = title_tpl.format(n=n) if n is not None else title_tpl
-        goals.append({
-            'period': 'weekly', 'category': category,
-            'title': title, 'description': desc, 'period_start': period_start,
-        })
     return goals

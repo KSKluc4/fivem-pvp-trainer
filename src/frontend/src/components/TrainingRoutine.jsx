@@ -5,7 +5,7 @@ import {
 } from '@mantine/core'
 import {
   IconChartBar, IconDeviceGamepad2, IconSettings, IconFlame, IconBolt,
-  IconClipboardList, IconBrandDiscord, IconTrophy,
+  IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords,
 } from '@tabler/icons-react'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
@@ -19,7 +19,20 @@ const DIFFICULTY_LABELS = {
 
 const FOCUS_LABELS = { aim: 'Mira', reflex: 'Reflexo', movement: 'Movimento' }
 
-const SECTION_ICONS = { 'Aquecimento': IconFlame, 'Treino Principal': IconBolt, 'Revisão': IconClipboardList }
+const SECTION_ICONS = {
+  'Aquecimento':                     IconFlame,
+  'Treino Principal':                IconBolt,
+  'Aplicação em Jogo (Mata-mata)':   IconSwords,
+  // Legacy — routines saved before the mata-mata block replaced Revisão.
+  'Revisão':                         IconClipboardList,
+}
+
+// A section is checkable (its exercises can be ticked and count toward the
+// day's completion/streak/total time) when it carries checkable: true.
+// Routines persisted before this flag existed fall back to the old rule.
+function isCheckableSection(section) {
+  return section.checkable ?? (section.name === 'Treino Principal')
+}
 
 // ── Recommended playlists ─────────────────────────────────────────────────────
 const PLAYLISTS = {
@@ -88,7 +101,7 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
   const [saving, setSaving]           = useState(false)
   const [saved, setSaved]             = useState(false)
 
-  const mainExercises  = routine.sections[1]?.exercises || []
+  const checkableExercises = routine.sections.flatMap((s) => (isCheckableSection(s) ? s.exercises || [] : []))
   const completedCount = Object.values(completed).filter(Boolean).length
   const toolLabel      = routine.tool === 'kovaak' ? "KovaaK's" : 'Aim Lab'
   const toolColor      = routine.tool === 'kovaak' ? 'orange' : 'green'
@@ -182,9 +195,10 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
               {section.exercises.length > 0 ? (
                 <Stack gap="xs">
                   {section.exercises.map((ex, idx) => {
-                    const diff   = DIFFICULTY_LABELS[ex.difficulty] || { label: ex.difficulty, color: '#8892a4' }
-                    const isMain = section.name === 'Treino Principal'
-                    const isDone = !!completed[ex.name]
+                    const isInGame    = ex.category === 'in-game'
+                    const diff        = ex.difficulty ? (DIFFICULTY_LABELS[ex.difficulty] || { label: ex.difficulty, color: '#8892a4' }) : null
+                    const isCheckable = isCheckableSection(section)
+                    const isDone      = !!completed[ex.name]
 
                     return (
                       <Card
@@ -193,8 +207,8 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                         radius="md"
                         p="sm"
                         className={`exercise-card ${isDone ? 'done' : ''}`}
-                        onClick={isMain ? () => toggleExercise(ex.name) : undefined}
-                        style={{ cursor: isMain ? 'pointer' : 'default' }}
+                        onClick={isCheckable ? () => toggleExercise(ex.name) : undefined}
+                        style={{ cursor: isCheckable ? 'pointer' : 'default' }}
                       >
                         <Group wrap="nowrap" justify="space-between">
                           <Group wrap="nowrap" gap="sm">
@@ -205,16 +219,22 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                               </Text>
                               <Text size="xs" c="dimmed">{ex.description}</Text>
                               <Group gap={6} mt={4}>
-                                <Badge size="xs" variant="light" color={toolColor}>{toolLabel}</Badge>
-                                <Badge size="xs" variant="outline" style={{ color: diff.color, borderColor: diff.color }}>
-                                  {diff.label}
-                                </Badge>
+                                {isInGame ? (
+                                  <Badge size="xs" variant="light" color="indigo">In-game</Badge>
+                                ) : (
+                                  <Badge size="xs" variant="light" color={toolColor}>{toolLabel}</Badge>
+                                )}
+                                {diff && (
+                                  <Badge size="xs" variant="outline" style={{ color: diff.color, borderColor: diff.color }}>
+                                    {diff.label}
+                                  </Badge>
+                                )}
                               </Group>
                             </Box>
                           </Group>
                           <Group wrap="nowrap" gap="sm">
                             <Text size="xs" c="dimmed">{ex.duration} min</Text>
-                            {isMain && <Checkbox checked={isDone} readOnly tabIndex={-1} style={{ pointerEvents: 'none' }} />}
+                            {isCheckable && <Checkbox checked={isDone} readOnly tabIndex={-1} style={{ pointerEvents: 'none' }} />}
                           </Group>
                         </Group>
                       </Card>
@@ -235,8 +255,8 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
       <Card mb="lg">
         <Group justify="space-between" wrap="wrap" gap="md">
           <Box style={{ flex: 1, minWidth: 220 }}>
-            <Text size="sm" mb={6}>{completedCount}/{mainExercises.length} exercícios concluídos</Text>
-            <Progress value={mainExercises.length ? (completedCount / mainExercises.length) * 100 : 0} radius="xl" />
+            <Text size="sm" mb={6}>{completedCount}/{checkableExercises.length} exercícios concluídos</Text>
+            <Progress value={checkableExercises.length ? (completedCount / checkableExercises.length) * 100 : 0} radius="xl" />
           </Box>
           {!saved ? (
             <Button
