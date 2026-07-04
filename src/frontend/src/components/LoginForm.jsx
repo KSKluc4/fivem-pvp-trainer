@@ -15,7 +15,7 @@ function friendlyError(err) {
   return 'Ocorreu um erro. Tente novamente.'
 }
 
-export default function LoginForm({ onSuccess, onGoRegister }) {
+export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState(null)
@@ -54,7 +54,7 @@ export default function LoginForm({ onSuccess, onGoRegister }) {
           <Stack gap="md">
             <TextInput
               label="Username"
-              placeholder="seu_username"
+              placeholder="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
@@ -69,6 +69,10 @@ export default function LoginForm({ onSuccess, onGoRegister }) {
               autoComplete="current-password"
               required
             />
+
+            <Anchor component="button" type="button" size="sm" onClick={onForgotPassword} style={{ alignSelf: 'flex-start' }}>
+              Esqueceu a senha?
+            </Anchor>
 
             {error && (
               <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />}>

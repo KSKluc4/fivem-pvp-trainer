@@ -13,6 +13,7 @@ from routes.admin         import admin_bp
 from routes.goals         import goals_bp
 
 _STATIC = os.path.join(os.path.dirname(__file__), 'static')
+_PAGES  = os.path.join(os.path.dirname(__file__), 'pages')
 
 app = Flask(__name__)
 CORS(app, resources={r'/api/*': {'origins': '*'}})
@@ -44,6 +45,12 @@ def health():
 @app.route('/api')
 def api_root():
     return jsonify({'status': 'ok'})
+
+
+# Standalone page (not part of the React SPA) — reached from the reset-password email link
+@app.route('/reset-password')
+def reset_password_page():
+    return send_from_directory(_PAGES, 'reset_password.html')
 
 
 # Serve React SPA — all non-API routes return index.html

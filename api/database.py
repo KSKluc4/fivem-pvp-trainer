@@ -19,20 +19,47 @@ def get_supabase() -> Client:
 
 def get_user_by_username(username: str):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,password_hash,created_at,is_admin').eq('username', username).limit(1).execute()
+    res = sb.table('users').select('id,name,username,email,password_hash,created_at,is_admin').eq('username', username).limit(1).execute()
     return res.data[0] if res.data else None
 
 
 def get_user_by_id(user_id: int):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,created_at,is_admin').eq('id', user_id).limit(1).execute()
+    res = sb.table('users').select('id,name,username,email,created_at,is_admin').eq('id', user_id).limit(1).execute()
     return res.data[0] if res.data else None
 
 
-def create_user(name: str, username: str, password_hash: str) -> int:
+def get_user_by_email(email: str):
     sb = get_supabase()
-    res = sb.table('users').insert({'name': name, 'username': username, 'password_hash': password_hash}).execute()
+    res = sb.table('users').select('id,name,username,email,created_at,is_admin').eq('email', email).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def create_user(name: str, username: str, password_hash: str, email: str = None) -> int:
+    from datetime import datetime, timezone
+    sb      = get_supabase()
+    payload = {'name': name, 'username': username, 'password_hash': password_hash}
+    if email:
+        payload['email']          = email
+        payload['email_added_at'] = datetime.now(timezone.utc).isoformat()
+    res = sb.table('users').insert(payload).execute()
     return res.data[0]['id']
+
+
+def email_taken_by_other(email: str, user_id: int) -> bool:
+    sb = get_supabase()
+    res = sb.table('users').select('id').eq('email', email).neq('id', user_id).limit(1).execute()
+    return bool(res.data)
+
+
+def set_user_email(user_id: int, email: str):
+    from datetime import datetime, timezone
+    sb  = get_supabase()
+    res = (sb.table('users')
+             .update({'email': email, 'email_added_at': datetime.now(timezone.utc).isoformat()})
+             .eq('id', user_id)
+             .execute())
+    return res.data[0] if res.data else None
 
 
 def update_user(user_id: int, name: str, username: str):
@@ -391,6 +418,43 @@ def get_admin_users() -> list:
         }
         for u in users
     ]
+
+
+# ── Password reset tokens ─────────────────────────────────────────────────────
+
+def count_recent_password_reset_requests(user_id: int, since_iso: str) -> int:
+    sb  = get_supabase()
+    res = (sb.table('password_reset_tokens')
+             .select('id')
+             .eq('user_id', user_id)
+             .gte('created_at', since_iso)
+             .execute())
+    return len(res.data or [])
+
+
+def create_password_reset_token(user_id: int, token_hash: str, expires_at: str):
+    sb = get_supabase()
+    sb.table('password_reset_tokens').insert({
+        'user_id':    user_id,
+        'token_hash': token_hash,
+        'expires_at': expires_at,
+    }).execute()
+
+
+def get_valid_reset_token(token_hash: str):
+    sb  = get_supabase()
+    res = (sb.table('password_reset_tokens')
+             .select('id,user_id,expires_at,used')
+             .eq('token_hash', token_hash)
+             .eq('used', False)
+             .limit(1)
+             .execute())
+    return res.data[0] if res.data else None
+
+
+def invalidate_user_reset_tokens(user_id: int):
+    sb = get_supabase()
+    sb.table('password_reset_tokens').update({'used': True}).eq('user_id', user_id).eq('used', False).execute()
 
 
 # ── Stats (for /auth/me) ──────────────────────────────────────────────────────

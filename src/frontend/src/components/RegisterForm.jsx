@@ -4,6 +4,8 @@ import { IconAlertCircle } from '@tabler/icons-react'
 import { register } from '../services/api'
 import BrandLogo from './BrandLogo'
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
 function friendlyError(err) {
   if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
   const msg = err.response?.data?.error || ''
@@ -16,7 +18,7 @@ function friendlyError(err) {
 }
 
 export default function RegisterForm({ onSuccess, onGoLogin }) {
-  const [form,    setForm]    = useState({ name: '', username: '', password: '' })
+  const [form,    setForm]    = useState({ name: '', username: '', email: '', password: '' })
   const [error,   setError]   = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -25,6 +27,12 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
+
+    if (!EMAIL_RE.test(form.email)) {
+      setError('Email inválido.')
+      return
+    }
+
     setLoading(true)
     const MAX = 5
     for (let attempt = 0; attempt < MAX; attempt++) {
@@ -72,6 +80,15 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               minLength={3}
               required
             />
+            <TextInput
+              label="Email"
+              type="email"
+              placeholder="voce@exemplo.com"
+              value={form.email}
+              onChange={set('email')}
+              autoComplete="email"
+              required
+            />
             <PasswordInput
               label="Senha"
               description="Mínimo 6 caracteres"
@@ -94,7 +111,7 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               size="md"
               fullWidth
               loading={loading}
-              disabled={!form.name || !form.username || !form.password}
+              disabled={!form.name || !form.username || !form.email || !form.password}
             >
               Criar conta →
             </Button>

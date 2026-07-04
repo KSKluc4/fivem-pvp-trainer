@@ -1,4 +1,6 @@
 import os
+import re
+import hashlib
 import secrets as _secrets
 from functools import wraps
 from datetime import datetime, timedelta, timezone
@@ -9,6 +11,7 @@ import bcrypt
 _JWT_ALGORITHM = 'HS256'
 _ACCESS_TTL    = timedelta(hours=24)
 _REFRESH_TTL   = timedelta(days=30)
+_EMAIL_RE      = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 
 def _secret() -> str:
@@ -29,6 +32,31 @@ def verify_password(password: str, stored: str) -> bool:
         from werkzeug.security import check_password_hash
         return check_password_hash(stored, password)
     return bcrypt.checkpw(password.encode(), stored.encode())
+
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+
+def is_valid_email(email: str) -> bool:
+    return bool(email) and len(email) <= 254 and bool(_EMAIL_RE.match(email))
+
+
+# ── Password reset tokens ─────────────────────────────────────────────────────
+# The raw token is only ever emailed to the user — the DB stores just the
+# SHA-256 hash, so a leaked database dump can't be used to reset passwords.
+
+def generate_reset_token() -> str:
+    return _secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def is_token_expired(expires_at) -> bool:
+    exp = datetime.fromisoformat(str(expires_at))
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) > exp
 
 
 # ── JWT access tokens ─────────────────────────────────────────────────────────

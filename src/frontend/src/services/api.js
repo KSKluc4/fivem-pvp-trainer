@@ -84,6 +84,8 @@ export const refreshTokenApi = (refreshToken) => axios.post('/api/auth/refresh',
 export const getMe           = ()             => api.get('/auth/me')
 export const updateProfile   = (data)         => api.put('/auth/profile', data)
 export const logoutApi       = (refreshToken) => api.post('/auth/logout', { refresh_token: refreshToken })
+export const addEmailApi     = (email)        => api.post('/auth/email', { email })
+export const forgotPassword  = (email)        => axios.post('/api/auth/forgot-password', { email })
 
 // ── Training ──────────────────────────────────────────────────────────────────
 export const submitQuestionnaire = (data)   => api.post('/questionnaire', data)

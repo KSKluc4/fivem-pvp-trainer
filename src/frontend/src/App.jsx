@@ -6,6 +6,8 @@ import { secureStorage } from './services/storage'
 import TitleBar         from './components/TitleBar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
+import ForgotPasswordForm from './components/ForgotPasswordForm'
+import EmailPromptModal from './components/EmailPromptModal'
 import Questionnaire    from './components/Questionnaire'
 import TrainingRoutine  from './components/TrainingRoutine'
 import Progress         from './components/Progress'
@@ -30,6 +32,7 @@ export default function App() {
   const [view,      setView]      = useState('loading')
   const [sessionId, setSessionId] = useState(null)
   const [routine,   setRoutine]   = useState(null)
+  const [emailPromptOpen, setEmailPromptOpen] = useState(false)
 
   // Check existing training profile; route accordingly
   async function loadTraining(u) {
@@ -56,6 +59,7 @@ export default function App() {
         setAccessToken(access_token)
         await secureStorage.set('refresh_token', newRefresh)
         setUser(u)
+        setEmailPromptOpen(!u.has_email)
         setAuthState('app')
         await loadTraining(u)
       } catch {
@@ -79,6 +83,7 @@ export default function App() {
     setAccessToken(access_token)
     await secureStorage.set('refresh_token', refresh_token)
     setUser(u)
+    setEmailPromptOpen(!u.has_email)
     setView('loading')
     setAuthState('app')
     await loadTraining(u)
@@ -132,7 +137,11 @@ export default function App() {
     return (
       <>
         <TitleBar />
-        <LoginForm onSuccess={handleAuthSuccess} onGoRegister={() => setAuthState('register')} />
+        <LoginForm
+          onSuccess={handleAuthSuccess}
+          onGoRegister={() => setAuthState('register')}
+          onForgotPassword={() => setAuthState('forgot-password')}
+        />
       </>
     )
   }
@@ -142,6 +151,15 @@ export default function App() {
       <>
         <TitleBar />
         <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
+      </>
+    )
+  }
+
+  if (authState === 'forgot-password') {
+    return (
+      <>
+        <TitleBar />
+        <ForgotPasswordForm onGoLogin={() => setAuthState('login')} />
       </>
     )
   }
@@ -217,6 +235,15 @@ export default function App() {
           />
         )}
       </AppShell.Main>
+
+      <EmailPromptModal
+        opened={emailPromptOpen}
+        onClose={() => setEmailPromptOpen(false)}
+        onLinked={() => {
+          setUser((u) => ({ ...u, has_email: true }))
+          setEmailPromptOpen(false)
+        }}
+      />
     </AppShell>
   )
 }
