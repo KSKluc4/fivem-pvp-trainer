@@ -197,6 +197,7 @@
     "alterar_perfil": "Alterar perfil",
     "alterar_perfil_tooltip": "Refazer questionário de perfil",
     "treinar_no_app": "Treinar no app",
+    "recomendado": "Recomendado: {{difficulty}}",
     "nivel": "Nível {{level}}",
     "reflexao_placeholder": "📝 Sessão de reflexão — anote suas observações e identifique o que melhorou hoje.",
     "exercicios_concluidos": "{{completed}}/{{total}} exercícios concluídos",
@@ -328,7 +329,7 @@
   },
   "trainer": {
     "titulo": "Treinar agora",
-    "subtitulo": "Tracking Suave",
+    "selecionar_subtitulo": "Escolha um exercício",
     "voltar": "Voltar",
     "dificuldade": "Dificuldade",
     "estilo_mira": "Estilo de mira",
@@ -338,6 +339,7 @@
     "pausado": "Pausado",
     "clique_continuar": "Clique para continuar",
     "na_mira": "na mira",
+    "precisao": "precisão",
     "dificuldades": {
       "facil": "Fácil",
       "medio": "Médio",
@@ -348,13 +350,46 @@
       "dot": "Ponto",
       "cross-dot": "Cruz + Ponto"
     },
+    "exercicios": {
+      "tracking_suave": {
+        "nome": "Tracking Suave",
+        "descricao": "Mantenha a mira em um alvo que se move de forma fluida e imprevisível"
+      },
+      "shot_grid": {
+        "nome": "Grade de Tiro",
+        "descricao": "Acerte alvos estáticos que nascem um por vez em posições aleatórias"
+      },
+      "quick_flick": {
+        "nome": "Flick Rápido",
+        "descricao": "Flicka rápido para alvos a distâncias variadas antes do tempo acabar"
+      },
+      "micro_adjust": {
+        "nome": "Micro Ajuste",
+        "descricao": "Pequenas correções em alvos próximos à mira, janela curta"
+      }
+    },
+    "nivel_aim": {
+      "titulo": "Nível de Aim Geral",
+      "sem_dados": "Treine cada exercício pelo menos 5 vezes para calcular seu nível de aim",
+      "nivel": "Nível {{level}}",
+      "proximo": "rumo ao nível {{level}}",
+      "nivel_maximo": "Nível máximo!"
+    },
+    "card": {
+      "recorde": "Recorde: {{score}}",
+      "sem_tentativas": "Ainda não treinado"
+    },
     "resultado": {
-      "titulo": "Resultado — Tracking Suave",
+      "titulo": "Resultado — {{exercise}}",
       "score": "Score",
       "tracking": "Tracking",
       "tempo_na_mira": "tempo na mira",
       "melhor_sequencia": "Melhor sequência",
       "continua_na_mira": "contínua na mira",
+      "precisao": "Precisão",
+      "taxa_acerto": "taxa de acerto",
+      "tempo_medio": "Tempo médio",
+      "reacao_media": "reação média",
       "recorde_pessoal": "Recorde pessoal ({{difficulty}})",
       "novo_recorde": "🏆 Novo recorde!",
       "primeira_tentativa": "Primeira tentativa",
@@ -396,6 +431,18 @@
       "titulo": "Evolução Semanal",
       "serie_geradas": "Sessões geradas",
       "serie_completas": "Sessões completas"
+    },
+    "aim_progress": {
+      "titulo": "Evolução de Aim",
+      "vazio": "🎯 Nenhum treino de aim registrado ainda. Vá até o Treinador e complete sua primeira sessão!",
+      "nivel_geral": "Nível geral",
+      "mais_forte": "Ponto forte",
+      "mais_fraco": "Ponto fraco",
+      "sugestao": "Sugestão: foque em {{exercise}} esta semana",
+      "exercicio_vazio": "Nenhuma sessão registrada para este exercício ainda.",
+      "recorde": "Recorde",
+      "media_7d": "Média (7 dias)",
+      "serie_score": "Score"
     },
     "taxa_conclusao": {
       "titulo": "Taxa de Conclusão",

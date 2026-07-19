@@ -218,9 +218,12 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                     <Button
                       size="xs" variant="light" color="brandCyan"
                       leftSection={<IconTargetArrow size={14} />}
-                      onClick={onTrainer}
+                      onClick={() => onTrainer(routine.recommended_trainer)}
                     >
                       {t('rotina.treinar_no_app')}
+                      {routine.recommended_trainer && (
+                        <> · {t('rotina.recomendado', { difficulty: t(`trainer.dificuldades.${routine.recommended_trainer.difficulty}`) })}</>
+                      )}
                     </Button>
                   )}
                   <Badge variant="default">{section.duration} min</Badge>

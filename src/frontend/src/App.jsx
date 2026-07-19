@@ -35,6 +35,7 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null)
   const [routine,   setRoutine]   = useState(null)
   const [emailPromptOpen, setEmailPromptOpen] = useState(false)
+  const [trainerHint, setTrainerHint] = useState(null)
 
   // Check existing training profile; route accordingly
   async function loadTraining(u) {
@@ -177,7 +178,7 @@ export default function App() {
               onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
               onChangeProfile={handleChangeProfile}
               onConverter={() => setView('converter')}
-              onTrainer={() => setView('trainer')}
+              onTrainer={() => { setTrainerHint(null); setView('trainer') }}
               onAdmin={() => setView('admin')}
             />
           )}
@@ -205,13 +206,14 @@ export default function App() {
             onViewProgress={() => setView('progress')}
             onChangeProfile={handleChangeProfile}
             onConverter={() => setView('converter')}
-            onTrainer={() => setView('trainer')}
+            onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
           />
         )}
 
         {view === 'trainer' && (
           <TrainerView
             key="trainer"
+            initialHint={trainerHint}
             onBack={() => setView('routine')}
           />
         )}

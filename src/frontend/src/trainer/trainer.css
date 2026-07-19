@@ -41,3 +41,6 @@
   color: var(--mantine-color-brandCyan-5);
   text-shadow: 0 4px 24px rgba(0, 212, 255, 0.4);
 }
+
+.trainer-select-card { transition: border-color 0.15s, transform 0.15s; }
+.trainer-select-card:hover { border-color: var(--mantine-color-brandCyan-5); transform: translateY(-2px); }

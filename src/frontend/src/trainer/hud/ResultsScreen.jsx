@@ -15,16 +15,20 @@ function DeltaBadge({ current, compare }) {
   )
 }
 
-export default function ResultsScreen({ result, lastAttempt, personalBest, savedRemotely, onRetry, onBack }) {
+export default function ResultsScreen({ result, exerciseName, lastAttempt, personalBest, savedRemotely, onRetry, onBack }) {
   const { t } = useTranslation()
   const isNewRecord = personalBest == null || result.score > personalBest.score
   const difficultyLabel = t(`trainer.dificuldades.${result.difficulty}`, result.difficulty)
+  // Tracking Suave scores continuous time-on-target (unchanged from Phase 1);
+  // the click-based drills (Shot Grid / Quick Flick / Micro Adjust) score
+  // hit accuracy + average reaction time instead of a streak.
+  const isTimeBased = result.mode === 'continuous'
 
   return (
     <Box className="trainer-results" p="xl" style={{ maxWidth: 640, margin: '0 auto' }}>
       <Group gap={6} mb="lg">
         <IconTrophy size={22} color="var(--mantine-color-yellow-5)" />
-        <Title order={2} size="h3">{t('trainer.resultado.titulo')}</Title>
+        <Title order={2} size="h3">{t('trainer.resultado.titulo', { exercise: exerciseName })}</Title>
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="lg">
@@ -34,14 +38,16 @@ export default function ResultsScreen({ result, lastAttempt, personalBest, saved
           <DeltaBadge current={result.score} compare={lastAttempt?.score} />
         </Card>
         <Card ta="center">
-          <Text size="xs" c="dimmed" mb={4}>{t('trainer.resultado.tracking')}</Text>
+          <Text size="xs" c="dimmed" mb={4}>{t(isTimeBased ? 'trainer.resultado.tracking' : 'trainer.resultado.precisao')}</Text>
           <Text fw={900} size="1.8rem">{result.accuracyPct.toFixed(1)}%</Text>
-          <Text size="xs" c="dimmed">{t('trainer.resultado.tempo_na_mira')}</Text>
+          <Text size="xs" c="dimmed">{t(isTimeBased ? 'trainer.resultado.tempo_na_mira' : 'trainer.resultado.taxa_acerto')}</Text>
         </Card>
         <Card ta="center">
-          <Text size="xs" c="dimmed" mb={4}>{t('trainer.resultado.melhor_sequencia')}</Text>
-          <Text fw={900} size="1.8rem">{(result.bestStreakMs / 1000).toFixed(1)}s</Text>
-          <Text size="xs" c="dimmed">{t('trainer.resultado.continua_na_mira')}</Text>
+          <Text size="xs" c="dimmed" mb={4}>{t(isTimeBased ? 'trainer.resultado.melhor_sequencia' : 'trainer.resultado.tempo_medio')}</Text>
+          <Text fw={900} size="1.8rem">
+            {isTimeBased ? `${(result.bestStreakMs / 1000).toFixed(1)}s` : `${Math.round(result.avgReactionMs)}ms`}
+          </Text>
+          <Text size="xs" c="dimmed">{t(isTimeBased ? 'trainer.resultado.continua_na_mira' : 'trainer.resultado.reacao_media')}</Text>
         </Card>
       </SimpleGrid>
 

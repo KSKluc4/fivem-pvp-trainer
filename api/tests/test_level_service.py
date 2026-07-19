@@ -35,6 +35,32 @@ def test_kill_quota_clamps_out_of_range_levels():
     assert kill_quota_for_level(9) == KILLS_PER_MATCH_BY_LEVEL[5]
 
 
+# ── Aim accelerator: half-step quota bump, never a substitute for adjust_level ──
+
+def test_accelerated_quota_is_unchanged_by_default():
+    for level in range(1, 6):
+        assert kill_quota_for_level(level, accelerated=False) == kill_quota_for_level(level)
+
+
+def test_accelerated_quota_is_halfway_to_next_level():
+    # level 2 = 60, level 3 = 80 -> accelerated level 2 = 70 (halfway)
+    assert kill_quota_for_level(2, accelerated=True) == 70
+    # level 3 = 80, level 4 = 100 -> accelerated level 3 = 90
+    assert kill_quota_for_level(3, accelerated=True) == 90
+
+
+def test_accelerated_quota_at_max_level_has_no_next_step():
+    assert kill_quota_for_level(MAX_LEVEL, accelerated=True) == KILLS_PER_MATCH_BY_LEVEL[MAX_LEVEL]
+
+
+def test_accelerated_quota_always_strictly_between_level_and_next():
+    for level in range(1, MAX_LEVEL):
+        base = KILLS_PER_MATCH_BY_LEVEL[level]
+        nxt  = KILLS_PER_MATCH_BY_LEVEL[level + 1]
+        accelerated = kill_quota_for_level(level, accelerated=True)
+        assert base < accelerated < nxt
+
+
 # ── Adaptive difficulty rule (sobe/desce/mantém), now evaluated on matches ───
 
 def test_adjust_level_up_after_two_completed_days():

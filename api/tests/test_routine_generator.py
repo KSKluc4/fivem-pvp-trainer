@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from services.routine_generator import (
     generate_routine, match_count_for_daily_time, MATCH_DURATION, FOCUS_OPTIONS,
+    EXTERNAL_TO_INTERNAL_EXERCISE,
 )
 from services.level_service import KILLS_PER_MATCH_BY_LEVEL
 
@@ -160,3 +161,42 @@ def test_legacy_server_type_field_ignored_without_error():
     profile = dict(PROFILE, server_type='goat')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     assert routine['sections'][-1]['exercises']
+
+
+# ── Aim accelerator: half-step quota bump on top of the completion rule ──────
+
+def test_aim_accelerated_bumps_quota_halfway_to_next_level():
+    normal      = generate_routine(PROFILE, today=date(2026, 7, 6), action_level=2)
+    accelerated = generate_routine(PROFILE, today=date(2026, 7, 6), action_level=2, aim_accelerated=True)
+    normal_quota      = normal['sections'][-1]['exercises'][0]['kill_quota']
+    accelerated_quota = accelerated['sections'][-1]['exercises'][0]['kill_quota']
+    assert normal_quota == KILLS_PER_MATCH_BY_LEVEL[2]
+    assert accelerated_quota == round(KILLS_PER_MATCH_BY_LEVEL[2] + (KILLS_PER_MATCH_BY_LEVEL[3] - KILLS_PER_MATCH_BY_LEVEL[2]) / 2)
+    assert accelerated_quota > normal_quota
+
+
+def test_aim_accelerated_defaults_to_off():
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), action_level=2)
+    assert routine['sections'][-1]['exercises'][0]['kill_quota'] == KILLS_PER_MATCH_BY_LEVEL[2]
+
+
+# ── Trainer recommendation on the daily "Train in-app" card ──────────────────
+
+def test_recommended_trainer_present_for_aim_focus_with_known_tool_exercise():
+    # aimlab + aim focus's first candidate is gridshot_ultimate -> shot_grid.
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'shot_grid': 4})
+    assert routine['recommended_trainer'] == {'exercise': 'shot_grid', 'difficulty': 'dificil'}
+
+
+def test_recommended_trainer_defaults_difficulty_without_aim_data():
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels=None)
+    assert routine['recommended_trainer']['exercise'] == 'shot_grid'
+    assert routine['recommended_trainer']['difficulty'] == 'medio'
+
+
+def test_recommended_trainer_none_when_no_exercise_maps_to_an_internal_one():
+    profile = dict(PROFILE, focus_area='movement')
+    routine = generate_routine(profile, today=date(2026, 7, 6))
+    for ex in routine['sections'][1]['exercises']:
+        assert ex['key'] not in EXTERNAL_TO_INTERNAL_EXERCISE
+    assert routine['recommended_trainer'] is None

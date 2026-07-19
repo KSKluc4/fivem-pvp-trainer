@@ -197,6 +197,7 @@
     "alterar_perfil": "Change profile",
     "alterar_perfil_tooltip": "Retake the profile questionnaire",
     "treinar_no_app": "Train in-app",
+    "recomendado": "Recommended: {{difficulty}}",
     "nivel": "Level {{level}}",
     "reflexao_placeholder": "📝 Reflection session — jot down what you noticed and what improved today.",
     "exercicios_concluidos": "{{completed}}/{{total}} drills completed",
@@ -328,7 +329,7 @@
   },
   "trainer": {
     "titulo": "Train Now",
-    "subtitulo": "Smooth Tracking",
+    "selecionar_subtitulo": "Choose a drill",
     "voltar": "Back",
     "dificuldade": "Difficulty",
     "estilo_mira": "Crosshair style",
@@ -338,6 +339,7 @@
     "pausado": "Paused",
     "clique_continuar": "Click to continue",
     "na_mira": "on target",
+    "precisao": "accuracy",
     "dificuldades": {
       "facil": "Easy",
       "medio": "Medium",
@@ -348,13 +350,46 @@
       "dot": "Dot",
       "cross-dot": "Cross + Dot"
     },
+    "exercicios": {
+      "tracking_suave": {
+        "nome": "Smooth Tracking",
+        "descricao": "Keep your crosshair on a target drifting in fluid, unpredictable directions"
+      },
+      "shot_grid": {
+        "nome": "Shot Grid",
+        "descricao": "Hit static targets that spawn one at a time at random positions"
+      },
+      "quick_flick": {
+        "nome": "Quick Flick",
+        "descricao": "Flick fast onto targets at varying distances before time runs out"
+      },
+      "micro_adjust": {
+        "nome": "Micro Adjust",
+        "descricao": "Small corrections on targets near your crosshair, short window"
+      }
+    },
+    "nivel_aim": {
+      "titulo": "Overall Aim Level",
+      "sem_dados": "Play each drill at least 5 times to calculate your aim level",
+      "nivel": "Level {{level}}",
+      "proximo": "toward level {{level}}",
+      "nivel_maximo": "Max level!"
+    },
+    "card": {
+      "recorde": "Best: {{score}}",
+      "sem_tentativas": "Not trained yet"
+    },
     "resultado": {
-      "titulo": "Results — Smooth Tracking",
+      "titulo": "Results — {{exercise}}",
       "score": "Score",
       "tracking": "Tracking",
       "tempo_na_mira": "time on target",
       "melhor_sequencia": "Best streak",
       "continua_na_mira": "continuous on target",
+      "precisao": "Accuracy",
+      "taxa_acerto": "hit rate",
+      "tempo_medio": "Avg. time",
+      "reacao_media": "avg. reaction",
       "recorde_pessoal": "Personal best ({{difficulty}})",
       "novo_recorde": "🏆 New record!",
       "primeira_tentativa": "First attempt",
@@ -396,6 +431,18 @@
       "titulo": "Weekly Progress",
       "serie_geradas": "Sessions generated",
       "serie_completas": "Sessions completed"
+    },
+    "aim_progress": {
+      "titulo": "Aim Progress",
+      "vazio": "🎯 No aim training logged yet. Head to the Trainer and complete your first session!",
+      "nivel_geral": "Overall level",
+      "mais_forte": "Strongest",
+      "mais_fraco": "Weakest",
+      "sugestao": "Suggestion: focus on {{exercise}} this week",
+      "exercicio_vazio": "No sessions logged for this drill yet.",
+      "recorde": "Best",
+      "media_7d": "Avg (7 days)",
+      "serie_score": "Score"
     },
     "taxa_conclusao": {
       "titulo": "Completion Rate",

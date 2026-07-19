@@ -2,6 +2,7 @@ import random
 from datetime import date
 
 from services.level_service import initial_level_for_experience, kill_quota_for_level
+from services.aim_level import recommended_difficulty
 
 # Exercise catalog. `name` is the scenario's real, third-party name in
 # KovaaK's/Aim Lab (never translated). `key` is a stable slug the frontend
@@ -69,6 +70,41 @@ DIFFICULTY_MAP = {
     'avancado':      ['beginner', 'intermediate', 'advanced'],
 }
 
+# Maps a catalog exercise (its stable `key`) to the in-app trainer exercise
+# it's conceptually equivalent to, if any — used to recommend a difficulty
+# for the "Train in-app" button (see _recommended_trainer_exercise). Exercises
+# with no clear equivalent (movement-focused drills, mostly) are simply
+# absent and get no recommendation.
+EXTERNAL_TO_INTERNAL_EXERCISE = {
+    'smoothbot':                      'tracking_suave',
+    'gridshot_ultimate':              'shot_grid',
+    'tile_frenzy':                    'shot_grid',
+    'microshot':                      'micro_adjust',
+    'popcorn_nightmare':              'micro_adjust',
+    'reflexshot':                     'quick_flick',
+    'valorant_medium_strafes_goated': 'quick_flick',
+    '1w4ts_goated':                   'quick_flick',
+    'bounce_180':                     'quick_flick',
+    'spidershot':                     'quick_flick',
+}
+
+
+def _recommended_trainer_exercise(main_exercises: list, aim_levels: dict):
+    """Returns {'exercise', 'difficulty'} for the first exercise in the
+    day's main section that has an in-app equivalent, or None if none do.
+    `aim_levels` is {internal_exercise: level_or_None}, as returned by
+    services.aim_level.compute_per_exercise_levels — missing/None just
+    means "not enough data yet", which recommended_difficulty treats as a
+    medium-difficulty default."""
+    for ex in main_exercises:
+        internal = EXTERNAL_TO_INTERNAL_EXERCISE.get(ex['key'])
+        if not internal:
+            continue
+        level = (aim_levels or {}).get(internal)
+        return {'exercise': internal, 'difficulty': recommended_difficulty(level)}
+    return None
+
+
 # Valid codes for the Treino Principal tip — the frontend builds the actual
 # tip text from routine['focus_area'] / routine['main_weapon'] /
 # routine['specific_weakness'], skipping any that aren't one of these (unset
@@ -124,7 +160,8 @@ def _daily_focus_order(today: date) -> list:
     return order
 
 
-def generate_routine(profile, today: date = None, action_level: int = None, action_level_note: str = ''):
+def generate_routine(profile, today: date = None, action_level: int = None, action_level_note: str = '',
+                      aim_accelerated: bool = False, aim_levels: dict = None):
     focus      = profile.get('focus_area', 'aim')
     experience = profile.get('experience_level', 'iniciante')
     daily_time = int(profile.get('daily_time', 30))
@@ -156,7 +193,7 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
     match_count = match_count_for_daily_time(daily_time)
     focus_order = _daily_focus_order(today)[:match_count]
     level       = action_level if action_level is not None else initial_level_for_experience(experience)
-    base_quota  = kill_quota_for_level(level)
+    base_quota  = kill_quota_for_level(level, accelerated=aim_accelerated)
 
     matches = []
     for i in range(match_count):
@@ -172,12 +209,13 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
         })
 
     return {
-        'focus_area':        focus,
-        'experience_level':  experience,
-        'tool':              tool,
-        'main_weapon':       weapon,
-        'specific_weakness': weakness,
-        'total_duration':    warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
+        'focus_area':          focus,
+        'experience_level':    experience,
+        'tool':                tool,
+        'main_weapon':         weapon,
+        'specific_weakness':   weakness,
+        'recommended_trainer': _recommended_trainer_exercise(main, aim_levels),
+        'total_duration':      warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
         'sections': [
             {
                 'name':      'aquecimento',

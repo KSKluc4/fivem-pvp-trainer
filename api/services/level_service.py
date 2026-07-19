@@ -66,8 +66,23 @@ def level_note_for(change: str) -> str:
     return change or ''
 
 
-def kill_quota_for_level(level: int) -> int:
-    return KILLS_PER_MATCH_BY_LEVEL[_clamp_level(level)]
+def kill_quota_for_level(level: int, accelerated: bool = False) -> int:
+    """Base quota for the level. When `accelerated` is True (the user's aim
+    level — see services.aim_level — went up a tier since the last routine),
+    the quota is nudged halfway toward the NEXT level's quota instead of
+    jumping a full level early. This is deliberately half a step, not a
+    full one: the completion-based up/down rule in adjust_level() remains
+    the primary driver of the mata-mata level itself; aim only accelerates
+    the quota within the current level, it never substitutes the rule or
+    changes the stored level."""
+    level = _clamp_level(level)
+    base = KILLS_PER_MATCH_BY_LEVEL[level]
+    if not accelerated:
+        return base
+    next_level = min(level + 1, MAX_LEVEL)
+    if next_level == level:
+        return base
+    return round(base + (KILLS_PER_MATCH_BY_LEVEL[next_level] - base) / 2)
 
 
 def resolve_action_level(user_id: int, profile: dict):

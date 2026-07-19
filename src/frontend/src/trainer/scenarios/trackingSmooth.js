@@ -92,6 +92,10 @@ export class TrackingScorer {
     this.totalMs       = 0
     this.currentStreakMs = 0
     this.bestStreakMs   = 0
+    // Unused by this scorer — kept so a session result has the same shape
+    // as ClickScorer's (see engine/clickTarget.js), letting ResultsScreen
+    // read either without branching on which fields exist.
+    this.avgReactionMs = 0
   }
 
   update(dtMs, isOnTarget) {
