@@ -39,7 +39,16 @@ app.register_blueprint(trainer_bp,        url_prefix='/api')
 
 @app.route('/api/health')
 def health():
-    return jsonify({'status': 'ok'})
+    # Also pinged once a day by the Vercel Cron in vercel.json — a minimal DB
+    # touch keeps the Supabase free-tier project from auto-pausing on inactivity.
+    db_ok = False
+    try:
+        from database import get_supabase
+        get_supabase().table('users').select('id').limit(1).execute()
+        db_ok = True
+    except Exception:
+        db_ok = False
+    return jsonify({'ok': True, 'db': db_ok})
 
 
 @app.route('/api')
