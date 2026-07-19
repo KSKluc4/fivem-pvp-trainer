@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import * as THREE from 'three'
 import { Box, Button, Group, Text, Title, SegmentedControl, Stack, Card } from '@mantine/core'
 import { IconArrowLeft, IconPlayerPlay } from '@tabler/icons-react'
+import { Trans, useTranslation } from 'react-i18next'
 import { createArenaScene } from './engine/scene'
 import { createLoop } from './engine/loop'
 import { createPointerLook } from './engine/pointerLook'
@@ -17,6 +18,7 @@ import './trainer.css'
 const CENTER_NDC = new THREE.Vector2(0, 0)
 
 export default function TrainerView({ onBack }) {
+  const { t } = useTranslation()
   const canvasRef    = useRef(null)
   const containerRef = useRef(null)
   const engineRef    = useRef(null)
@@ -77,7 +79,6 @@ export default function TrainerView({ onBack }) {
         accuracyPct:     scorer.accuracyPct,
         bestStreakMs:    scorer.bestStreakMs,
         difficulty,
-        difficultyLabel: DIFFICULTIES[difficulty].label,
         savedRemotely,
       })
     })
@@ -185,9 +186,9 @@ export default function TrainerView({ onBack }) {
     setPhase('setup')
   }
 
-  // "Tentar novamente" re-requests pointer lock directly from the click (a
-  // genuine user gesture) — startCountdown itself runs once the lock is
-  // confirmed, via the pointerlockchange handler below.
+  // Retrying re-requests pointer lock directly from the click (a genuine
+  // user gesture) — startCountdown itself runs once the lock is confirmed,
+  // via the pointerlockchange handler below.
   const handleRetry = useCallback(() => {
     canvasRef.current?.requestPointerLock()
   }, [])
@@ -198,11 +199,11 @@ export default function TrainerView({ onBack }) {
     <Box className="trainer-view">
       <Group justify="space-between" mb="md">
         <Group gap={6}>
-          <Title order={1} size="h2">Treinar agora</Title>
-          <Text c="dimmed" size="sm">Tracking Suave</Text>
+          <Title order={1} size="h2">{t('trainer.titulo')}</Title>
+          <Text c="dimmed" size="sm">{t('trainer.subtitulo')}</Text>
         </Group>
         <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
-          Voltar
+          {t('trainer.voltar')}
         </Button>
       </Group>
 
@@ -244,32 +245,32 @@ export default function TrainerView({ onBack }) {
             <Card className="trainer-setup-card">
               <Stack gap="md">
                 <Box>
-                  <Text size="sm" mb={6}>Dificuldade</Text>
+                  <Text size="sm" mb={6}>{t('trainer.dificuldade')}</Text>
                   <SegmentedControl
                     fullWidth
                     value={difficulty}
                     onChange={setDifficulty}
-                    data={Object.entries(DIFFICULTIES).map(([key, d]) => ({ label: d.label, value: key }))}
+                    data={Object.keys(DIFFICULTIES).map((key) => ({ label: t(`trainer.dificuldades.${key}`), value: key }))}
                   />
                 </Box>
                 <Box>
-                  <Text size="sm" mb={6}>Estilo de mira</Text>
+                  <Text size="sm" mb={6}>{t('trainer.estilo_mira')}</Text>
                   <SegmentedControl
                     fullWidth
                     value={crosshairStyle}
                     onChange={setCrosshairStyle}
-                    data={CROSSHAIR_STYLES.map((s) => ({ label: s, value: s }))}
+                    data={CROSSHAIR_STYLES.map((s) => ({ label: t(`trainer.crosshair_estilos.${s}`), value: s }))}
                   />
                 </Box>
                 <Text size="xs" c="dimmed">
-                  60 segundos · o mouse fica preso na janela (Pointer Lock) — pressione <b>ESC</b> para soltar a qualquer momento.
+                  <Trans i18nKey="trainer.instrucoes" components={{ bold: <b /> }} />
                 </Text>
                 <Button
                   size="md"
                   leftSection={<IconPlayerPlay size={18} />}
                   onClick={() => canvasRef.current?.requestPointerLock()}
                 >
-                  Iniciar
+                  {t('trainer.iniciar')}
                 </Button>
               </Stack>
             </Card>
@@ -278,7 +279,7 @@ export default function TrainerView({ onBack }) {
 
         {phase === 'countdown' && (
           <div className="trainer-overlay trainer-overlay--countdown">
-            <Text className="trainer-countdown-number">{countdownN > 0 ? countdownN : 'Vai!'}</Text>
+            <Text className="trainer-countdown-number">{countdownN > 0 ? countdownN : t('trainer.vai')}</Text>
           </div>
         )}
 
@@ -287,8 +288,8 @@ export default function TrainerView({ onBack }) {
             className="trainer-overlay trainer-overlay--clickable"
             onClick={() => canvasRef.current?.requestPointerLock()}
           >
-            <Text fw={700} size="lg">Pausado</Text>
-            <Text size="sm" c="dimmed">Clique para continuar</Text>
+            <Text fw={700} size="lg">{t('trainer.pausado')}</Text>
+            <Text size="sm" c="dimmed">{t('trainer.clique_continuar')}</Text>
           </div>
         )}
       </div>

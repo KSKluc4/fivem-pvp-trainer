@@ -31,9 +31,11 @@ def test_match_count_buckets():
 # ── Sections shape ────────────────────────────────────────────────────────────
 
 def test_routine_has_three_sections_ending_in_ingame_block():
+    # Sections are returned as machine-stable keys (translated on the
+    # frontend via rotina.secoes.<key>) rather than ready-made PT prose.
     routine = generate_routine(PROFILE, today=date(2026, 7, 6))
     names = [s['name'] for s in routine['sections']]
-    assert names == ['Aquecimento', 'Treino Principal', 'Aplicação em Jogo (Mata-mata)']
+    assert names == ['aquecimento', 'treino_principal', 'aplicacao_jogo']
 
 
 def test_no_revisao_or_server_tip_leftovers():
@@ -43,6 +45,15 @@ def test_no_revisao_or_server_tip_leftovers():
     assert 'Revisão' not in all_tips
     assert 'Dica de servidor' not in all_tips
     assert all(s['name'] != 'Revisão' for s in routine['sections'])
+
+
+def test_sections_carry_no_hardcoded_prose():
+    # Section tips are built on the frontend from codes (section name, plus
+    # routine['focus_area']/['main_weapon']/['specific_weakness'] for the
+    # main section) — the backend no longer embeds ready-made PT text.
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6))
+    assert all(s['tip'] == '' for s in routine['sections'])
+    assert routine['specific_weakness'] == PROFILE.get('specific_weakness', '')
 
 
 def test_checkable_flags():
@@ -73,11 +84,15 @@ def test_ingame_matches_scale_with_daily_time():
 
 
 def test_each_match_has_a_kill_quota_and_a_focus():
+    # `name` is a stable machine key (e.g. "match_1") used for progress
+    # tracking — the display title ("Match 1 — Get 60 kills · Focus: ...")
+    # is built on the frontend from `index`, `kill_quota`, and `focus`.
     routine = generate_routine(dict(PROFILE, daily_time=70), today=date(2026, 7, 6), action_level=3)
-    for ex in routine['sections'][-1]['exercises']:
+    for i, ex in enumerate(routine['sections'][-1]['exercises']):
         assert ex['kill_quota'] > 0
         assert ex['focus'] in {opt['id'] for opt in FOCUS_OPTIONS}
-        assert str(ex['kill_quota']) in ex['name']
+        assert ex['name'] == f'match_{i + 1}'
+        assert ex['index'] == i + 1
 
 
 def test_matches_never_repeat_focus_within_the_same_day():

@@ -15,8 +15,10 @@
     "@mantine/notifications": "^7.17.8",
     "@tabler/icons-react": "^3.44.0",
     "axios": "^1.6.0",
+    "i18next": "^26.3.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-i18next": "^17.0.10",
     "recharts": "^2.15.4",
     "three": "^0.185.1"
   },

@@ -1,0 +1,496 @@
+{
+  "comum": {
+    "app_name": "FiveM PvP Trainer",
+    "tagline": "Training System",
+    "voltar": "Back",
+    "cancelar": "Cancel",
+    "salvar": "Save",
+    "agora_nao": "Not now",
+    "idioma": "Language",
+    "loading": {
+      "iniciando": "Starting...",
+      "carregando_rotina": "Loading routine..."
+    },
+    "erros": {
+      "servidor_indisponivel": "Server unavailable. Check your connection and try again.",
+      "muitas_tentativas": "Too many attempts. Wait a moment and try again.",
+      "erro_servidor": "Internal server error. Try again shortly.",
+      "erro_generico": "Something went wrong. Try again."
+    },
+    "update_banner": {
+      "versao_disponivel": "Version <bold>{{version}}</bold> available — downloaded and ready to install",
+      "reiniciar_agora": "Restart now",
+      "depois": "Later",
+      "sera_instalado_tooltip": "Will install when you close the app"
+    },
+    "user_menu": {
+      "dias": "days",
+      "streak": "streak",
+      "exercicios": "drills",
+      "editar_perfil": "Edit profile",
+      "alterar_perfil_treino": "Change training profile",
+      "treinar_agora": "Train now",
+      "conversor_sensibilidade": "Sensitivity converter",
+      "painel_admin": "Admin panel",
+      "sair": "Log out",
+      "desktop": "Desktop",
+      "web": "Web",
+      "nome_label": "Name",
+      "nome_placeholder": "Full name",
+      "username_label": "Username",
+      "username_placeholder": "username",
+      "erro_ao_salvar": "Failed to save. Try again.",
+      "perfil_atualizado": "Profile updated!",
+      "niveis": {
+        "elite": "Elite",
+        "veterano": "Veteran",
+        "especialista": "Specialist",
+        "atirador": "Gunner",
+        "recruta": "Recruit",
+        "novato": "Rookie"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Access your account to keep training",
+      "username_label": "Username",
+      "username_placeholder": "username",
+      "password_label": "Password",
+      "forgot_password": "Forgot your password?",
+      "submit": "Log in →",
+      "no_account": "Don't have an account?",
+      "create_account": "Create account"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Start your personalized training journey",
+      "name_label": "Full name",
+      "name_placeholder": "John Smith",
+      "username_label": "Username",
+      "username_desc": "Minimum 3 characters",
+      "username_placeholder": "johnsmith",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "password_label": "Password",
+      "password_desc": "Minimum 6 characters",
+      "submit": "Create account →",
+      "has_account": "Already have an account?",
+      "login": "Log in"
+    },
+    "forgot_password": {
+      "title": "Forgot your password?",
+      "subtitle": "Enter your account email to receive a reset link",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "submit": "Send link →",
+      "back_to_login": "← Back to login",
+      "default_sent_message": "If this email is registered, we've sent a password reset link."
+    },
+    "email_prompt": {
+      "title": "Link an email",
+      "description": "Link an email so you can recover your password if you forget it.",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "vincular": "Link email",
+      "email_vinculado": "Email linked successfully!",
+      "erro_vincular": "Failed to link email. Try again."
+    },
+    "errors": {
+      "email_invalido": "Invalid email.",
+      "senha_incorreta": "Wrong username or password.",
+      "username_em_uso": "This username is already taken. Choose another.",
+      "dados_invalidos": "Invalid data. Check the fields and try again."
+    }
+  },
+  "questionario": {
+    "pergunta_contador": "Question <bold>{{current}}</bold> of {{total}}",
+    "pergunta_anterior": "Previous question",
+    "gerando_rotina": "Generating your personalized routine...",
+    "analisando_perfil": "Analyzing {{username}}'s profile",
+    "erro_enviar": "Failed to submit questionnaire: {{detail}}",
+    "erro_desconhecido": "Unknown error",
+    "perguntas": {
+      "specific_weakness": {
+        "question": "What's your biggest specific weakness?",
+        "subtitle": "Let's target your biggest technical bottleneck",
+        "opcoes": {
+          "moving_target": { "label": "Moving Targets", "description": "I miss a lot when the enemy is moving" },
+          "headshot":      { "label": "Consistent Headshots", "description": "I hit body shots but rarely headshots" },
+          "long_range":    { "label": "Long Range", "description": "I lose fights at range easily" },
+          "reaction":      { "label": "Reaction Under Pressure", "description": "I freeze up when I take the first hit" }
+        }
+      },
+      "focus_area": {
+        "question": "What's your biggest challenge in PvP?",
+        "subtitle": "Sets the main focus of the generated drills",
+        "opcoes": {
+          "aim":      { "label": "Aim", "description": "I miss a lot when shooting, crosshair is imprecise or shaky" },
+          "reflex":   { "label": "Reflex", "description": "I react slowly, I'm slow to draw and shoot" },
+          "movement": { "label": "Movement", "description": "I move predictably, I take a lot of bullets" }
+        }
+      },
+      "experience_level": {
+        "question": "What's your experience level in PvP?",
+        "subtitle": "Sets the difficulty of the generated drills",
+        "opcoes": {
+          "iniciante":     { "label": "Beginner", "description": "I started playing FiveM PvP recently" },
+          "intermediario": { "label": "Intermediate", "description": "I've been playing for a few months, I win some fights" },
+          "avancado":      { "label": "Advanced", "description": "I've been playing over a year, I want to refine my technique" }
+        }
+      },
+      "aim_difficulty": {
+        "question": "What kind of aim is hardest for you?",
+        "subtitle": "Pick your biggest struggle with the crosshair",
+        "opcoes": {
+          "tracking": { "label": "Tracking", "description": "Keeping the crosshair on moving enemies" },
+          "flick":    { "label": "Flick Shot", "description": "Quick flicks onto distant targets" },
+          "close":    { "label": "Close Range", "description": "Trading shots up close under pressure" }
+        }
+      },
+      "reflex_level": {
+        "question": "How do you rate your current reflexes?",
+        "subtitle": "Be honest — this calibrates the training intensity",
+        "opcoes": {
+          "lento":  { "label": "Slow", "description": "The enemy often shoots first" },
+          "medio":  { "label": "Average", "description": "Sometimes I react well, sometimes I don't" },
+          "rapido": { "label": "Fast", "description": "I react well, I want to reach the next level" }
+        }
+      },
+      "movement_quality": {
+        "question": "How's your movement during a fight?",
+        "subtitle": "Unpredictable movement is one of the most important skills",
+        "opcoes": {
+          "previsivel":   { "label": "Predictable", "description": "I stand still or walk in a line, I take a lot of damage" },
+          "moderado":     { "label": "Moderate", "description": "Sometimes I manage to confuse the enemy" },
+          "imprevisivel": { "label": "Unpredictable", "description": "Good movement, I want to combine it with aim" }
+        }
+      },
+      "daily_time": {
+        "question": "How much time can you train per day?",
+        "subtitle": "Daily consistency beats occasional long sessions",
+        "opcoes": {
+          "25": { "label": "15–30 min", "description": "Quick drill focused on the critical point" },
+          "45": { "label": "30–60 min", "description": "Full session with warmup and review" },
+          "65": { "label": "60+ min", "description": "Intensive training for faster progress" }
+        }
+      },
+      "preferred_tool": {
+        "question": "Which training tool do you use?",
+        "subtitle": "Drills will be adapted to your tool",
+        "opcoes": {
+          "kovaak": { "label": "KovaaK's", "description": "FPS-focused, highly customizable" },
+          "aimlab": { "label": "Aim Lab", "description": "Free, modern interface, solid metrics" },
+          "ambos":  { "label": "Both", "description": "I use both tools" },
+          "nenhum": { "label": "Neither (yet)", "description": "I'll download one now — Aim Lab is free on Steam" }
+        }
+      }
+    }
+  },
+  "rotina": {
+    "titulo": "Today's Routine",
+    "saudacao": "Hey, <bold>{{name}}</bold> • Focus:",
+    "progresso": "Progress",
+    "conversor": "Converter",
+    "conversor_tooltip": "GTA V → KovaaK / Aim Lab sensitivity converter",
+    "alterar_perfil": "Change profile",
+    "alterar_perfil_tooltip": "Retake the profile questionnaire",
+    "treinar_no_app": "Train in-app",
+    "nivel": "Level {{level}}",
+    "reflexao_placeholder": "📝 Reflection session — jot down what you noticed and what improved today.",
+    "exercicios_concluidos": "{{completed}}/{{total}} drills completed",
+    "finalizar_sessao": "Finish Session ✓",
+    "marque_pelo_menos_um": "Check off at least one drill to finish",
+    "sessao_salva": "Session saved! Good grind, {{name}}!",
+    "toast_sessao_finalizada_one": "Session finished! {{count}} drill completed.",
+    "toast_sessao_finalizada_other": "Session finished! {{count}} drills completed.",
+    "toast_erro_salvar_sessao": "Failed to save session. Check your connection and try again.",
+    "in_game_badge": "In-game",
+    "secoes": {
+      "aquecimento": "Warmup",
+      "treino_principal": "Main Training",
+      "aplicacao_jogo": "In-Game Application (Deathmatch)",
+      "revisao_legado": "Review"
+    },
+    "tips": {
+      "aquecimento": "Take it easy on each drill. The goal is to activate your muscles and reflexes.",
+      "aplicacao_jogo": "Play on the GOAT server — each match has its own kill quota and focus. Hit the quota on each one.",
+      "focus": {
+        "aim":      "Keep your crosshair at head height. Breathe between scenarios and avoid tensing your wrist.",
+        "reflex":   "Don't force the speed — a natural reaction is more effective than a forced one. Consistency first.",
+        "movement": "Strafe and aim at the same time — practice pre-aiming. Unpredictable movement is your armor."
+      },
+      "weapon": {
+        "pistola": "Pistol: precise semi-auto beats spray. Every bullet counts — prioritize headshots.",
+        "rifle":   "Rifle: control the first-shot kick. A 2–3 round burst is more lethal than full-auto.",
+        "shotgun": "Shotgun: close the gap aggressively. Aim center mass and always attack first.",
+        "misto":   "Multiple weapons: universal crosshair placement applies to all of them — head, always."
+      },
+      "weakness": {
+        "moving_target": "Moving enemies: keep the crosshair ahead of the target, not on it.",
+        "headshot":      "Headshots: adjust your sensitivity — a slower aim makes precise placement easier.",
+        "long_range":    "Long range: lower sensitivity + breath control during the shot.",
+        "reaction":      "Under pressure: pre-aim angles before you turn. Whoever's ready shoots first."
+      }
+    },
+    "level_note": {
+      "up": "Quota went up — you're improving! 📈",
+      "down": "Quota adjusted to help you get back into rhythm"
+    },
+    "partida": {
+      "titulo": "Match {{index}} — Get {{quota}} kills · Focus: {{focus}}",
+      "mate_inimigos_one": "Get {{count}} kill",
+      "mate_inimigos_other": "Get {{count}} kills"
+    },
+    "focos": {
+      "duelos_1x1": {
+        "label": "1v1 duels",
+        "instrucao": "Seek out direct 1v1 fights and close out every duel decisively."
+      },
+      "tracking_combate": {
+        "label": "combat tracking",
+        "instrucao": "Keep the crosshair on the enemy even when they — or you — are moving."
+      },
+      "posicionamento": {
+        "label": "positioning",
+        "instrucao": "Use angles and cover to win the duel before you even fire."
+      },
+      "movement_strafe": {
+        "label": "movement/strafe",
+        "instrucao": "Move unpredictably while shooting — never stand still."
+      },
+      "game_sense": {
+        "label": "game sense",
+        "instrucao": "Pay attention to sound and enemy positioning before engaging."
+      }
+    },
+    "exercicios": {
+      "smoothbot":                       "Smooth, continuous tracking",
+      "popcorn_nightmare":               "Micro-adjustments and precision",
+      "valorant_medium_strafes_goated":  "Tracking against strafing targets",
+      "air_angelic_4":                   "Advanced air tracking",
+      "thin_gauntlet":                   "Precision on small targets",
+      "gridshot_ultimate":               "Quick aim across multiple targets",
+      "microshot":                       "Precision on small targets",
+      "strafetrack":                     "Tracking targets moving laterally",
+      "multilitrack":                    "Tracking multiple simultaneous targets",
+      "tile_frenzy":                     "Quick reaction to random targets",
+      "1w4ts_goated":                    "Short-range flick shots",
+      "bounce_180":                      "Reflex and 180° turns",
+      "psalmsfasttargets":               "High-speed targets",
+      "revosect":                        "Advanced precision flicking",
+      "reflexshot":                      "Pure reaction training",
+      "spidershot":                      "Multiple targets, reaction-based",
+      "motionshot":                      "Flicking onto moving targets",
+      "strafing_tiles":                  "Aiming while strafing",
+      "movement_redirect":               "Redirecting aim while moving",
+      "b180_goated":                     "Aim control through angle changes",
+      "pasu_voltaic":                    "Flicking with simultaneous strafing",
+      "circletrack":                     "Circular tracking with movement",
+      "smoothbot_aquecimento":           "Tracking warmup",
+      "tile_frenzy_aquecimento":         "Reaction warmup",
+      "gridshot_ultimate_aquecimento":   "General warmup",
+      "reflexshot_aquecimento":          "Reflex warmup"
+    },
+    "dificuldade": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "foco_label": {
+      "aim": "Aim",
+      "reflex": "Reflex",
+      "movement": "Movement"
+    },
+    "playlists": {
+      "titulo": "Recommended Playlists — {{tool}}",
+      "subtitulo": "Curated collections to speed up your progress",
+      "acessar": "Open →",
+      "kovaak": {
+        "voltaic_benchmark": { "nome": "Voltaic Benchmark", "desc": "The gold standard — measures your real level across 6 tracking, flicking, and control scenarios", "tag": "Benchmark" },
+        "smooth_click": { "nome": "Smooth & Click", "desc": "Progression from smooth tracking to precise flick shots — great for beginners and intermediates", "tag": "Progressive" },
+        "voltaic_fps_pack": { "nome": "Voltaic FPS Pack", "desc": "Scenarios validated by the competitive community — the training reference for FPS", "tag": "Competitive" }
+      },
+      "aimlab": {
+        "aim_lab_routines": { "nome": "Aim Lab Routines", "desc": "Official routines organized by level — beginner, intermediate, and advanced", "tag": "Official" },
+        "gridshot_challenge": { "nome": "Gridshot Challenge", "desc": "Aim Lab's most famous drill — measures speed, precision, and consistency", "tag": "Popular" },
+        "tracking_fundamentals": { "nome": "Tracking Fundamentals", "desc": "Progression from basic to advanced tracking — from Circletrack to Multilitrack", "tag": "Tracking" }
+      }
+    },
+    "servidores": {
+      "titulo": "💡 Where to train in FiveM",
+      "subtitulo": "Join the server's Discord to see how to connect and play",
+      "discord": "Discord",
+      "goat_desc": "great for deathmatch training",
+      "plf_desc": "great for improving your drops"
+    }
+  },
+  "trainer": {
+    "titulo": "Train Now",
+    "subtitulo": "Smooth Tracking",
+    "voltar": "Back",
+    "dificuldade": "Difficulty",
+    "estilo_mira": "Crosshair style",
+    "instrucoes": "60 seconds · the mouse is locked to the window (Pointer Lock) — press <bold>ESC</bold> to release it anytime.",
+    "iniciar": "Start",
+    "vai": "Go!",
+    "pausado": "Paused",
+    "clique_continuar": "Click to continue",
+    "na_mira": "on target",
+    "dificuldades": {
+      "facil": "Easy",
+      "medio": "Medium",
+      "dificil": "Hard"
+    },
+    "crosshair_estilos": {
+      "cross": "Cross",
+      "dot": "Dot",
+      "cross-dot": "Cross + Dot"
+    },
+    "resultado": {
+      "titulo": "Results — Smooth Tracking",
+      "score": "Score",
+      "tracking": "Tracking",
+      "tempo_na_mira": "time on target",
+      "melhor_sequencia": "Best streak",
+      "continua_na_mira": "continuous on target",
+      "recorde_pessoal": "Personal best ({{difficulty}})",
+      "novo_recorde": "🏆 New record!",
+      "primeira_tentativa": "First attempt",
+      "igual_ultima": "Same as last",
+      "vs_ultima": "vs last",
+      "sync_indisponivel": "⚠️ Sync unavailable right now — this result was saved on this device only.",
+      "tentar_novamente": "Try again",
+      "voltar": "Back"
+    },
+    "sensitivity_setup": {
+      "titulo": "Set up sensitivity",
+      "descricao": "Training uses your real GTA V sensitivity — the exact same mouse response, count for count.",
+      "carregado_historico": "Pre-filled from your last saved conversion.",
+      "gta_sens_label": "GTA V Sensitivity",
+      "gta_sens_desc": "0–100 scale · the same one you use in-game",
+      "dpi_label": "Mouse DPI",
+      "ajuste_fino": "Fine-tune",
+      "ajuste_fino_desc": "Multiplies the converted sensitivity — use this for a small adjustment without touching GTA V.",
+      "salvar_continuar": "Save and continue",
+      "preview_label": "Live preview — move the mouse here"
+    }
+  },
+  "dashboard": {
+    "titulo": "Your Progress",
+    "voltar_ao_treino": "Back to Training",
+    "dias_seguidos_one": "day streak",
+    "dias_seguidos_other": "day streak",
+    "ultimos_7_dias": "Last 7 Days",
+    "dias": {
+      "dom": "Sun", "seg": "Mon", "ter": "Tue", "qua": "Wed", "qui": "Thu", "sex": "Fri", "sab": "Sat"
+    },
+    "stats": {
+      "sessoes_geradas": "Sessions generated",
+      "sessoes_completas": "Sessions completed",
+      "conclusao": "Completion",
+      "semanas_ativas": "Active weeks"
+    },
+    "evolucao_semanal": {
+      "titulo": "Weekly Progress",
+      "serie_geradas": "Sessions generated",
+      "serie_completas": "Sessions completed"
+    },
+    "taxa_conclusao": {
+      "titulo": "Completion Rate",
+      "completa_one": "completed",
+      "completa_other": "completed",
+      "em_andamento": "in progress"
+    },
+    "conquistas": {
+      "titulo": "Achievements",
+      "desbloqueado": "✓ Unlocked",
+      "lista": {
+        "first":   { "nome": "First Blood", "desc": "Complete 1 session" },
+        "streak3": { "nome": "On Fire", "desc": "3 days in a row" },
+        "sess5":   { "nome": "Consistent", "desc": "5 completed sessions" },
+        "streak7": { "nome": "Perfect Week", "desc": "7 days straight" },
+        "sess10":  { "nome": "Dedicated", "desc": "10 completed sessions" },
+        "sess30":  { "nome": "Veteran", "desc": "30 completed sessions" }
+      }
+    },
+    "historico": {
+      "titulo": "Session History",
+      "vazio": "📭 No sessions logged yet. Complete your first routine!",
+      "exercicios_registrados": "{{count}} drill(s)",
+      "completo": "✓ Complete",
+      "em_andamento": "● In progress"
+    }
+  },
+  "conversor": {
+    "titulo": "Sensitivity Converter",
+    "subtitulo": "GTA V / FiveM → KovaaK's · Aim Lab",
+    "voltar_ao_treino": "Back to Training",
+    "configuracao": "Settings",
+    "gta_sens_label": "GTA V Sensitivity",
+    "gta_sens_desc": "0–100 scale · accepts negative for inverted axis",
+    "gta_sens_placeholder": "e.g. 50 or -35",
+    "config_hint": "Set this in GTA V → <code>Options → Controls → Mouse Sensitivity</code>",
+    "dpi_label": "Mouse DPI",
+    "dpi_placeholder": "e.g. 800",
+    "converter_salvar": "Convert and Save",
+    "como_calculamos": "How do we calculate this?",
+    "formula": {
+      "gta_yaw": "GTA V yaw",
+      "kovaak_yaw": "KovaaK's yaw",
+      "aimlab_yaw": "Aim Lab yaw",
+      "formula_texto": "cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54",
+      "validado_por": "Values validated by the community via mouse-sensitivity.com and r/FPSAimTrainer"
+    },
+    "resultado": "Result",
+    "salvo": "Saved",
+    "eixo_invertido": "↕ Inverted axis detected — the sensitivity values are correct, but the mouse will have swapped Y directions.",
+    "cm_360": "cm / 360°",
+    "kovaak": "KovaaK's",
+    "aimlab": "Aim Lab",
+    "baixa_sens": "Low sens. (high cm)",
+    "alta_sens": "High sens. (low cm)",
+    "resultado_vazio": "Enter your sensitivity and DPI to see the result in real time",
+    "historico": "History",
+    "conversoes_count": "{{count}} conversions",
+    "historico_indisponivel": "⚠️ History unavailable. Run migration v2 on Supabase first.",
+    "historico_vazio": "📭 No conversions saved yet. Click \"Convert and Save\" to log one.",
+    "copiado": "Copied!",
+    "copiar": "Copy",
+    "erros": {
+      "sens_invalida": "Enter a valid sensitivity (non-zero).",
+      "sens_fora_faixa": "Sensitivity must be between -100 and 100.",
+      "dpi_invalido": "Enter a valid DPI (positive number)."
+    }
+  },
+  "admin": {
+    "titulo": "⚙️ Admin Panel",
+    "subtitulo": "Platform overview",
+    "voltar": "Back",
+    "erro_carregar": "Failed to load panel",
+    "visao_geral": "Overview",
+    "stats": {
+      "total_usuarios": "Total users",
+      "ativos_7d": "Active (7 days)",
+      "novos_7d": "New (7 days)",
+      "novos_30d": "New (30 days)",
+      "sessoes_completadas": "Sessions completed"
+    },
+    "foco_treino": "🎯 Training Focus",
+    "servidor_preferido": "🎮 Preferred Server",
+    "nenhum_questionario": "No questionnaires answered yet",
+    "usuarios_titulo": "Users ({{count}})",
+    "buscar_placeholder": "Search name or username…",
+    "nenhum_usuario_encontrado": "No users found.",
+    "sem_usuarios": "No users.",
+    "tabela": {
+      "nome": "Name",
+      "username": "Username",
+      "cadastro": "Joined",
+      "ultimo_treino": "Last session",
+      "sessoes": "Sessions",
+      "admin_badge": "admin"
+    }
+  }
+}

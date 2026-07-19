@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AppShell, Group, Text, Center, Stack } from '@mantine/core'
 import { IconTargetArrow } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { secureStorage } from './services/storage'
 import TitleBar         from './components/TitleBar'
@@ -28,6 +29,7 @@ async function retryNetworkCall(fn, retries = 5, delay = 1000) {
 }
 
 export default function App() {
+  const { t } = useTranslation()
   const [authState, setAuthState] = useState('loading')
   const [user,      setUser]      = useState(null)
   const [view,      setView]      = useState('loading')
@@ -116,7 +118,7 @@ export default function App() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
-    const msg = authState === 'loading' ? 'Iniciando...' : 'Carregando rotina...'
+    const msg = authState === 'loading' ? t('comum.loading.iniciando') : t('comum.loading.carregando_rotina')
     return (
       <>
         <TitleBar />
@@ -172,7 +174,7 @@ export default function App() {
         <Group h={60} px="md" justify="space-between" className="app-header-drag">
           <Group gap="xs">
             <IconTargetArrow size={26} color="var(--mantine-color-brandCyan-5)" />
-            <Text fw={800} size="lg">FiveM PvP Trainer</Text>
+            <Text fw={800} size="lg">{t('comum.app_name')}</Text>
           </Group>
           {user && (
             <div className="titlebar-clickable">

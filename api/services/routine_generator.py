@@ -3,59 +3,63 @@ from datetime import date
 
 from services.level_service import initial_level_for_experience, kill_quota_for_level
 
+# Exercise catalog. `name` is the scenario's real, third-party name in
+# KovaaK's/Aim Lab (never translated). `key` is a stable slug the frontend
+# uses to look up the translated description in locales/<lang>/translation.json
+# under rotina.exercicios.<key> — this module carries no display prose itself.
 EXERCISES = {
     'aim': {
         'kovaak': [
-            {'name': 'Smoothbot', 'duration': 5, 'description': 'Tracking suave e contínuo', 'difficulty': 'beginner'},
-            {'name': 'popcorn nightmare', 'duration': 5, 'description': 'Microajustes e precisão', 'difficulty': 'intermediate'},
-            {'name': 'Valorant Medium Strafes Goated', 'duration': 5, 'description': 'Tracking com targets em movimento', 'difficulty': 'intermediate'},
-            {'name': 'Air Angelic 4', 'duration': 5, 'description': 'Tracking aéreo avançado', 'difficulty': 'advanced'},
-            {'name': 'Thin Gauntlet', 'duration': 5, 'description': 'Precisão em targets pequenos', 'difficulty': 'advanced'},
+            {'name': 'Smoothbot', 'key': 'smoothbot', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'popcorn nightmare', 'key': 'popcorn_nightmare', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Valorant Medium Strafes Goated', 'key': 'valorant_medium_strafes_goated', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Air Angelic 4', 'key': 'air_angelic_4', 'duration': 5, 'difficulty': 'advanced'},
+            {'name': 'Thin Gauntlet', 'key': 'thin_gauntlet', 'duration': 5, 'difficulty': 'advanced'},
         ],
         'aimlab': [
-            {'name': 'Gridshot Ultimate', 'duration': 5, 'description': 'Mira rápida em múltiplos targets', 'difficulty': 'beginner'},
-            {'name': 'Microshot', 'duration': 5, 'description': 'Precisão em alvos pequenos', 'difficulty': 'intermediate'},
-            {'name': 'Strafetrack', 'duration': 5, 'description': 'Tracking de targets em movimento lateral', 'difficulty': 'intermediate'},
-            {'name': 'Multilitrack', 'duration': 5, 'description': 'Tracking múltiplos simultâneos', 'difficulty': 'advanced'},
+            {'name': 'Gridshot Ultimate', 'key': 'gridshot_ultimate', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'Microshot', 'key': 'microshot', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Strafetrack', 'key': 'strafetrack', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Multilitrack', 'key': 'multilitrack', 'duration': 5, 'difficulty': 'advanced'},
         ],
     },
     'reflex': {
         'kovaak': [
-            {'name': 'Tile Frenzy', 'duration': 5, 'description': 'Reação rápida a targets aleatórios', 'difficulty': 'beginner'},
-            {'name': '1w4ts_Goated', 'duration': 5, 'description': 'Flick shots de curta distância', 'difficulty': 'beginner'},
-            {'name': 'Bounce 180', 'duration': 5, 'description': 'Reflexo e rotação de 180°', 'difficulty': 'intermediate'},
-            {'name': 'psalmsfasttargets', 'duration': 5, 'description': 'Targets de alta velocidade', 'difficulty': 'advanced'},
-            {'name': 'Revosect', 'duration': 5, 'description': 'Flick avançado com precisão', 'difficulty': 'advanced'},
+            {'name': 'Tile Frenzy', 'key': 'tile_frenzy', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': '1w4ts_Goated', 'key': '1w4ts_goated', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'Bounce 180', 'key': 'bounce_180', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'psalmsfasttargets', 'key': 'psalmsfasttargets', 'duration': 5, 'difficulty': 'advanced'},
+            {'name': 'Revosect', 'key': 'revosect', 'duration': 5, 'difficulty': 'advanced'},
         ],
         'aimlab': [
-            {'name': 'Reflexshot', 'duration': 5, 'description': 'Treino de reação pura', 'difficulty': 'beginner'},
-            {'name': 'Spidershot', 'duration': 5, 'description': 'Múltiplos targets em reação', 'difficulty': 'intermediate'},
-            {'name': 'Motionshot', 'duration': 5, 'description': 'Flick em targets em movimento', 'difficulty': 'advanced'},
+            {'name': 'Reflexshot', 'key': 'reflexshot', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'Spidershot', 'key': 'spidershot', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Motionshot', 'key': 'motionshot', 'duration': 5, 'difficulty': 'advanced'},
         ],
     },
     'movement': {
         'kovaak': [
-            {'name': 'Strafing Tiles', 'duration': 5, 'description': 'Mira enquanto executa strafe', 'difficulty': 'beginner'},
-            {'name': 'Movement Redirect', 'duration': 5, 'description': 'Redirecionamento de mira com movimento', 'difficulty': 'intermediate'},
-            {'name': 'B180 Goated', 'duration': 5, 'description': 'Controle de mira em mudanças de ângulo', 'difficulty': 'intermediate'},
-            {'name': 'Pasu Voltaic', 'duration': 5, 'description': 'Flick com strafe simultâneo', 'difficulty': 'advanced'},
+            {'name': 'Strafing Tiles', 'key': 'strafing_tiles', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'Movement Redirect', 'key': 'movement_redirect', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'B180 Goated', 'key': 'b180_goated', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Pasu Voltaic', 'key': 'pasu_voltaic', 'duration': 5, 'difficulty': 'advanced'},
         ],
         'aimlab': [
-            {'name': 'Circletrack', 'duration': 5, 'description': 'Tracking circular com movimento', 'difficulty': 'beginner'},
-            {'name': 'Strafetrack', 'duration': 5, 'description': 'Mira precisa com strafe lateral', 'difficulty': 'intermediate'},
-            {'name': 'Multilitrack', 'duration': 5, 'description': 'Múltiplos targets com movimento complexo', 'difficulty': 'advanced'},
+            {'name': 'Circletrack', 'key': 'circletrack', 'duration': 5, 'difficulty': 'beginner'},
+            {'name': 'Strafetrack', 'key': 'strafetrack', 'duration': 5, 'difficulty': 'intermediate'},
+            {'name': 'Multilitrack', 'key': 'multilitrack', 'duration': 5, 'difficulty': 'advanced'},
         ],
     },
 }
 
 WARMUP = {
     'kovaak': [
-        {'name': 'Smoothbot', 'duration': 3, 'description': 'Aquecimento de tracking', 'difficulty': 'beginner'},
-        {'name': 'Tile Frenzy', 'duration': 3, 'description': 'Aquecimento de reação', 'difficulty': 'beginner'},
+        {'name': 'Smoothbot', 'key': 'smoothbot_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
+        {'name': 'Tile Frenzy', 'key': 'tile_frenzy_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
     ],
     'aimlab': [
-        {'name': 'Gridshot Ultimate', 'duration': 3, 'description': 'Aquecimento geral', 'difficulty': 'beginner'},
-        {'name': 'Reflexshot', 'duration': 3, 'description': 'Aquecimento de reflexo', 'difficulty': 'beginner'},
+        {'name': 'Gridshot Ultimate', 'key': 'gridshot_ultimate_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
+        {'name': 'Reflexshot', 'key': 'reflexshot_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
     ],
 }
 
@@ -65,25 +69,13 @@ DIFFICULTY_MAP = {
     'avancado':      ['beginner', 'intermediate', 'advanced'],
 }
 
-FOCUS_TIPS = {
-    'aim':      'Mantenha o crosshair na altura da cabeça. Respire entre cenários e evite tensionar o pulso.',
-    'reflex':   'Não force a velocidade — reação natural é mais eficiente que forçada. Consistência primeiro.',
-    'movement': 'Strafe e mire ao mesmo tempo — pratique o pre-aim. Movimento imprevisível é a sua armadura.',
-}
-
-WEAPON_NOTES = {
-    'pistola': 'Pistola: semi-auto preciso supera spray. Cada bala conta — priorize headshots.',
-    'rifle':   'Rifle: controle o kick do primeiro tiro. Burst de 2–3 é mais letal que full-auto.',
-    'shotgun': 'Shotgun: feche o espaço agressivamente. Mire no centro e ataque sempre primeiro.',
-    'misto':   'Múltiplas armas: crosshair placement universal vale para todas — cabeça, sempre.',
-}
-
-WEAKNESS_NOTES = {
-    'moving_target': 'Inimigos em movimento: mantenha o crosshair à frente do alvo, não sobre ele.',
-    'headshot':      'Headshots: ajuste sua sensibilidade — mira mais lenta facilita colocação precisa.',
-    'long_range':    'Longa distância: menos sensibilidade + controle de respiração durante o tiro.',
-    'reaction':      'Pressão: pré-mire ângulos antes de virar. Quem chega preparado atira primeiro.',
-}
+# Valid codes for the Treino Principal tip — the frontend builds the actual
+# tip text from routine['focus_area'] / routine['main_weapon'] /
+# routine['specific_weakness'], skipping any that aren't one of these (unset
+# or a legacy/unrecognized value).
+FOCUS_TIP_CODES    = {'aim', 'reflex', 'movement'}
+WEAPON_TIP_CODES    = {'pistola', 'rifle', 'shotgun', 'misto'}
+WEAKNESS_TIP_CODES  = {'moving_target', 'headshot', 'long_range', 'reaction'}
 
 # ── In-game application block (mata-mata) ───────────────────────────────────
 #
@@ -109,33 +101,14 @@ def match_count_for_daily_time(daily_time: int) -> int:
 # Each match in the day's in-game block gets its own focus — never the same
 # focus twice in one day. The daily order is deterministic (seeded by date)
 # so a page refresh doesn't reshuffle an already-generated routine, but two
-# different days read differently.
+# different days read differently. Display label/instruction for each id
+# live in the frontend locale files under rotina.focos.<id>.
 FOCUS_OPTIONS = [
-    {
-        'id':          'duelos_1x1',
-        'label':       'duelos 1x1',
-        'instruction': 'Busque confrontos diretos 1x1 e feche cada duelo com decisão.',
-    },
-    {
-        'id':          'tracking_combate',
-        'label':       'tracking em combate',
-        'instruction': 'Mantenha o crosshair no inimigo mesmo quando ele — ou você — está em movimento.',
-    },
-    {
-        'id':          'posicionamento',
-        'label':       'posicionamento',
-        'instruction': 'Use ângulos e cover para vencer o duelo antes mesmo de atirar.',
-    },
-    {
-        'id':          'movement_strafe',
-        'label':       'movement/strafe',
-        'instruction': 'Mova-se de forma imprevisível enquanto atira — nunca fique parado.',
-    },
-    {
-        'id':          'game_sense',
-        'label':       'game sense',
-        'instruction': 'Preste atenção em som e posicionamento do inimigo antes de engajar.',
-    },
+    {'id': 'duelos_1x1'},
+    {'id': 'tracking_combate'},
+    {'id': 'posicionamento'},
+    {'id': 'movement_strafe'},
+    {'id': 'game_sense'},
 ]
 
 # Quota grows slightly across the day's matches — only the 3rd match gets a
@@ -180,13 +153,6 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
         main.append(ex)
         budget -= ex['duration']
 
-    tip_parts = [FOCUS_TIPS.get(focus, '')]
-    if weapon and weapon in WEAPON_NOTES:
-        tip_parts.append(WEAPON_NOTES[weapon])
-    if weakness and weakness in WEAKNESS_NOTES:
-        tip_parts.append(WEAKNESS_NOTES[weakness])
-    main_tip = ' | '.join(tip_parts)
-
     match_count = match_count_for_daily_time(daily_time)
     focus_order = _daily_focus_order(today)[:match_count]
     level       = action_level if action_level is not None else initial_level_for_experience(experience)
@@ -197,43 +163,44 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
         focus_opt = focus_order[i]
         quota     = round(base_quota * MATCH_QUOTA_MULTIPLIERS.get(i, 1.0))
         matches.append({
-            'name':        f'Partida {i + 1} — Mate {quota} inimigos · Foco: {focus_opt["label"]}',
+            'name':        f'match_{i + 1}',
+            'index':       i + 1,
             'duration':    MATCH_DURATION,
-            'description': focus_opt['instruction'],
             'category':    'in-game',
             'kill_quota':  quota,
             'focus':       focus_opt['id'],
         })
 
     return {
-        'focus_area':       focus,
-        'experience_level': experience,
-        'tool':             tool,
-        'main_weapon':      weapon,
-        'total_duration':   warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
+        'focus_area':        focus,
+        'experience_level':  experience,
+        'tool':              tool,
+        'main_weapon':       weapon,
+        'specific_weakness': weakness,
+        'total_duration':    warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
         'sections': [
             {
-                'name':      'Aquecimento',
+                'name':      'aquecimento',
                 'duration':  warmup_time,
                 'exercises': warmup_list,
                 'checkable': False,
-                'tip':       'Faça cada exercício sem pressão. O objetivo é ativar a musculatura e o reflexo.',
+                'tip':       '',
             },
             {
-                'name':      'Treino Principal',
+                'name':      'treino_principal',
                 'duration':  sum(e['duration'] for e in main),
                 'exercises': main,
                 'checkable': True,
-                'tip':       main_tip,
+                'tip':       '',
             },
             {
-                'name':       'Aplicação em Jogo (Mata-mata)',
+                'name':       'aplicacao_jogo',
                 'duration':   match_count * MATCH_DURATION,
                 'exercises':  matches,
                 'checkable':  True,
                 'level':      level,
                 'level_note': action_level_note or '',
-                'tip':        'Jogue no servidor GOAT — cada partida tem sua própria cota e foco. Bata a cota de cada uma.',
+                'tip':        '',
             },
         ],
     }

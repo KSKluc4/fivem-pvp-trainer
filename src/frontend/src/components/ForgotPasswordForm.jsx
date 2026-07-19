@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import { Card, TextInput, Button, Stack, Title, Text, Anchor, Alert } from '@mantine/core'
 import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { forgotPassword } from '../services/api'
 import BrandLogo from './BrandLogo'
 
-function friendlyError(err) {
-  if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
-  const code = err.response?.status
-  if (code === 429) return 'Muitas tentativas. Aguarde um momento e tente novamente.'
-  if (code >= 500) return 'Erro interno do servidor. Tente novamente em instantes.'
-  return 'Ocorreu um erro. Tente novamente.'
+function useFriendlyError() {
+  const { t } = useTranslation()
+  return (err) => {
+    if (!err.response) return t('comum.erros.servidor_indisponivel')
+    const code = err.response?.status
+    if (code === 429) return t('comum.erros.muitas_tentativas')
+    if (code >= 500) return t('comum.erros.erro_servidor')
+    return t('comum.erros.erro_generico')
+  }
 }
 
 export default function ForgotPasswordForm({ onGoLogin }) {
+  const { t } = useTranslation()
+  const friendlyError = useFriendlyError()
   const [email,   setEmail]   = useState('')
   const [error,   setError]   = useState(null)
   const [sent,    setSent]    = useState(false)
@@ -25,7 +31,7 @@ export default function ForgotPasswordForm({ onGoLogin }) {
     setLoading(true)
     try {
       const res = await forgotPassword(email)
-      setMessage(res.data?.message || 'Se este email estiver cadastrado, enviamos um link de redefinição de senha.')
+      setMessage(res.data?.message || t('auth.forgot_password.default_sent_message'))
       setSent(true)
     } catch (err) {
       setError(friendlyError(err))
@@ -39,9 +45,9 @@ export default function ForgotPasswordForm({ onGoLogin }) {
       <Card w="100%" maw={420} p="xl">
         <BrandLogo />
 
-        <Title order={2} mt="lg" mb={4}>Esqueceu a senha?</Title>
+        <Title order={2} mt="lg" mb={4}>{t('auth.forgot_password.title')}</Title>
         <Text c="dimmed" size="sm" mb="xl">
-          Digite o email da sua conta para receber um link de redefinição
+          {t('auth.forgot_password.subtitle')}
         </Text>
 
         {sent ? (
@@ -52,9 +58,9 @@ export default function ForgotPasswordForm({ onGoLogin }) {
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               <TextInput
-                label="Email"
+                label={t('auth.forgot_password.email_label')}
                 type="email"
-                placeholder="voce@exemplo.com"
+                placeholder={t('auth.forgot_password.email_placeholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
@@ -69,7 +75,7 @@ export default function ForgotPasswordForm({ onGoLogin }) {
               )}
 
               <Button type="submit" size="md" fullWidth loading={loading} disabled={!email}>
-                Enviar link →
+                {t('auth.forgot_password.submit')}
               </Button>
             </Stack>
           </form>
@@ -77,7 +83,7 @@ export default function ForgotPasswordForm({ onGoLogin }) {
 
         <Text ta="center" size="sm" mt="lg" c="dimmed">
           <Anchor component="button" type="button" onClick={onGoLogin} fw={700}>
-            ← Voltar para o login
+            {t('auth.forgot_password.back_to_login')}
           </Anchor>
         </Text>
       </Card>

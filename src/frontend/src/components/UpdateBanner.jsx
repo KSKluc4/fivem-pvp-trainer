@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Alert, Group, Text, Button } from '@mantine/core'
 import { IconRocket } from '@tabler/icons-react'
+import { Trans, useTranslation } from 'react-i18next'
 
 export default function UpdateBanner() {
+  const { t } = useTranslation()
   const [updateInfo, setUpdateInfo] = useState(null)
   const [restarting, setRestarting] = useState(false)
   const [dismissed,  setDismissed]  = useState(false)
@@ -28,7 +30,11 @@ export default function UpdateBanner() {
     >
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Text size="sm">
-          Versão <Text span fw={700}>{updateInfo.version}</Text> disponível — baixada e pronta para instalar
+          <Trans
+            i18nKey="comum.update_banner.versao_disponivel"
+            values={{ version: updateInfo.version }}
+            components={{ bold: <Text span fw={700} /> }}
+          />
         </Text>
         <Group gap="xs">
           <Button
@@ -36,10 +42,10 @@ export default function UpdateBanner() {
             loading={restarting}
             onClick={() => { setRestarting(true); window.electronAPI.restartNow() }}
           >
-            Reiniciar agora
+            {t('comum.update_banner.reiniciar_agora')}
           </Button>
-          <Button size="xs" variant="subtle" color="gray" onClick={() => setDismissed(true)} title="Será instalado ao fechar o app">
-            Depois
+          <Button size="xs" variant="subtle" color="gray" onClick={() => setDismissed(true)} title={t('comum.update_banner.sera_instalado_tooltip')}>
+            {t('comum.update_banner.depois')}
           </Button>
         </Group>
       </Group>

@@ -8,20 +8,22 @@ import {
   IconArrowLeft, IconCalendar, IconFlame, IconClipboardList, IconCircleCheck,
   IconChartPie, IconTrendingUp, IconMedal, IconArchive,
 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { getProgress } from '../services/api'
 
-const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const DAY_KEYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab']
 
 const ACHIEVEMENTS = [
-  { id: 'first',   name: 'Primeira Batalha', desc: 'Complete 1 sessão',        icon: '🎯', goal: 1,  key: 'completed' },
-  { id: 'streak3', name: 'Em Chamas',        desc: '3 dias consecutivos',       icon: '🔥', goal: 3,  key: 'streak'    },
-  { id: 'sess5',   name: 'Consistente',      desc: '5 sessões completas',       icon: '⚔️', goal: 5,  key: 'completed' },
-  { id: 'streak7', name: 'Semana Perfeita',  desc: '7 dias seguidos',           icon: '💫', goal: 7,  key: 'streak'    },
-  { id: 'sess10',  name: 'Dedicado',         desc: '10 sessões completas',      icon: '🏅', goal: 10, key: 'completed' },
-  { id: 'sess30',  name: 'Veterano',         desc: '30 sessões completas',      icon: '🏆', goal: 30, key: 'completed' },
+  { id: 'first',   icon: '🎯', goal: 1,  key: 'completed' },
+  { id: 'streak3', icon: '🔥', goal: 3,  key: 'streak'    },
+  { id: 'sess5',   icon: '⚔️', goal: 5,  key: 'completed' },
+  { id: 'streak7', icon: '💫', goal: 7,  key: 'streak'    },
+  { id: 'sess10',  icon: '🏅', goal: 10, key: 'completed' },
+  { id: 'sess30',  icon: '🏆', goal: 30, key: 'completed' },
 ]
 
 export default function Progress({ userId, username, onBack }) {
+  const { t } = useTranslation()
   const [data, setData]       = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -57,11 +59,11 @@ export default function Progress({ userId, username, onBack }) {
     <Box className="progress-view">
       <Group justify="space-between" mb="lg">
         <Box>
-          <Title order={1}>Seu Progresso</Title>
+          <Title order={1}>{t('dashboard.titulo')}</Title>
           <Text c="dimmed" size="sm">{username}</Text>
         </Box>
         <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
-          Voltar ao Treino
+          {t('dashboard.voltar_ao_treino')}
         </Button>
       </Group>
 
@@ -72,7 +74,7 @@ export default function Progress({ userId, username, onBack }) {
             <Stack align="center" justify="center" h="100%" gap={4}>
               <IconFlame size={36} color="var(--mantine-color-orange-5)" />
               <Text fw={900} size="48px" lh={1}>{streak}</Text>
-              <Text size="sm" c="dimmed">dia{streak !== 1 ? 's' : ''} seguido{streak !== 1 ? 's' : ''}</Text>
+              <Text size="sm" c="dimmed">{t('dashboard.dias_seguidos', { count: streak })}</Text>
             </Stack>
           </Paper>
         </Grid.Col>
@@ -82,7 +84,7 @@ export default function Progress({ userId, username, onBack }) {
           <Card h="100%">
             <Group gap={6} mb="sm">
               <IconCalendar size={18} color="var(--mantine-color-brandCyan-5)" />
-              <Text fw={700} size="sm">Últimos 7 Dias</Text>
+              <Text fw={700} size="sm">{t('dashboard.ultimos_7_dias')}</Text>
             </Group>
             <SimpleGrid cols={7} spacing={6}>
               {weekCalendar.map((day, i) => (
@@ -96,7 +98,7 @@ export default function Progress({ userId, username, onBack }) {
                     background: day.completed ? 'rgba(46,213,115,0.08)' : undefined,
                   }}
                 >
-                  <Text size="xs" c="dimmed">{day.label}</Text>
+                  <Text size="xs" c="dimmed">{t(`dashboard.dias.${day.dayKey}`)}</Text>
                   <Text size="sm" fw={700} c={day.completed ? 'green' : day.today ? 'brandCyan' : 'dimmed'}>
                     {day.completed ? '✓' : day.today ? '◉' : '○'}
                   </Text>
@@ -109,10 +111,10 @@ export default function Progress({ userId, username, onBack }) {
 
       {/* ── Stats Grid ── */}
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md" mb="lg">
-        <StatCard number={total}          label="Sessões geradas"   icon={IconClipboardList} color="brandCyan"   />
-        <StatCard number={completed}      label="Sessões completas" icon={IconCircleCheck}   color="green"       />
-        <StatCard number={`${completionRate}%`} label="Conclusão"   icon={IconChartPie}      color="brandPurple" />
-        <StatCard number={weeklyData.length} label="Semanas ativas" icon={IconTrendingUp}    color="orange"      />
+        <StatCard number={total}          label={t('dashboard.stats.sessoes_geradas')}   icon={IconClipboardList} color="brandCyan"   />
+        <StatCard number={completed}      label={t('dashboard.stats.sessoes_completas')} icon={IconCircleCheck}   color="green"       />
+        <StatCard number={`${completionRate}%`} label={t('dashboard.stats.conclusao')}   icon={IconChartPie}      color="brandPurple" />
+        <StatCard number={weeklyData.length} label={t('dashboard.stats.semanas_ativas')} icon={IconTrendingUp}    color="orange"      />
       </SimpleGrid>
 
       {/* ── Weekly Evolution Chart ── */}
@@ -120,15 +122,15 @@ export default function Progress({ userId, username, onBack }) {
         <Card mb="lg">
           <Group gap={6} mb="md">
             <IconTrendingUp size={18} color="var(--mantine-color-brandCyan-5)" />
-            <Text fw={700} size="sm">Evolução Semanal</Text>
+            <Text fw={700} size="sm">{t('dashboard.evolucao_semanal.titulo')}</Text>
           </Group>
           <BarChart
             h={220}
             data={weeklyData}
             dataKey="label"
             series={[
-              { name: 'total',     color: 'gray.6',  label: 'Sessões geradas' },
-              { name: 'completed', color: 'green.6', label: 'Sessões completas' },
+              { name: 'total',     color: 'gray.6',  label: t('dashboard.evolucao_semanal.serie_geradas') },
+              { name: 'completed', color: 'green.6', label: t('dashboard.evolucao_semanal.serie_completas') },
             ]}
             tickLine="y"
             withLegend
@@ -143,14 +145,14 @@ export default function Progress({ userId, username, onBack }) {
           <Group justify="space-between" mb="xs">
             <Group gap={6}>
               <IconChartPie size={18} color="var(--mantine-color-brandCyan-5)" />
-              <Text fw={700} size="sm">Taxa de Conclusão</Text>
+              <Text fw={700} size="sm">{t('dashboard.taxa_conclusao.titulo')}</Text>
             </Group>
             <Badge variant="light">{completionRate}%</Badge>
           </Group>
           <MProgress value={completionRate} radius="xl" size="lg" mb={6} />
           <Group justify="space-between">
-            <Text size="xs" c="dimmed">{completed} completa{completed !== 1 ? 's' : ''}</Text>
-            <Text size="xs" c="dimmed">{total - completed} em andamento</Text>
+            <Text size="xs" c="dimmed">{completed} {t('dashboard.taxa_conclusao.completa', { count: completed })}</Text>
+            <Text size="xs" c="dimmed">{total - completed} {t('dashboard.taxa_conclusao.em_andamento')}</Text>
           </Group>
         </Card>
       )}
@@ -159,7 +161,7 @@ export default function Progress({ userId, username, onBack }) {
       <Card mb="lg">
         <Group gap={6} mb="md">
           <IconMedal size={18} color="var(--mantine-color-orange-5)" />
-          <Text fw={700} size="sm">Conquistas</Text>
+          <Text fw={700} size="sm">{t('dashboard.conquistas.titulo')}</Text>
         </Group>
         <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="sm">
           {ACHIEVEMENTS.map((ach) => {
@@ -175,10 +177,10 @@ export default function Progress({ userId, username, onBack }) {
                 style={unlocked ? { borderColor: 'var(--mantine-color-orange-5)', background: 'rgba(255,165,2,0.06)' } : undefined}
               >
                 <Text size="xl">{ach.icon}</Text>
-                <Text fw={700} size="sm">{ach.name}</Text>
-                <Text size="xs" c="dimmed" mb={6}>{ach.desc}</Text>
+                <Text fw={700} size="sm">{t(`dashboard.conquistas.lista.${ach.id}.nome`)}</Text>
+                <Text size="xs" c="dimmed" mb={6}>{t(`dashboard.conquistas.lista.${ach.id}.desc`)}</Text>
                 {unlocked ? (
-                  <Badge color="orange" variant="light">✓ Desbloqueado</Badge>
+                  <Badge color="orange" variant="light">{t('dashboard.conquistas.desbloqueado')}</Badge>
                 ) : (
                   <>
                     <MProgress value={pct} size="sm" radius="xl" mb={4} />
@@ -195,18 +197,18 @@ export default function Progress({ userId, username, onBack }) {
       <Card>
         <Group gap={6} mb="md">
           <IconArchive size={18} color="var(--mantine-color-brandCyan-5)" />
-          <Text fw={700} size="sm">Histórico de Sessões</Text>
+          <Text fw={700} size="sm">{t('dashboard.historico.titulo')}</Text>
         </Group>
         {data.length === 0 ? (
-          <Text size="sm" c="dimmed" fs="italic">📭 Nenhuma sessão registrada ainda. Complete sua primeira rotina!</Text>
+          <Text size="sm" c="dimmed" fs="italic">{t('dashboard.historico.vazio')}</Text>
         ) : (
           <Stack gap={6}>
             {data.map((session, i) => (
               <Group key={i} justify="space-between" p={8} className="history-item">
                 <Text size="sm">{formatDate(session.date)}</Text>
-                <Text size="sm" c="dimmed">{session.exercises_logged} exercício(s)</Text>
+                <Text size="sm" c="dimmed">{t('dashboard.historico.exercicios_registrados', { count: session.exercises_logged })}</Text>
                 <Badge color={session.completed ? 'green' : 'gray'} variant="light">
-                  {session.completed ? '✓ Completo' : '● Em andamento'}
+                  {session.completed ? t('dashboard.historico.completo') : t('dashboard.historico.em_andamento')}
                 </Badge>
               </Group>
             ))}
@@ -250,7 +252,7 @@ function getWeekCalendar(sessions) {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
     const dateStr = d.toISOString().split('T')[0]
-    return { label: DAY_NAMES[d.getDay()], completed: completedDates.has(dateStr), today: i === 6 }
+    return { dayKey: DAY_KEYS[d.getDay()], completed: completedDates.has(dateStr), today: i === 6 }
   })
 }
 

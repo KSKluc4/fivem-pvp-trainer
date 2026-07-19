@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next'
+
 export default function Hud({ timeLeft, score, accuracyPct, fps }) {
+  const { t } = useTranslation()
   return (
     <>
       <div style={{
@@ -21,7 +24,7 @@ export default function Hud({ timeLeft, score, accuracyPct, fps }) {
         textShadow: '0 1px 4px rgba(0,0,0,0.6)',
       }}>
         <div style={{ fontSize: 22, fontWeight: 800 }}>{score}</div>
-        <div style={{ fontSize: 12, opacity: 0.75 }}>{accuracyPct.toFixed(1)}% na mira</div>
+        <div style={{ fontSize: 12, opacity: 0.75 }}>{accuracyPct.toFixed(1)}% {t('trainer.na_mira')}</div>
       </div>
     </>
   )

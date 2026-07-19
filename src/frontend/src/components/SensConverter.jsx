@@ -4,6 +4,7 @@ import {
   CopyButton, Tooltip, ActionIcon, Collapse, Code, Progress as MProgress,
 } from '@mantine/core'
 import { IconArrowLeft, IconDeviceGamepad2, IconBolt, IconTarget, IconRuler2, IconCopy, IconCheck, IconChevronDown, IconArchive } from '@tabler/icons-react'
+import { Trans, useTranslation } from 'react-i18next'
 import { convertSensitivity, getSensitivityHistory } from '../services/api'
 import { toast } from '../services/toast'
 import { calcLocal } from '../services/sensitivityMath'
@@ -15,10 +16,11 @@ function fmt(n, dp = 3) {
 }
 
 function CopyChip({ value }) {
+  const { t } = useTranslation()
   return (
     <CopyButton value={String(value)}>
       {({ copied, copy }) => (
-        <Tooltip label={copied ? 'Copiado!' : 'Copiar'} withArrow>
+        <Tooltip label={copied ? t('conversor.copiado') : t('conversor.copiar')} withArrow>
           <ActionIcon variant="light" color={copied ? 'green' : 'brandCyan'} onClick={copy} size="sm">
             {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
           </ActionIcon>
@@ -48,6 +50,7 @@ function HistoryRow({ row }) {
 }
 
 export default function SensConverter({ onBack }) {
+  const { t } = useTranslation()
   const [gtaSens, setGtaSens]     = useState(50)
   const [dpi,     setDpi]         = useState(800)
   const [result,  setResult]      = useState(null)
@@ -77,9 +80,9 @@ export default function SensConverter({ onBack }) {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
     const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
 
-    if (isNaN(s) || s === 0)          { toast.error('Informe uma sensibilidade válida (diferente de zero).'); return }
-    if (Math.abs(s) > 100)            { toast.error('Sensibilidade deve estar entre -100 e 100.'); return }
-    if (isNaN(d) || d <= 0)           { toast.error('Informe um DPI válido (número positivo).'); return }
+    if (isNaN(s) || s === 0)          { toast.error(t('conversor.erros.sens_invalida')); return }
+    if (Math.abs(s) > 100)            { toast.error(t('conversor.erros.sens_fora_faixa')); return }
+    if (isNaN(d) || d <= 0)           { toast.error(t('conversor.erros.dpi_invalido')); return }
 
     // Show instant local result
     const local = calcLocal(s, d)
@@ -103,11 +106,11 @@ export default function SensConverter({ onBack }) {
     <Box className="sens-view">
       <Group justify="space-between" mb="lg">
         <Box>
-          <Title order={1}>Conversor de Sensibilidade</Title>
-          <Text c="dimmed" size="sm">GTA V / FiveM → KovaaK's · Aim Lab</Text>
+          <Title order={1}>{t('conversor.titulo')}</Title>
+          <Text c="dimmed" size="sm">{t('conversor.subtitulo')}</Text>
         </Box>
         <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
-          Voltar ao Treino
+          {t('conversor.voltar_ao_treino')}
         </Button>
       </Group>
 
@@ -118,33 +121,33 @@ export default function SensConverter({ onBack }) {
             <Card>
               <Group gap={6} mb="md">
                 <IconDeviceGamepad2 size={18} color="var(--mantine-color-brandCyan-5)" />
-                <Text fw={700} size="sm">Configuração</Text>
+                <Text fw={700} size="sm">{t('conversor.configuracao')}</Text>
               </Group>
 
               <form onSubmit={handleConvert}>
                 <Stack gap="md">
                   <NumberInput
-                    label="Sensibilidade GTA V"
-                    description="Escala 0–100 · aceita negativo para eixo invertido"
+                    label={t('conversor.gta_sens_label')}
+                    description={t('conversor.gta_sens_desc')}
                     value={gtaSens}
                     onChange={setGtaSens}
                     min={-100}
                     max={100}
                     step={1}
-                    placeholder="ex: 50 ou -35"
+                    placeholder={t('conversor.gta_sens_placeholder')}
                     autoFocus
                   />
                   <Text size="xs" c="dimmed" mt={-8}>
-                    Configure em GTA V → <Code>Opções → Controles → Sensibilidade do Mouse</Code>
+                    <Trans i18nKey="conversor.config_hint" components={{ code: <Code /> }} />
                   </Text>
 
                   <NumberInput
-                    label="DPI do Mouse"
+                    label={t('conversor.dpi_label')}
                     value={dpi}
                     onChange={setDpi}
                     min={1}
                     step={1}
-                    placeholder="ex: 800"
+                    placeholder={t('conversor.dpi_placeholder')}
                   />
                   <Group gap={6}>
                     {DPI_PRESETS.map((p) => (
@@ -161,7 +164,7 @@ export default function SensConverter({ onBack }) {
                   </Group>
 
                   <Button type="submit" fullWidth loading={loading} disabled={!preview}>
-                    Converter e Salvar
+                    {t('conversor.converter_salvar')}
                   </Button>
                 </Stack>
               </form>
@@ -174,15 +177,15 @@ export default function SensConverter({ onBack }) {
                 rightSection={<IconChevronDown size={14} style={{ transform: showFormula ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
                 onClick={() => setShowFormula((v) => !v)}
               >
-                Como calculamos isso?
+                {t('conversor.como_calculamos')}
               </Button>
               <Collapse in={showFormula}>
                 <Stack gap={6} mt="md">
-                  <Group justify="space-between"><Text size="xs" c="dimmed">GTA V yaw</Text><Code>0.0009 °/count</Code></Group>
-                  <Group justify="space-between"><Text size="xs" c="dimmed">KovaaK's yaw</Text><Code>0.022 °/count</Code></Group>
-                  <Group justify="space-between"><Text size="xs" c="dimmed">Aim Lab yaw</Text><Code>0.022 °/count</Code></Group>
-                  <Text size="xs" ta="center" mt={4}>cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54</Text>
-                  <Text size="xs" c="dimmed" ta="center">Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer</Text>
+                  <Group justify="space-between"><Text size="xs" c="dimmed">{t('conversor.formula.gta_yaw')}</Text><Code>0.0009 °/count</Code></Group>
+                  <Group justify="space-between"><Text size="xs" c="dimmed">{t('conversor.formula.kovaak_yaw')}</Text><Code>0.022 °/count</Code></Group>
+                  <Group justify="space-between"><Text size="xs" c="dimmed">{t('conversor.formula.aimlab_yaw')}</Text><Code>0.022 °/count</Code></Group>
+                  <Text size="xs" ta="center" mt={4}>{t('conversor.formula.formula_texto')}</Text>
+                  <Text size="xs" c="dimmed" ta="center">{t('conversor.formula.validado_por')}</Text>
                 </Stack>
               </Collapse>
             </Card>
@@ -197,14 +200,14 @@ export default function SensConverter({ onBack }) {
                 <Group justify="space-between" mb="xs">
                   <Group gap={6}>
                     <IconBolt size={18} color="var(--mantine-color-brandCyan-5)" />
-                    <Text fw={700} size="sm">Resultado</Text>
+                    <Text fw={700} size="sm">{t('conversor.resultado')}</Text>
                   </Group>
-                  {result && <Badge color="green" variant="light">Salvo</Badge>}
+                  {result && <Badge color="green" variant="light">{t('conversor.salvo')}</Badge>}
                 </Group>
 
                 {display.inverted && (
                   <Text size="xs" c="orange" mb="sm">
-                    ↕ Eixo invertido detectado — os valores de sensibilidade são corretos, mas o mouse estará com direções Y trocadas.
+                    {t('conversor.eixo_invertido')}
                   </Text>
                 )}
 
@@ -212,7 +215,7 @@ export default function SensConverter({ onBack }) {
                   <Grid.Col span={4}>
                     <Card withBorder ta="center" p="sm">
                       <IconRuler2 size={20} color="var(--mantine-color-brandCyan-5)" />
-                      <Text size="xs" c="dimmed">cm / 360°</Text>
+                      <Text size="xs" c="dimmed">{t('conversor.cm_360')}</Text>
                       <Text fw={900} size="lg">{fmt(display.cm_per_360, 1)}</Text>
                       <CopyChip value={fmt(display.cm_per_360, 2)} />
                     </Card>
@@ -220,7 +223,7 @@ export default function SensConverter({ onBack }) {
                   <Grid.Col span={4}>
                     <Card withBorder ta="center" p="sm">
                       <IconBolt size={20} color="var(--mantine-color-orange-5)" />
-                      <Text size="xs" c="dimmed">KovaaK's</Text>
+                      <Text size="xs" c="dimmed">{t('conversor.kovaak')}</Text>
                       <Text fw={900} size="lg">{fmt(display.kovaak_sensitivity, 3)}</Text>
                       <CopyChip value={fmt(display.kovaak_sensitivity, 3)} />
                     </Card>
@@ -228,7 +231,7 @@ export default function SensConverter({ onBack }) {
                   <Grid.Col span={4}>
                     <Card withBorder ta="center" p="sm">
                       <IconTarget size={20} color="var(--mantine-color-green-5)" />
-                      <Text size="xs" c="dimmed">Aim Lab</Text>
+                      <Text size="xs" c="dimmed">{t('conversor.aimlab')}</Text>
                       <Text fw={900} size="lg">{fmt(display.aimlab_sensitivity, 3)}</Text>
                       <CopyChip value={fmt(display.aimlab_sensitivity, 3)} />
                     </Card>
@@ -237,8 +240,8 @@ export default function SensConverter({ onBack }) {
 
                 <Box mt="md">
                   <Group justify="space-between" mb={4}>
-                    <Text size="xs" c="dimmed">Baixa sens. (alto cm)</Text>
-                    <Text size="xs" c="dimmed">Alta sens. (baixo cm)</Text>
+                    <Text size="xs" c="dimmed">{t('conversor.baixa_sens')}</Text>
+                    <Text size="xs" c="dimmed">{t('conversor.alta_sens')}</Text>
                   </Group>
                   <MProgress
                     value={Math.min(100, Math.max(2, (1 - Math.log(display.cm_per_360 / 5) / Math.log(200)) * 100))}
@@ -250,7 +253,7 @@ export default function SensConverter({ onBack }) {
             ) : (
               <Card ta="center" py="xl">
                 <Text size="xl" mb={6}>🎯</Text>
-                <Text size="sm" c="dimmed">Informe a sensibilidade e o DPI para ver o resultado em tempo real</Text>
+                <Text size="sm" c="dimmed">{t('conversor.resultado_vazio')}</Text>
               </Card>
             )}
 
@@ -259,14 +262,14 @@ export default function SensConverter({ onBack }) {
               <Group justify="space-between" mb="sm">
                 <Group gap={6}>
                   <IconArchive size={18} color="var(--mantine-color-brandCyan-5)" />
-                  <Text fw={700} size="sm">Histórico</Text>
+                  <Text fw={700} size="sm">{t('conversor.historico')}</Text>
                 </Group>
-                <Badge variant="default">{history.length} conversões</Badge>
+                <Badge variant="default">{t('conversor.conversoes_count', { count: history.length })}</Badge>
               </Group>
               {histErr ? (
-                <Text size="sm" c="dimmed">⚠️ Histórico indisponível. Execute a migration v2 no Supabase primeiro.</Text>
+                <Text size="sm" c="dimmed">{t('conversor.historico_indisponivel')}</Text>
               ) : history.length === 0 ? (
-                <Text size="sm" c="dimmed">📭 Nenhuma conversão salva ainda. Clique em "Converter e Salvar" para registrar.</Text>
+                <Text size="sm" c="dimmed">{t('conversor.historico_vazio')}</Text>
               ) : (
                 <Stack gap={0}>
                   {history.map((row) => <HistoryRow key={row.id} row={row} />)}

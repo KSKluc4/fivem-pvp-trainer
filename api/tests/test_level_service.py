@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from services.level_service import (
     adjust_level, level_note_for, initial_level_for_experience, kill_quota_for_level,
-    KILLS_PER_MATCH_BY_LEVEL, LEVEL_UP_NOTE, LEVEL_DOWN_NOTE, MIN_LEVEL, MAX_LEVEL,
+    KILLS_PER_MATCH_BY_LEVEL, MIN_LEVEL, MAX_LEVEL,
 )
 
 
@@ -66,6 +66,8 @@ def test_adjust_level_ignores_days_beyond_the_last_two():
 
 
 def test_level_note_for_matches_change():
-    assert level_note_for('up') == LEVEL_UP_NOTE
-    assert level_note_for('down') == LEVEL_DOWN_NOTE
+    # level_note_for returns the raw 'up'/'down' code — the frontend
+    # translates it via rotina.level_note.<code> in the locale files.
+    assert level_note_for('up') == 'up'
+    assert level_note_for('down') == 'down'
     assert level_note_for(None) == ''

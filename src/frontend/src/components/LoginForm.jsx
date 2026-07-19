@@ -1,21 +1,27 @@
 import { useState } from 'react'
 import { Card, TextInput, PasswordInput, Button, Stack, Title, Text, Anchor, Alert } from '@mantine/core'
 import { IconAlertCircle } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { login } from '../services/api'
 import BrandLogo from './BrandLogo'
 
-function friendlyError(err) {
-  if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
-  const msg = err.response?.data?.error || ''
-  if (msg) return msg
-  const code = err.response?.status
-  if (code === 401) return 'Username ou senha incorretos.'
-  if (code === 429) return 'Muitas tentativas. Aguarde um momento e tente novamente.'
-  if (code >= 500) return 'Erro interno do servidor. Tente novamente em instantes.'
-  return 'Ocorreu um erro. Tente novamente.'
+function useFriendlyError() {
+  const { t } = useTranslation()
+  return (err) => {
+    if (!err.response) return t('comum.erros.servidor_indisponivel')
+    const msg = err.response?.data?.error || ''
+    if (msg) return msg
+    const code = err.response?.status
+    if (code === 401) return t('auth.errors.senha_incorreta')
+    if (code === 429) return t('comum.erros.muitas_tentativas')
+    if (code >= 500) return t('comum.erros.erro_servidor')
+    return t('comum.erros.erro_generico')
+  }
 }
 
 export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword }) {
+  const { t } = useTranslation()
+  const friendlyError = useFriendlyError()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState(null)
@@ -47,14 +53,14 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
       <Card w="100%" maw={420} p="xl">
         <BrandLogo />
 
-        <Title order={2} mt="lg" mb={4}>Entrar</Title>
-        <Text c="dimmed" size="sm" mb="xl">Acesse sua conta para continuar treinando</Text>
+        <Title order={2} mt="lg" mb={4}>{t('auth.login.title')}</Title>
+        <Text c="dimmed" size="sm" mb="xl">{t('auth.login.subtitle')}</Text>
 
         <form onSubmit={handleSubmit}>
           <Stack gap="md">
             <TextInput
-              label="Username"
-              placeholder="username"
+              label={t('auth.login.username_label')}
+              placeholder={t('auth.login.username_placeholder')}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
@@ -62,7 +68,7 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
               required
             />
             <PasswordInput
-              label="Senha"
+              label={t('auth.login.password_label')}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -71,7 +77,7 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
             />
 
             <Anchor component="button" type="button" size="sm" onClick={onForgotPassword} style={{ alignSelf: 'flex-start' }}>
-              Esqueceu a senha?
+              {t('auth.login.forgot_password')}
             </Anchor>
 
             {error && (
@@ -81,15 +87,15 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
             )}
 
             <Button type="submit" size="md" fullWidth loading={loading} disabled={!username || !password}>
-              Entrar →
+              {t('auth.login.submit')}
             </Button>
           </Stack>
         </form>
 
         <Text ta="center" size="sm" mt="lg" c="dimmed">
-          Não tem conta?{' '}
+          {t('auth.login.no_account')}{' '}
           <Anchor component="button" type="button" onClick={onGoRegister} fw={700}>
-            Criar conta
+            {t('auth.login.create_account')}
           </Anchor>
         </Text>
       </Card>

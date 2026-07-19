@@ -19,10 +19,6 @@ EXPERIENCE_INITIAL_LEVEL = {
     'avancado':      3,
 }
 
-LEVEL_UP_NOTE   = 'Meta aumentou — você está evoluindo! 📈'
-LEVEL_DOWN_NOTE = 'Meta ajustada para retomar o ritmo'
-
-
 def initial_level_for_experience(experience_level: str) -> int:
     return EXPERIENCE_INITIAL_LEVEL.get(experience_level, 2)
 
@@ -63,11 +59,11 @@ def adjust_level(current_level: int, recent_results: list):
 
 
 def level_note_for(change: str) -> str:
-    if change == 'up':
-        return LEVEL_UP_NOTE
-    if change == 'down':
-        return LEVEL_DOWN_NOTE
-    return ''
+    """Returns the 'up'/'down' code as-is (or '' for no change) — the
+    frontend translates it via rotina.level_note.<code> in the locale files.
+    Kept as its own function so call sites don't need to know the '' default
+    for "no change"."""
+    return change or ''
 
 
 def kill_quota_for_level(level: int) -> int:

@@ -1,0 +1,496 @@
+{
+  "comum": {
+    "app_name": "FiveM PvP Trainer",
+    "tagline": "Training System",
+    "voltar": "Voltar",
+    "cancelar": "Cancelar",
+    "salvar": "Salvar",
+    "agora_nao": "Agora não",
+    "idioma": "Idioma",
+    "loading": {
+      "iniciando": "Iniciando...",
+      "carregando_rotina": "Carregando rotina..."
+    },
+    "erros": {
+      "servidor_indisponivel": "Servidor indisponível. Verifique sua conexão e tente novamente.",
+      "muitas_tentativas": "Muitas tentativas. Aguarde um momento e tente novamente.",
+      "erro_servidor": "Erro interno do servidor. Tente novamente em instantes.",
+      "erro_generico": "Ocorreu um erro. Tente novamente."
+    },
+    "update_banner": {
+      "versao_disponivel": "Versão <bold>{{version}}</bold> disponível — baixada e pronta para instalar",
+      "reiniciar_agora": "Reiniciar agora",
+      "depois": "Depois",
+      "sera_instalado_tooltip": "Será instalado ao fechar o app"
+    },
+    "user_menu": {
+      "dias": "dias",
+      "streak": "streak",
+      "exercicios": "exercícios",
+      "editar_perfil": "Editar perfil",
+      "alterar_perfil_treino": "Alterar perfil de treino",
+      "treinar_agora": "Treinar agora",
+      "conversor_sensibilidade": "Conversor de sensibilidade",
+      "painel_admin": "Painel admin",
+      "sair": "Sair",
+      "desktop": "Desktop",
+      "web": "Web",
+      "nome_label": "Nome",
+      "nome_placeholder": "Nome completo",
+      "username_label": "Username",
+      "username_placeholder": "username",
+      "erro_ao_salvar": "Erro ao salvar. Tente novamente.",
+      "perfil_atualizado": "Perfil atualizado com sucesso!",
+      "niveis": {
+        "elite": "Elite",
+        "veterano": "Veterano",
+        "especialista": "Especialista",
+        "atirador": "Atirador",
+        "recruta": "Recruta",
+        "novato": "Novato"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Acesse sua conta para continuar treinando",
+      "username_label": "Username",
+      "username_placeholder": "username",
+      "password_label": "Senha",
+      "forgot_password": "Esqueceu a senha?",
+      "submit": "Entrar →",
+      "no_account": "Não tem conta?",
+      "create_account": "Criar conta"
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Comece sua jornada de treino personalizado",
+      "name_label": "Nome completo",
+      "name_placeholder": "João Silva",
+      "username_label": "Username",
+      "username_desc": "Mínimo 3 caracteres",
+      "username_placeholder": "joaosilva",
+      "email_label": "Email",
+      "email_placeholder": "voce@exemplo.com",
+      "password_label": "Senha",
+      "password_desc": "Mínimo 6 caracteres",
+      "submit": "Criar conta →",
+      "has_account": "Já tem conta?",
+      "login": "Entrar"
+    },
+    "forgot_password": {
+      "title": "Esqueceu a senha?",
+      "subtitle": "Digite o email da sua conta para receber um link de redefinição",
+      "email_label": "Email",
+      "email_placeholder": "voce@exemplo.com",
+      "submit": "Enviar link →",
+      "back_to_login": "← Voltar para o login",
+      "default_sent_message": "Se este email estiver cadastrado, enviamos um link de redefinição de senha."
+    },
+    "email_prompt": {
+      "title": "Vincule um email",
+      "description": "Vincule um email para poder recuperar sua senha caso a esqueça.",
+      "email_label": "Email",
+      "email_placeholder": "voce@exemplo.com",
+      "vincular": "Vincular",
+      "email_vinculado": "Email vinculado com sucesso!",
+      "erro_vincular": "Erro ao vincular email. Tente novamente."
+    },
+    "errors": {
+      "email_invalido": "Email inválido.",
+      "senha_incorreta": "Username ou senha incorretos.",
+      "username_em_uso": "Este username já está em uso. Escolha outro.",
+      "dados_invalidos": "Dados inválidos. Verifique os campos e tente novamente."
+    }
+  },
+  "questionario": {
+    "pergunta_contador": "Pergunta <bold>{{current}}</bold> de {{total}}",
+    "pergunta_anterior": "Pergunta anterior",
+    "gerando_rotina": "Gerando sua rotina personalizada...",
+    "analisando_perfil": "Analisando perfil de {{username}}",
+    "erro_enviar": "Erro ao enviar questionário: {{detail}}",
+    "erro_desconhecido": "Erro desconhecido",
+    "perguntas": {
+      "specific_weakness": {
+        "question": "Qual é sua maior dificuldade específica?",
+        "subtitle": "Vamos focar no seu maior gargalo técnico",
+        "opcoes": {
+          "moving_target": { "label": "Mira em Movimento", "description": "Erro muito quando o inimigo se movimenta" },
+          "headshot":      { "label": "Headshot Consistente", "description": "Acerto no corpo mas raramente na cabeça" },
+          "long_range":    { "label": "Distância Longa", "description": "Perco fights de longe facilmente" },
+          "reaction":      { "label": "Reação sob Pressão", "description": "Travo quando levo o primeiro tiro" }
+        }
+      },
+      "focus_area": {
+        "question": "Qual é seu maior desafio no PvP?",
+        "subtitle": "Define o foco principal dos exercícios gerados",
+        "opcoes": {
+          "aim":      { "label": "Mira", "description": "Erro muito ao atirar, crosshair impreciso ou tremido" },
+          "reflex":   { "label": "Reflexo", "description": "Reajo lento, demoro para sacar e atirar" },
+          "movement": { "label": "Movimento", "description": "Me movo de forma previsível, levo muita bala" }
+        }
+      },
+      "experience_level": {
+        "question": "Qual é seu nível de experiência em PvP?",
+        "subtitle": "Define a dificuldade dos exercícios gerados",
+        "opcoes": {
+          "iniciante":     { "label": "Iniciante", "description": "Comecei a jogar FiveM PvP recentemente" },
+          "intermediario": { "label": "Intermediário", "description": "Jogo há alguns meses, ganho algumas fights" },
+          "avancado":      { "label": "Avançado", "description": "Jogo há mais de 1 ano, quero refinar a técnica" }
+        }
+      },
+      "aim_difficulty": {
+        "question": "Que tipo de mira é mais difícil para você?",
+        "subtitle": "Selecione sua maior dificuldade com o crosshair",
+        "opcoes": {
+          "tracking": { "label": "Tracking", "description": "Manter a mira em inimigos que se movem" },
+          "flick":    { "label": "Flick Shot", "description": "Miras rápidas para alvos distantes" },
+          "close":    { "label": "Close Range", "description": "Trocar tiros de perto sob pressão" }
+        }
+      },
+      "reflex_level": {
+        "question": "Como você avalia seu reflexo atual?",
+        "subtitle": "Seja honesto — isso calibra a intensidade do treino",
+        "opcoes": {
+          "lento":  { "label": "Lento", "description": "Inimigo frequentemente atira primeiro" },
+          "medio":  { "label": "Médio", "description": "Às vezes reajo bem, às vezes não" },
+          "rapido": { "label": "Rápido", "description": "Reajo bem, quero ir ao próximo nível" }
+        }
+      },
+      "movement_quality": {
+        "question": "Como é seu movimento durante o combate?",
+        "subtitle": "Movimento imprevisível é uma das habilidades mais importantes",
+        "opcoes": {
+          "previsivel":   { "label": "Previsível", "description": "Fico parado ou ando linear, levo muito dano" },
+          "moderado":     { "label": "Moderado", "description": "Às vezes consigo confundir o inimigo" },
+          "imprevisivel": { "label": "Imprevisível", "description": "Movimento bom, quero combinar com mira" }
+        }
+      },
+      "daily_time": {
+        "question": "Quanto tempo você pode treinar por dia?",
+        "subtitle": "Consistência diária supera sessões longas esporádicas",
+        "opcoes": {
+          "25": { "label": "15–30 min", "description": "Treino rápido e focado no ponto crítico" },
+          "45": { "label": "30–60 min", "description": "Sessão completa com aquecimento e revisão" },
+          "65": { "label": "60+ min", "description": "Treino intensivo para evolução acelerada" }
+        }
+      },
+      "preferred_tool": {
+        "question": "Qual ferramenta de treino você usa?",
+        "subtitle": "Os exercícios serão adaptados para sua ferramenta",
+        "opcoes": {
+          "kovaak": { "label": "KovaaK's", "description": "Focado em FPS, altamente customizável" },
+          "aimlab": { "label": "Aim Lab", "description": "Gratuito, interface moderna, boas métricas" },
+          "ambos":  { "label": "Ambos", "description": "Uso as duas ferramentas" },
+          "nenhum": { "label": "Nenhum (ainda)", "description": "Vou baixar agora — Aim Lab é gratuito na Steam" }
+        }
+      }
+    }
+  },
+  "rotina": {
+    "titulo": "Rotina de Hoje",
+    "saudacao": "Olá, <bold>{{name}}</bold> • Foco:",
+    "progresso": "Progresso",
+    "conversor": "Conversor",
+    "conversor_tooltip": "Conversor de sensibilidade GTA V → KovaaK / Aim Lab",
+    "alterar_perfil": "Alterar perfil",
+    "alterar_perfil_tooltip": "Refazer questionário de perfil",
+    "treinar_no_app": "Treinar no app",
+    "nivel": "Nível {{level}}",
+    "reflexao_placeholder": "📝 Sessão de reflexão — anote suas observações e identifique o que melhorou hoje.",
+    "exercicios_concluidos": "{{completed}}/{{total}} exercícios concluídos",
+    "finalizar_sessao": "Finalizar Sessão ✓",
+    "marque_pelo_menos_um": "Marque pelo menos um exercício para finalizar",
+    "sessao_salva": "Sessão salva! Bom treino, {{name}}!",
+    "toast_sessao_finalizada_one": "Sessão finalizada! {{count}} exercício concluído.",
+    "toast_sessao_finalizada_other": "Sessão finalizada! {{count}} exercícios concluídos.",
+    "toast_erro_salvar_sessao": "Erro ao salvar sessão. Verifique sua conexão e tente novamente.",
+    "in_game_badge": "In-game",
+    "secoes": {
+      "aquecimento": "Aquecimento",
+      "treino_principal": "Treino Principal",
+      "aplicacao_jogo": "Aplicação em Jogo (Mata-mata)",
+      "revisao_legado": "Revisão"
+    },
+    "tips": {
+      "aquecimento": "Faça cada exercício sem pressão. O objetivo é ativar a musculatura e o reflexo.",
+      "aplicacao_jogo": "Jogue no servidor GOAT — cada partida tem sua própria cota e foco. Bata a cota de cada uma.",
+      "focus": {
+        "aim":      "Mantenha o crosshair na altura da cabeça. Respire entre cenários e evite tensionar o pulso.",
+        "reflex":   "Não force a velocidade — reação natural é mais eficiente que forçada. Consistência primeiro.",
+        "movement": "Strafe e mire ao mesmo tempo — pratique o pre-aim. Movimento imprevisível é a sua armadura."
+      },
+      "weapon": {
+        "pistola": "Pistola: semi-auto preciso supera spray. Cada bala conta — priorize headshots.",
+        "rifle":   "Rifle: controle o kick do primeiro tiro. Burst de 2–3 é mais letal que full-auto.",
+        "shotgun": "Shotgun: feche o espaço agressivamente. Mire no centro e ataque sempre primeiro.",
+        "misto":   "Múltiplas armas: crosshair placement universal vale para todas — cabeça, sempre."
+      },
+      "weakness": {
+        "moving_target": "Inimigos em movimento: mantenha o crosshair à frente do alvo, não sobre ele.",
+        "headshot":      "Headshots: ajuste sua sensibilidade — mira mais lenta facilita colocação precisa.",
+        "long_range":    "Longa distância: menos sensibilidade + controle de respiração durante o tiro.",
+        "reaction":      "Pressão: pré-mire ângulos antes de virar. Quem chega preparado atira primeiro."
+      }
+    },
+    "level_note": {
+      "up": "Meta aumentou — você está evoluindo! 📈",
+      "down": "Meta ajustada para retomar o ritmo"
+    },
+    "partida": {
+      "titulo": "Partida {{index}} — Mate {{quota}} inimigos · Foco: {{focus}}",
+      "mate_inimigos_one": "Mate {{count}} inimigo",
+      "mate_inimigos_other": "Mate {{count}} inimigos"
+    },
+    "focos": {
+      "duelos_1x1": {
+        "label": "duelos 1x1",
+        "instrucao": "Busque confrontos diretos 1x1 e feche cada duelo com decisão."
+      },
+      "tracking_combate": {
+        "label": "tracking em combate",
+        "instrucao": "Mantenha o crosshair no inimigo mesmo quando ele — ou você — está em movimento."
+      },
+      "posicionamento": {
+        "label": "posicionamento",
+        "instrucao": "Use ângulos e cover para vencer o duelo antes mesmo de atirar."
+      },
+      "movement_strafe": {
+        "label": "movement/strafe",
+        "instrucao": "Mova-se de forma imprevisível enquanto atira — nunca fique parado."
+      },
+      "game_sense": {
+        "label": "game sense",
+        "instrucao": "Preste atenção em som e posicionamento do inimigo antes de engajar."
+      }
+    },
+    "exercicios": {
+      "smoothbot":                       "Tracking suave e contínuo",
+      "popcorn_nightmare":               "Microajustes e precisão",
+      "valorant_medium_strafes_goated":  "Tracking com targets em movimento",
+      "air_angelic_4":                   "Tracking aéreo avançado",
+      "thin_gauntlet":                   "Precisão em targets pequenos",
+      "gridshot_ultimate":               "Mira rápida em múltiplos targets",
+      "microshot":                       "Precisão em alvos pequenos",
+      "strafetrack":                     "Tracking de targets em movimento lateral",
+      "multilitrack":                    "Tracking múltiplos simultâneos",
+      "tile_frenzy":                     "Reação rápida a targets aleatórios",
+      "1w4ts_goated":                    "Flick shots de curta distância",
+      "bounce_180":                      "Reflexo e rotação de 180°",
+      "psalmsfasttargets":               "Targets de alta velocidade",
+      "revosect":                        "Flick avançado com precisão",
+      "reflexshot":                      "Treino de reação pura",
+      "spidershot":                      "Múltiplos targets em reação",
+      "motionshot":                      "Flick em targets em movimento",
+      "strafing_tiles":                  "Mira enquanto executa strafe",
+      "movement_redirect":               "Redirecionamento de mira com movimento",
+      "b180_goated":                     "Controle de mira em mudanças de ângulo",
+      "pasu_voltaic":                    "Flick com strafe simultâneo",
+      "circletrack":                     "Tracking circular com movimento",
+      "smoothbot_aquecimento":           "Aquecimento de tracking",
+      "tile_frenzy_aquecimento":         "Aquecimento de reação",
+      "gridshot_ultimate_aquecimento":   "Aquecimento geral",
+      "reflexshot_aquecimento":          "Aquecimento de reflexo"
+    },
+    "dificuldade": {
+      "beginner": "Iniciante",
+      "intermediate": "Intermediário",
+      "advanced": "Avançado"
+    },
+    "foco_label": {
+      "aim": "Mira",
+      "reflex": "Reflexo",
+      "movement": "Movimento"
+    },
+    "playlists": {
+      "titulo": "Playlists Recomendadas — {{tool}}",
+      "subtitulo": "Coleções curadas para acelerar sua evolução",
+      "acessar": "Acessar →",
+      "kovaak": {
+        "voltaic_benchmark": { "nome": "Voltaic Benchmark", "desc": "O padrão ouro — avalia seu nível real com 6 cenários de tracking, flick e controle", "tag": "Benchmark" },
+        "smooth_click": { "nome": "Smooth & Click", "desc": "Progressão de tracking suave a flick shots precisos — ideal para iniciantes e intermediários", "tag": "Progressivo" },
+        "voltaic_fps_pack": { "nome": "Voltaic FPS Pack", "desc": "Cenários validados pela comunidade competitiva — referência de treino para FPS", "tag": "Competitivo" }
+      },
+      "aimlab": {
+        "aim_lab_routines": { "nome": "Aim Lab Routines", "desc": "Rotinas oficiais organizadas por nível — iniciante, intermediário e avançado", "tag": "Oficial" },
+        "gridshot_challenge": { "nome": "Gridshot Challenge", "desc": "O exercício mais famoso do Aim Lab — mede velocidade, precisão e consistência", "tag": "Popular" },
+        "tracking_fundamentals": { "nome": "Tracking Fundamentals", "desc": "Progressão de tracking básico a avançado — do Circletrack ao Multilitrack", "tag": "Tracking" }
+      }
+    },
+    "servidores": {
+      "titulo": "💡 Onde treinar no FiveM",
+      "subtitulo": "Entre no Discord do servidor para ver como conectar e jogar",
+      "discord": "Discord",
+      "goat_desc": "ideal para treinar mata-mata",
+      "plf_desc": "ideal para melhorar seus drops"
+    }
+  },
+  "trainer": {
+    "titulo": "Treinar agora",
+    "subtitulo": "Tracking Suave",
+    "voltar": "Voltar",
+    "dificuldade": "Dificuldade",
+    "estilo_mira": "Estilo de mira",
+    "instrucoes": "60 segundos · o mouse fica preso na janela (Pointer Lock) — pressione <bold>ESC</bold> para soltar a qualquer momento.",
+    "iniciar": "Iniciar",
+    "vai": "Vai!",
+    "pausado": "Pausado",
+    "clique_continuar": "Clique para continuar",
+    "na_mira": "na mira",
+    "dificuldades": {
+      "facil": "Fácil",
+      "medio": "Médio",
+      "dificil": "Difícil"
+    },
+    "crosshair_estilos": {
+      "cross": "Cruz",
+      "dot": "Ponto",
+      "cross-dot": "Cruz + Ponto"
+    },
+    "resultado": {
+      "titulo": "Resultado — Tracking Suave",
+      "score": "Score",
+      "tracking": "Tracking",
+      "tempo_na_mira": "tempo na mira",
+      "melhor_sequencia": "Melhor sequência",
+      "continua_na_mira": "contínua na mira",
+      "recorde_pessoal": "Recorde pessoal ({{difficulty}})",
+      "novo_recorde": "🏆 Novo recorde!",
+      "primeira_tentativa": "Primeira tentativa",
+      "igual_ultima": "Igual à última",
+      "vs_ultima": "vs última",
+      "sync_indisponivel": "⚠️ Sincronização indisponível no momento — este resultado foi salvo só neste dispositivo.",
+      "tentar_novamente": "Tentar novamente",
+      "voltar": "Voltar"
+    },
+    "sensitivity_setup": {
+      "titulo": "Configurar sensibilidade",
+      "descricao": "O treino usa a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.",
+      "carregado_historico": "Preenchido a partir do seu último conversor salvo.",
+      "gta_sens_label": "Sensibilidade GTA V",
+      "gta_sens_desc": "Escala 0–100 · a mesma que você usa no jogo",
+      "dpi_label": "DPI do Mouse",
+      "ajuste_fino": "Ajuste fino",
+      "ajuste_fino_desc": "Multiplica a sensibilidade convertida — use se precisar de um pequeno ajuste sem mexer no GTA V.",
+      "salvar_continuar": "Salvar e continuar",
+      "preview_label": "Prévia ao vivo — mova o mouse aqui"
+    }
+  },
+  "dashboard": {
+    "titulo": "Seu Progresso",
+    "voltar_ao_treino": "Voltar ao Treino",
+    "dias_seguidos_one": "dia seguido",
+    "dias_seguidos_other": "dias seguidos",
+    "ultimos_7_dias": "Últimos 7 Dias",
+    "dias": {
+      "dom": "Dom", "seg": "Seg", "ter": "Ter", "qua": "Qua", "qui": "Qui", "sex": "Sex", "sab": "Sáb"
+    },
+    "stats": {
+      "sessoes_geradas": "Sessões geradas",
+      "sessoes_completas": "Sessões completas",
+      "conclusao": "Conclusão",
+      "semanas_ativas": "Semanas ativas"
+    },
+    "evolucao_semanal": {
+      "titulo": "Evolução Semanal",
+      "serie_geradas": "Sessões geradas",
+      "serie_completas": "Sessões completas"
+    },
+    "taxa_conclusao": {
+      "titulo": "Taxa de Conclusão",
+      "completa_one": "completa",
+      "completa_other": "completas",
+      "em_andamento": "em andamento"
+    },
+    "conquistas": {
+      "titulo": "Conquistas",
+      "desbloqueado": "✓ Desbloqueado",
+      "lista": {
+        "first":   { "nome": "Primeira Batalha", "desc": "Complete 1 sessão" },
+        "streak3": { "nome": "Em Chamas", "desc": "3 dias consecutivos" },
+        "sess5":   { "nome": "Consistente", "desc": "5 sessões completas" },
+        "streak7": { "nome": "Semana Perfeita", "desc": "7 dias seguidos" },
+        "sess10":  { "nome": "Dedicado", "desc": "10 sessões completas" },
+        "sess30":  { "nome": "Veterano", "desc": "30 sessões completas" }
+      }
+    },
+    "historico": {
+      "titulo": "Histórico de Sessões",
+      "vazio": "📭 Nenhuma sessão registrada ainda. Complete sua primeira rotina!",
+      "exercicios_registrados": "{{count}} exercício(s)",
+      "completo": "✓ Completo",
+      "em_andamento": "● Em andamento"
+    }
+  },
+  "conversor": {
+    "titulo": "Conversor de Sensibilidade",
+    "subtitulo": "GTA V / FiveM → KovaaK's · Aim Lab",
+    "voltar_ao_treino": "Voltar ao Treino",
+    "configuracao": "Configuração",
+    "gta_sens_label": "Sensibilidade GTA V",
+    "gta_sens_desc": "Escala 0–100 · aceita negativo para eixo invertido",
+    "gta_sens_placeholder": "ex: 50 ou -35",
+    "config_hint": "Configure em GTA V → <code>Opções → Controles → Sensibilidade do Mouse</code>",
+    "dpi_label": "DPI do Mouse",
+    "dpi_placeholder": "ex: 800",
+    "converter_salvar": "Converter e Salvar",
+    "como_calculamos": "Como calculamos isso?",
+    "formula": {
+      "gta_yaw": "GTA V yaw",
+      "kovaak_yaw": "KovaaK's yaw",
+      "aimlab_yaw": "Aim Lab yaw",
+      "formula_texto": "cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54",
+      "validado_por": "Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer"
+    },
+    "resultado": "Resultado",
+    "salvo": "Salvo",
+    "eixo_invertido": "↕ Eixo invertido detectado — os valores de sensibilidade são corretos, mas o mouse estará com direções Y trocadas.",
+    "cm_360": "cm / 360°",
+    "kovaak": "KovaaK's",
+    "aimlab": "Aim Lab",
+    "baixa_sens": "Baixa sens. (alto cm)",
+    "alta_sens": "Alta sens. (baixo cm)",
+    "resultado_vazio": "Informe a sensibilidade e o DPI para ver o resultado em tempo real",
+    "historico": "Histórico",
+    "conversoes_count": "{{count}} conversões",
+    "historico_indisponivel": "⚠️ Histórico indisponível. Execute a migration v2 no Supabase primeiro.",
+    "historico_vazio": "📭 Nenhuma conversão salva ainda. Clique em \"Converter e Salvar\" para registrar.",
+    "copiado": "Copiado!",
+    "copiar": "Copiar",
+    "erros": {
+      "sens_invalida": "Informe uma sensibilidade válida (diferente de zero).",
+      "sens_fora_faixa": "Sensibilidade deve estar entre -100 e 100.",
+      "dpi_invalido": "Informe um DPI válido (número positivo)."
+    }
+  },
+  "admin": {
+    "titulo": "⚙️ Painel de Admin",
+    "subtitulo": "Visão geral da plataforma",
+    "voltar": "Voltar",
+    "erro_carregar": "Erro ao carregar painel",
+    "visao_geral": "Visão Geral",
+    "stats": {
+      "total_usuarios": "Total de usuários",
+      "ativos_7d": "Ativos (7 dias)",
+      "novos_7d": "Novos (7 dias)",
+      "novos_30d": "Novos (30 dias)",
+      "sessoes_completadas": "Sessões completadas"
+    },
+    "foco_treino": "🎯 Foco de Treino",
+    "servidor_preferido": "🎮 Servidor Preferido",
+    "nenhum_questionario": "Nenhum questionário respondido ainda",
+    "usuarios_titulo": "Usuários ({{count}})",
+    "buscar_placeholder": "Buscar nome ou username…",
+    "nenhum_usuario_encontrado": "Nenhum usuário encontrado.",
+    "sem_usuarios": "Sem usuários.",
+    "tabela": {
+      "nome": "Nome",
+      "username": "Username",
+      "cadastro": "Cadastro",
+      "ultimo_treino": "Último treino",
+      "sessoes": "Sessões",
+      "admin_badge": "admin"
+    }
+  }
+}

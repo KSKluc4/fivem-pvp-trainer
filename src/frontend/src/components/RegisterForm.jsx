@@ -1,23 +1,29 @@
 import { useState } from 'react'
 import { Card, TextInput, PasswordInput, Button, Stack, Title, Text, Anchor, Alert } from '@mantine/core'
 import { IconAlertCircle } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { register } from '../services/api'
 import BrandLogo from './BrandLogo'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-function friendlyError(err) {
-  if (!err.response) return 'Servidor indisponível. Verifique sua conexão e tente novamente.'
-  const msg = err.response?.data?.error || ''
-  if (msg) return msg
-  const code = err.response?.status
-  if (code === 409) return 'Este username já está em uso. Escolha outro.'
-  if (code === 400) return 'Dados inválidos. Verifique os campos e tente novamente.'
-  if (code >= 500) return 'Erro interno do servidor. Tente novamente em instantes.'
-  return 'Ocorreu um erro. Tente novamente.'
+function useFriendlyError() {
+  const { t } = useTranslation()
+  return (err) => {
+    if (!err.response) return t('comum.erros.servidor_indisponivel')
+    const msg = err.response?.data?.error || ''
+    if (msg) return msg
+    const code = err.response?.status
+    if (code === 409) return t('auth.errors.username_em_uso')
+    if (code === 400) return t('auth.errors.dados_invalidos')
+    if (code >= 500) return t('comum.erros.erro_servidor')
+    return t('comum.erros.erro_generico')
+  }
 }
 
 export default function RegisterForm({ onSuccess, onGoLogin }) {
+  const { t } = useTranslation()
+  const friendlyError = useFriendlyError()
   const [form,    setForm]    = useState({ name: '', username: '', email: '', password: '' })
   const [error,   setError]   = useState(null)
   const [loading, setLoading] = useState(false)
@@ -29,7 +35,7 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
     setError(null)
 
     if (!EMAIL_RE.test(form.email)) {
-      setError('Email inválido.')
+      setError(t('auth.errors.email_invalido'))
       return
     }
 
@@ -56,14 +62,14 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
       <Card w="100%" maw={420} p="xl">
         <BrandLogo />
 
-        <Title order={2} mt="lg" mb={4}>Criar conta</Title>
-        <Text c="dimmed" size="sm" mb="xl">Comece sua jornada de treino personalizado</Text>
+        <Title order={2} mt="lg" mb={4}>{t('auth.register.title')}</Title>
+        <Text c="dimmed" size="sm" mb="xl">{t('auth.register.subtitle')}</Text>
 
         <form onSubmit={handleSubmit}>
           <Stack gap="md">
             <TextInput
-              label="Nome completo"
-              placeholder="João Silva"
+              label={t('auth.register.name_label')}
+              placeholder={t('auth.register.name_placeholder')}
               value={form.name}
               onChange={set('name')}
               autoFocus
@@ -71,9 +77,9 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               required
             />
             <TextInput
-              label="Username"
-              description="Mínimo 3 caracteres"
-              placeholder="joaosilva"
+              label={t('auth.register.username_label')}
+              description={t('auth.register.username_desc')}
+              placeholder={t('auth.register.username_placeholder')}
               value={form.username}
               onChange={set('username')}
               autoComplete="username"
@@ -81,17 +87,17 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               required
             />
             <TextInput
-              label="Email"
+              label={t('auth.register.email_label')}
               type="email"
-              placeholder="voce@exemplo.com"
+              placeholder={t('auth.register.email_placeholder')}
               value={form.email}
               onChange={set('email')}
               autoComplete="email"
               required
             />
             <PasswordInput
-              label="Senha"
-              description="Mínimo 6 caracteres"
+              label={t('auth.register.password_label')}
+              description={t('auth.register.password_desc')}
               placeholder="••••••••"
               value={form.password}
               onChange={set('password')}
@@ -113,15 +119,15 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               loading={loading}
               disabled={!form.name || !form.username || !form.email || !form.password}
             >
-              Criar conta →
+              {t('auth.register.submit')}
             </Button>
           </Stack>
         </form>
 
         <Text ta="center" size="sm" mt="lg" c="dimmed">
-          Já tem conta?{' '}
+          {t('auth.register.has_account')}{' '}
           <Anchor component="button" type="button" onClick={onGoLogin} fw={700}>
-            Entrar
+            {t('auth.register.login')}
           </Anchor>
         </Text>
       </Card>

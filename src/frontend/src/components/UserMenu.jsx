@@ -7,16 +7,17 @@ import {
   IconPencil, IconSettings, IconDeviceGamepad2, IconShieldLock, IconLogout,
   IconAlertCircle, IconTargetArrow,
 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { getMe, updateProfile } from '../services/api'
 import { toast } from '../services/toast'
 
 const LEVELS = [
-  { min: 50, label: 'Elite',        icon: '🏆', color: '#ffa502' },
-  { min: 30, label: 'Veterano',     icon: '🏅', color: '#7b2fd4' },
-  { min: 15, label: 'Especialista', icon: '🔥', color: '#ff4757' },
-  { min: 5,  label: 'Atirador',     icon: '⚔️', color: '#00d4ff' },
-  { min: 1,  label: 'Recruta',      icon: '🎯', color: '#2ed573' },
-  { min: 0,  label: 'Novato',       icon: '🌱', color: '#7a839a' },
+  { min: 50, key: 'elite',        icon: '🏆', color: '#ffa502' },
+  { min: 30, key: 'veterano',     icon: '🏅', color: '#7b2fd4' },
+  { min: 15, key: 'especialista', icon: '🔥', color: '#ff4757' },
+  { min: 5,  key: 'atirador',     icon: '⚔️', color: '#00d4ff' },
+  { min: 1,  key: 'recruta',      icon: '🎯', color: '#2ed573' },
+  { min: 0,  key: 'novato',       icon: '🌱', color: '#7a839a' },
 ]
 
 function getLevel(n) { return LEVELS.find((l) => n >= l.min) || LEVELS[LEVELS.length - 1] }
@@ -33,6 +34,7 @@ function avatarHue(username) {
 }
 
 export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin }) {
+  const { t } = useTranslation()
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -65,9 +67,9 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
       setEditing(false)
       setOpen(false)
       setProfile(null) // force reload on next open
-      toast.success('Perfil atualizado com sucesso!')
+      toast.success(t('comum.user_menu.perfil_atualizado'))
     } catch (err) {
-      const msg = err.response?.data?.error || 'Erro ao salvar. Tente novamente.'
+      const msg = err.response?.data?.error || t('comum.user_menu.erro_ao_salvar')
       setEditErr(msg)
       toast.error(msg)
     } finally {
@@ -103,7 +105,7 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
           <Stack gap={0} style={{ minWidth: 0 }}>
             <Text fw={700} size="sm" truncate>{user.name}</Text>
             <Text size="xs" c="dimmed" truncate>@{user.username}</Text>
-            <Text size="xs" fw={700} style={{ color: level.color }}>{level.icon} {level.label}</Text>
+            <Text size="xs" fw={700} style={{ color: level.color }}>{level.icon} {t(`comum.user_menu.niveis.${level.key}`)}</Text>
           </Stack>
         </Group>
 
@@ -111,15 +113,15 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
           <Group justify="space-around" mb="sm" py="xs" style={{ borderTop: '1px solid var(--mantine-color-dark-5)', borderBottom: '1px solid var(--mantine-color-dark-5)' }}>
             <Stack gap={0} align="center">
               <Text fw={800} size="sm">{profile.stats.days_trained}</Text>
-              <Text size="10px" c="dimmed">dias</Text>
+              <Text size="10px" c="dimmed">{t('comum.user_menu.dias')}</Text>
             </Stack>
             <Stack gap={0} align="center">
               <Text fw={800} size="sm">{profile.stats.streak}</Text>
-              <Text size="10px" c="dimmed">streak</Text>
+              <Text size="10px" c="dimmed">{t('comum.user_menu.streak')}</Text>
             </Stack>
             <Stack gap={0} align="center">
               <Text fw={800} size="sm">{profile.stats.exercises_done}</Text>
-              <Text size="10px" c="dimmed">exercícios</Text>
+              <Text size="10px" c="dimmed">{t('comum.user_menu.exercicios')}</Text>
             </Stack>
           </Group>
         )}
@@ -128,17 +130,17 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
           <Stack gap="sm">
             <TextInput
               size="xs"
-              label="Nome"
+              label={t('comum.user_menu.nome_label')}
               value={editForm.name}
               onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-              placeholder="Nome completo"
+              placeholder={t('comum.user_menu.nome_placeholder')}
             />
             <TextInput
               size="xs"
-              label="Username"
+              label={t('comum.user_menu.username_label')}
               value={editForm.username}
               onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
-              placeholder="username"
+              placeholder={t('comum.user_menu.username_placeholder')}
             />
             {editErr && (
               <Alert color="red" variant="light" icon={<IconAlertCircle size={14} />} p="xs">
@@ -146,38 +148,38 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
               </Alert>
             )}
             <Group grow>
-              <Button size="xs" onClick={handleSave} loading={saving}>Salvar</Button>
-              <Button size="xs" variant="light" color="gray" onClick={() => setEditing(false)}>Cancelar</Button>
+              <Button size="xs" onClick={handleSave} loading={saving}>{t('comum.salvar')}</Button>
+              <Button size="xs" variant="light" color="gray" onClick={() => setEditing(false)}>{t('comum.cancelar')}</Button>
             </Group>
           </Stack>
         ) : (
           <Stack gap={2}>
             <UnstyledButton className="ud-action-btn" onClick={startEdit}>
-              <Group gap="xs"><IconPencil size={15} /><Text size="sm">Editar perfil</Text></Group>
+              <Group gap="xs"><IconPencil size={15} /><Text size="sm">{t('comum.user_menu.editar_perfil')}</Text></Group>
             </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onChangeProfile?.() }}>
-              <Group gap="xs"><IconSettings size={15} /><Text size="sm">Alterar perfil de treino</Text></Group>
+              <Group gap="xs"><IconSettings size={15} /><Text size="sm">{t('comum.user_menu.alterar_perfil_treino')}</Text></Group>
             </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onTrainer?.() }}>
-              <Group gap="xs"><IconTargetArrow size={15} /><Text size="sm">Treinar agora</Text></Group>
+              <Group gap="xs"><IconTargetArrow size={15} /><Text size="sm">{t('comum.user_menu.treinar_agora')}</Text></Group>
             </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onConverter?.() }}>
-              <Group gap="xs"><IconDeviceGamepad2 size={15} /><Text size="sm">Conversor de sensibilidade</Text></Group>
+              <Group gap="xs"><IconDeviceGamepad2 size={15} /><Text size="sm">{t('comum.user_menu.conversor_sensibilidade')}</Text></Group>
             </UnstyledButton>
             {user.is_admin && (
               <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onAdmin?.() }}>
-                <Group gap="xs"><IconShieldLock size={15} /><Text size="sm">Painel admin</Text></Group>
+                <Group gap="xs"><IconShieldLock size={15} /><Text size="sm">{t('comum.user_menu.painel_admin')}</Text></Group>
               </UnstyledButton>
             )}
             <Divider my={4} />
             <UnstyledButton className="ud-action-btn" c="red" onClick={handleLogout}>
-              <Group gap="xs"><IconLogout size={15} /><Text size="sm">Sair</Text></Group>
+              <Group gap="xs"><IconLogout size={15} /><Text size="sm">{t('comum.user_menu.sair')}</Text></Group>
             </UnstyledButton>
           </Stack>
         )}
 
         <Text size="10px" c="dimmed" ta="center" mt="sm">
-          {window.electronAPI ? 'Desktop' : 'Web'} · FiveM PvP Trainer
+          {window.electronAPI ? t('comum.user_menu.desktop') : t('comum.user_menu.web')} · {t('comum.app_name')}
         </Text>
       </Popover.Dropdown>
     </Popover>

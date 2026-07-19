@@ -1,17 +1,19 @@
 import * as THREE from 'three'
 import { ARENA_BOUNDS } from '../engine/scene'
 
-// "Tracking Suave" — a single target drifting through fluid, pseudo-random
+// "Smooth Tracking" — a single target drifting through fluid, pseudo-random
 // direction changes (steering toward a new random heading rather than
 // snapping to it). Own identity, not a clone of any third-party trainer's
 // named drill.
 export const EXERCISE_ID = 'tracking_suave'
 export const SESSION_DURATION_S = 60
 
+// Speed/turn tuning per difficulty. Display labels live in the locale files
+// under trainer.dificuldades.<key> — this module only carries gameplay data.
 export const DIFFICULTIES = {
-  facil:   { label: 'Fácil',   speed: 1.6, turnInterval: [1.3, 2.2], turnRate: 1.2 },
-  medio:   { label: 'Médio',   speed: 2.8, turnInterval: [0.9, 1.6], turnRate: 1.6 },
-  dificil: { label: 'Difícil', speed: 4.2, turnInterval: [0.6, 1.1], turnRate: 2.2 },
+  facil:   { speed: 1.6, turnInterval: [1.3, 2.2], turnRate: 1.2 },
+  medio:   { speed: 2.8, turnInterval: [0.9, 1.6], turnRate: 1.6 },
+  dificil: { speed: 4.2, turnInterval: [0.6, 1.1], turnRate: 2.2 },
 }
 
 const TARGET_RADIUS = 0.4

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Modal, TextInput, Button, Stack, Text, Group, Alert } from '@mantine/core'
 import { IconAlertCircle } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { addEmailApi } from '../services/api'
 import { toast } from '../services/toast'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 export default function EmailPromptModal({ opened, onClose, onLinked }) {
+  const { t } = useTranslation()
   const [email,   setEmail]   = useState('')
   const [error,   setError]   = useState(null)
   const [saving,  setSaving]  = useState(false)
@@ -16,34 +18,34 @@ export default function EmailPromptModal({ opened, onClose, onLinked }) {
     setError(null)
 
     if (!EMAIL_RE.test(email)) {
-      setError('Email inválido.')
+      setError(t('auth.errors.email_invalido'))
       return
     }
 
     setSaving(true)
     try {
       const res = await addEmailApi(email)
-      toast.success('Email vinculado com sucesso!')
+      toast.success(t('auth.email_prompt.email_vinculado'))
       onLinked(res.data.email)
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao vincular email. Tente novamente.')
+      setError(err.response?.data?.error || t('auth.email_prompt.erro_vincular'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Vincule um email" centered closeOnClickOutside={false}>
+    <Modal opened={opened} onClose={onClose} title={t('auth.email_prompt.title')} centered closeOnClickOutside={false}>
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Vincule um email para poder recuperar sua senha caso a esqueça.
+            {t('auth.email_prompt.description')}
           </Text>
 
           <TextInput
-            label="Email"
+            label={t('auth.email_prompt.email_label')}
             type="email"
-            placeholder="voce@exemplo.com"
+            placeholder={t('auth.email_prompt.email_placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoFocus
@@ -58,8 +60,8 @@ export default function EmailPromptModal({ opened, onClose, onLinked }) {
           )}
 
           <Group grow>
-            <Button type="submit" loading={saving} disabled={!email}>Vincular</Button>
-            <Button variant="light" color="gray" onClick={onClose} disabled={saving}>Agora não</Button>
+            <Button type="submit" loading={saving} disabled={!email}>{t('auth.email_prompt.vincular')}</Button>
+            <Button variant="light" color="gray" onClick={onClose} disabled={saving}>{t('comum.agora_nao')}</Button>
           </Group>
         </Stack>
       </form>

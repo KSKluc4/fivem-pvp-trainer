@@ -4,96 +4,83 @@ import {
   Group, Stack, Center, Alert, Transition,
 } from '@mantine/core'
 import { IconAlertCircle, IconChevronLeft, IconTargetArrow } from '@tabler/icons-react'
+import { Trans, useTranslation } from 'react-i18next'
 import { submitQuestionnaire } from '../services/api'
 
+// Question copy (question/subtitle/option label+description) lives in the
+// locale files under questionario.perguntas.<id> — this array only carries
+// the structural bits (order, option values/icons) that drive the UI.
 const QUESTIONS = [
-  // ── FiveM context ──────────────────────────────────────────────────────────
   {
     id: 'specific_weakness',
-    question: 'Qual é sua maior dificuldade específica?',
-    subtitle: 'Vamos focar no seu maior gargalo técnico',
     options: [
-      { value: 'moving_target', label: 'Mira em Movimento',    description: 'Erro muito quando o inimigo se movimenta',       icon: '🏃' },
-      { value: 'headshot',      label: 'Headshot Consistente', description: 'Acerto no corpo mas raramente na cabeça',         icon: '🎯' },
-      { value: 'long_range',    label: 'Distância Longa',      description: 'Perco fights de longe facilmente',               icon: '🔭' },
-      { value: 'reaction',      label: 'Reação sob Pressão',   description: 'Travo quando levo o primeiro tiro',              icon: '⚡' },
+      { value: 'moving_target', icon: '🏃' },
+      { value: 'headshot',      icon: '🎯' },
+      { value: 'long_range',    icon: '🔭' },
+      { value: 'reaction',      icon: '⚡' },
     ],
   },
-  // ── Aim training profile ───────────────────────────────────────────────────
   {
     id: 'focus_area',
-    question: 'Qual é seu maior desafio no PvP?',
-    subtitle: 'Define o foco principal dos exercícios gerados',
     options: [
-      { value: 'aim',      label: 'Mira',      description: 'Erro muito ao atirar, crosshair impreciso ou tremido', icon: '🎯' },
-      { value: 'reflex',   label: 'Reflexo',   description: 'Reajo lento, demoro para sacar e atirar',             icon: '⚡' },
-      { value: 'movement', label: 'Movimento', description: 'Me movo de forma previsível, levo muita bala',         icon: '🏃' },
+      { value: 'aim',      icon: '🎯' },
+      { value: 'reflex',   icon: '⚡' },
+      { value: 'movement', icon: '🏃' },
     ],
   },
   {
     id: 'experience_level',
-    question: 'Qual é seu nível de experiência em PvP?',
-    subtitle: 'Define a dificuldade dos exercícios gerados',
     options: [
-      { value: 'iniciante',    label: 'Iniciante',    description: 'Comecei a jogar FiveM PvP recentemente',           icon: '🌱' },
-      { value: 'intermediario', label: 'Intermediário', description: 'Jogo há alguns meses, ganho algumas fights',     icon: '⚔️' },
-      { value: 'avancado',     label: 'Avançado',     description: 'Jogo há mais de 1 ano, quero refinar a técnica',  icon: '🏆' },
+      { value: 'iniciante',     icon: '🌱' },
+      { value: 'intermediario', icon: '⚔️' },
+      { value: 'avancado',      icon: '🏆' },
     ],
   },
   {
     id: 'aim_difficulty',
-    question: 'Que tipo de mira é mais difícil para você?',
-    subtitle: 'Selecione sua maior dificuldade com o crosshair',
     options: [
-      { value: 'tracking', label: 'Tracking',    description: 'Manter a mira em inimigos que se movem',   icon: '👁️' },
-      { value: 'flick',    label: 'Flick Shot',  description: 'Miras rápidas para alvos distantes',       icon: '💥' },
-      { value: 'close',    label: 'Close Range', description: 'Trocar tiros de perto sob pressão',        icon: '🔫' },
+      { value: 'tracking', icon: '👁️' },
+      { value: 'flick',    icon: '💥' },
+      { value: 'close',    icon: '🔫' },
     ],
   },
   {
     id: 'reflex_level',
-    question: 'Como você avalia seu reflexo atual?',
-    subtitle: 'Seja honesto — isso calibra a intensidade do treino',
     options: [
-      { value: 'lento',  label: 'Lento',  description: 'Inimigo frequentemente atira primeiro',  icon: '🐢' },
-      { value: 'medio',  label: 'Médio',  description: 'Às vezes reajo bem, às vezes não',       icon: '⏱️' },
-      { value: 'rapido', label: 'Rápido', description: 'Reajo bem, quero ir ao próximo nível',   icon: '🐆' },
+      { value: 'lento',  icon: '🐢' },
+      { value: 'medio',  icon: '⏱️' },
+      { value: 'rapido', icon: '🐆' },
     ],
   },
   {
     id: 'movement_quality',
-    question: 'Como é seu movimento durante o combate?',
-    subtitle: 'Movimento imprevisível é uma das habilidades mais importantes',
     options: [
-      { value: 'previsivel',   label: 'Previsível',   description: 'Fico parado ou ando linear, levo muito dano', icon: '🪆' },
-      { value: 'moderado',     label: 'Moderado',     description: 'Às vezes consigo confundir o inimigo',        icon: '🎲' },
-      { value: 'imprevisivel', label: 'Imprevisível', description: 'Movimento bom, quero combinar com mira',      icon: '🌪️' },
+      { value: 'previsivel',   icon: '🪆' },
+      { value: 'moderado',     icon: '🎲' },
+      { value: 'imprevisivel', icon: '🌪️' },
     ],
   },
   {
     id: 'daily_time',
-    question: 'Quanto tempo você pode treinar por dia?',
-    subtitle: 'Consistência diária supera sessões longas esporádicas',
     options: [
-      { value: 25, label: '15–30 min', description: 'Treino rápido e focado no ponto crítico',       icon: '⚡' },
-      { value: 45, label: '30–60 min', description: 'Sessão completa com aquecimento e revisão',     icon: '🔥' },
-      { value: 65, label: '60+ min',   description: 'Treino intensivo para evolução acelerada',      icon: '💪' },
+      { value: 25, icon: '⚡' },
+      { value: 45, icon: '🔥' },
+      { value: 65, icon: '💪' },
     ],
   },
   {
     id: 'preferred_tool',
-    question: 'Qual ferramenta de treino você usa?',
-    subtitle: 'Os exercícios serão adaptados para sua ferramenta',
     options: [
-      { value: 'kovaak', label: "KovaaK's",      description: 'Focado em FPS, altamente customizável',              icon: '🎮' },
-      { value: 'aimlab', label: 'Aim Lab',        description: 'Gratuito, interface moderna, boas métricas',         icon: '🎯' },
-      { value: 'ambos',  label: 'Ambos',          description: 'Uso as duas ferramentas',                            icon: '⚡' },
-      { value: 'nenhum', label: 'Nenhum (ainda)', description: 'Vou baixar agora — Aim Lab é gratuito na Steam',     icon: '🆕' },
+      { value: 'kovaak', icon: '🎮' },
+      { value: 'aimlab', icon: '🎯' },
+      { value: 'ambos',  icon: '⚡' },
+      { value: 'nenhum', icon: '🆕' },
     ],
   },
 ]
 
 export default function Questionnaire({ username, onComplete }) {
+  const { t } = useTranslation()
   const [step, setStep]       = useState(0)
   const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
@@ -101,6 +88,7 @@ export default function Questionnaire({ username, onComplete }) {
 
   const current  = QUESTIONS[step]
   const progress = (step / QUESTIONS.length) * 100
+  const qBase    = `questionario.perguntas.${current.id}`
 
   const handleSelect = async (value) => {
     // Radio values arrive as strings — coerce back to number for daily_time
@@ -119,8 +107,8 @@ export default function Questionnaire({ username, onComplete }) {
       const res = await submitQuestionnaire({ name: username, ...newAnswers })
       onComplete(res.data)
     } catch (err) {
-      const detail = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Erro desconhecido'
-      setError(`Erro ao enviar questionário: ${detail}`)
+      const detail = err?.response?.data?.message || err?.response?.data?.error || err?.message || t('questionario.erro_desconhecido')
+      setError(t('questionario.erro_enviar', { detail }))
       setLoading(false)
     }
   }
@@ -136,8 +124,8 @@ export default function Questionnaire({ username, onComplete }) {
             <div className="lc-ring lc-ring-2" />
             <div className="lc-dot" />
           </div>
-          <Text fw={600}>Gerando sua rotina personalizada...</Text>
-          <Text c="dimmed" size="sm">Analisando perfil de {username}</Text>
+          <Text fw={600}>{t('questionario.gerando_rotina')}</Text>
+          <Text c="dimmed" size="sm">{t('questionario.analisando_perfil', { username })}</Text>
         </Stack>
       </Center>
     )
@@ -148,9 +136,11 @@ export default function Questionnaire({ username, onComplete }) {
       <Group justify="space-between" mb="sm">
         <Group gap={6}>
           <IconTargetArrow size={18} color="var(--mantine-color-brandCyan-5)" />
-          <Text fw={800} size="sm">FiveM PvP Trainer</Text>
+          <Text fw={800} size="sm">{t('comum.app_name')}</Text>
         </Group>
-        <Text size="xs" c="dimmed">Pergunta <strong>{step + 1}</strong> de {QUESTIONS.length}</Text>
+        <Text size="xs" c="dimmed">
+          <Trans i18nKey="questionario.pergunta_contador" values={{ current: step + 1, total: QUESTIONS.length }} components={{ bold: <strong /> }} />
+        </Text>
       </Group>
 
       <Progress value={progress} size="sm" radius="xl" mb="md" />
@@ -162,8 +152,8 @@ export default function Questionnaire({ username, onComplete }) {
       <Transition mounted transition="slide-left" duration={250} timingFunction="ease">
         {(styles) => (
           <div key={step} style={styles}>
-            <Title order={2} mb={4}>{current.question}</Title>
-            <Text c="dimmed" mb="lg">{current.subtitle}</Text>
+            <Title order={2} mb={4}>{t(`${qBase}.question`)}</Title>
+            <Text c="dimmed" mb="lg">{t(`${qBase}.subtitle`)}</Text>
 
             <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
               <SimpleGrid cols={{ base: 1, sm: current.options.length > 3 ? 2 : 1 }} spacing="sm">
@@ -173,8 +163,8 @@ export default function Questionnaire({ username, onComplete }) {
                       <Radio.Indicator />
                       <Text size="xl" style={{ lineHeight: 1 }}>{opt.icon}</Text>
                       <Box style={{ flex: 1 }}>
-                        <Text fw={700} size="sm">{opt.label}</Text>
-                        <Text size="xs" c="dimmed">{opt.description}</Text>
+                        <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
+                        <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
                       </Box>
                     </Group>
                   </Radio.Card>
@@ -196,7 +186,7 @@ export default function Questionnaire({ username, onComplete }) {
                 onClick={handleBack}
                 mt="lg"
               >
-                Pergunta anterior
+                {t('questionario.pergunta_anterior')}
               </Button>
             )}
           </div>

@@ -1,6 +1,8 @@
 import { Group, Stack, Text } from '@mantine/core'
+import { useTranslation } from 'react-i18next'
 
 export default function BrandLogo() {
+  const { t } = useTranslation()
   return (
     <Group gap="sm">
       <svg width="44" height="44" viewBox="0 0 56 56" fill="none">
@@ -18,8 +20,8 @@ export default function BrandLogo() {
         </defs>
       </svg>
       <Stack gap={0}>
-        <Text fw={900} size="sm" className="auth-brand">FiveM PvP Trainer</Text>
-        <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: 2 }}>Training System</Text>
+        <Text fw={900} size="sm" className="auth-brand">{t('comum.app_name')}</Text>
+        <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: 2 }}>{t('comum.tagline')}</Text>
       </Stack>
     </Group>
   )

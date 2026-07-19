@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Box, Stack, Group, Text, Title, NumberInput, Slider, Button, Card, Badge } from '@mantine/core'
 import { IconTarget, IconDeviceGamepad2 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { getSensitivityHistory } from '../../services/api'
 import { calcLocal } from '../../services/sensitivityMath'
 import { loadTrainerSensSettings, saveTrainerSensSettings, effectiveDegPerCount } from './trainerSensitivity'
@@ -9,6 +10,7 @@ import { loadTrainerSensSettings, saveTrainerSensSettings, effectiveDegPerCount 
 const FALLBACK_DEG_PER_COUNT = 0.03
 
 export default function SensitivitySetup({ onDone }) {
+  const { t } = useTranslation()
   const [gtaSens, setGtaSens] = useState(50)
   const [dpi, setDpi]         = useState(800)
   const [fineTune, setFineTune] = useState(1.0)
@@ -71,19 +73,19 @@ export default function SensitivitySetup({ onDone }) {
     <Box className="trainer-sens-setup">
       <Group gap={6} mb="md">
         <IconDeviceGamepad2 size={20} color="var(--mantine-color-brandCyan-5)" />
-        <Title order={2} size="h3">Configurar sensibilidade</Title>
+        <Title order={2} size="h3">{t('trainer.sensitivity_setup.titulo')}</Title>
       </Group>
       <Text size="sm" c="dimmed" mb="lg">
-        O treino usa a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.
-        {loadedFromHistory && ' Preenchido a partir do seu último conversor salvo.'}
+        {t('trainer.sensitivity_setup.descricao')}
+        {loadedFromHistory && ' ' + t('trainer.sensitivity_setup.carregado_historico')}
       </Text>
 
       <Group align="flex-start" gap="lg" wrap="wrap">
         <Card style={{ flex: 1, minWidth: 260 }}>
           <Stack gap="md">
             <NumberInput
-              label="Sensibilidade GTA V"
-              description="Escala 0–100 · a mesma que você usa no jogo"
+              label={t('trainer.sensitivity_setup.gta_sens_label')}
+              description={t('trainer.sensitivity_setup.gta_sens_desc')}
               value={gtaSens}
               onChange={setGtaSens}
               min={-100}
@@ -91,7 +93,7 @@ export default function SensitivitySetup({ onDone }) {
               step={1}
             />
             <NumberInput
-              label="DPI do Mouse"
+              label={t('trainer.sensitivity_setup.dpi_label')}
               value={dpi}
               onChange={setDpi}
               min={1}
@@ -100,7 +102,7 @@ export default function SensitivitySetup({ onDone }) {
 
             <Box>
               <Group justify="space-between" mb={4}>
-                <Text size="sm">Ajuste fino</Text>
+                <Text size="sm">{t('trainer.sensitivity_setup.ajuste_fino')}</Text>
                 <Badge variant="light" color="brandCyan">{fineTune.toFixed(2)}×</Badge>
               </Group>
               <Slider
@@ -113,18 +115,18 @@ export default function SensitivitySetup({ onDone }) {
                 marks={[{ value: 1.0, label: '1.00×' }]}
               />
               <Text size="xs" c="dimmed" mt={4}>
-                Multiplica a sensibilidade convertida — use se precisar de um pequeno ajuste sem mexer no GTA V.
+                {t('trainer.sensitivity_setup.ajuste_fino_desc')}
               </Text>
             </Box>
 
             <Button onClick={handleSave} disabled={!canSave} leftSection={<IconTarget size={16} />}>
-              Salvar e continuar
+              {t('trainer.sensitivity_setup.salvar_continuar')}
             </Button>
           </Stack>
         </Card>
 
         <Card style={{ flex: '0 0 220px' }} ta="center">
-          <Text size="xs" c="dimmed" mb="sm">Prévia ao vivo — mova o mouse aqui</Text>
+          <Text size="xs" c="dimmed" mb="sm">{t('trainer.sensitivity_setup.preview_label')}</Text>
           <Box
             onMouseMove={handlePreviewMouseMove}
             style={{
