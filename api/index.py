@@ -2,7 +2,7 @@ import sys, os
 # Ensure api/ is on the path so sub-modules resolve regardless of cwd
 sys.path.insert(0, os.path.dirname(__file__))
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from routes.auth          import auth_bp
 from routes.questionnaire import questionnaire_bp
@@ -14,6 +14,17 @@ from routes.trainer       import trainer_bp
 
 _STATIC = os.path.join(os.path.dirname(__file__), 'static')
 _PAGES  = os.path.join(os.path.dirname(__file__), 'pages')
+_SITE   = os.path.join(os.path.dirname(__file__), '..', 'site')
+
+# Top-level assets for the public landing page (site/) — named distinctly
+# from the Electron/React app's own (content-hashed) build output under
+# api/static/assets/, so the two can never collide.
+_SITE_ASSETS = {'style.css', 'script.js', 'favicon.ico', 'og-image.png'}
+
+
+def _is_electron_request() -> bool:
+    return 'Electron' in request.headers.get('User-Agent', '')
+
 
 app = Flask(__name__)
 CORS(app, resources={r'/api/*': {'origins': '*'}})
@@ -66,6 +77,20 @@ def reset_password_page():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_spa(path):
+    # Public landing page assets (site/) — checked first so /style.css,
+    # /script.js etc. resolve here rather than falling through to the app's
+    # own (differently-named) static files.
+    if path in _SITE_ASSETS and os.path.isfile(os.path.join(_SITE, path)):
+        return send_from_directory(_SITE, path)
+
+    # Root path ("/"): the desktop app's Electron shell loads this exact URL
+    # to render its own UI (see electron/main.js loadURL) — everyone else
+    # gets the public marketing landing page instead. Branching on
+    # User-Agent (Electron's default UA always includes "Electron/") means
+    # this works without ever shipping a new Electron build.
+    if path == '' and not _is_electron_request() and os.path.isfile(os.path.join(_SITE, 'index.html')):
+        return send_from_directory(_SITE, 'index.html')
+
     if not os.path.isdir(_STATIC):
         return jsonify({'error': 'Frontend not built — run npm run build in src/frontend'}), 503
     full = os.path.join(_STATIC, path)

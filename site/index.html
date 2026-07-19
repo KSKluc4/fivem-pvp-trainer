@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title data-i18n="meta.title">FiveM PvP Trainer — Treine seu PvP no FiveM como um profissional</title>
+<meta name="description" content="Treine mira, reflexo e movimento pro PvP do FiveM com um aim trainer 3D, rotinas adaptativas e sensibilidade real do GTA V. Grátis." data-i18n-attr="meta.description">
+<link rel="canonical" href="https://fivem-pvp-trainer.vercel.app/">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fivem-pvp-trainer.vercel.app/">
+<meta property="og:site_name" content="FiveM PvP Trainer">
+<meta property="og:title" content="FiveM PvP Trainer — Treine seu PvP no FiveM como um profissional" data-i18n-attr="og.title">
+<meta property="og:description" content="Aim trainer 3D com sensibilidade real do GTA V, rotinas adaptativas e dashboard de evolução. Grátis para Windows." data-i18n-attr="og.description">
+<meta property="og:image" content="https://fivem-pvp-trainer.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+
+<!-- Twitter card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FiveM PvP Trainer" data-i18n-attr="og.title">
+<meta name="twitter:description" content="Aim trainer 3D com sensibilidade real do GTA V, rotinas adaptativas e dashboard de evolução. Grátis para Windows." data-i18n-attr="og.description">
+<meta name="twitter:image" content="https://fivem-pvp-trainer.vercel.app/og-image.png">
+
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a href="#top" class="brand">
+      <svg width="30" height="30" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+        <circle cx="28" cy="28" r="24" stroke="url(#g)" stroke-width="2.5"/>
+        <circle cx="28" cy="28" r="10" stroke="url(#g)" stroke-width="2"/>
+        <circle cx="28" cy="28" r="3" fill="url(#g)"/>
+        <line x1="28" y1="2" x2="28" y2="16" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="28" y1="40" x2="28" y2="54" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="2" y1="28" x2="16" y2="28" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="40" y1="28" x2="54" y2="28" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00d4ff"/><stop offset="1" stop-color="#7b2fd4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span>FiveM PvP Trainer</span>
+    </a>
+    <nav class="topnav">
+      <a href="#features" data-i18n="nav.features">Recursos</a>
+      <a href="#how" data-i18n="nav.how">Como funciona</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="https://github.com/KSKluc4/fivem-pvp-trainer" target="_blank" rel="noreferrer">GitHub</a>
+    </nav>
+    <button id="lang-toggle" class="lang-toggle" type="button" aria-label="Toggle language">
+      <span class="lang-globe" aria-hidden="true">&#127760;</span>
+      <span id="lang-toggle-label">EN</span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <p class="eyebrow" data-i18n="hero.eyebrow">Ferramenta gratuita de treino</p>
+      <h1 data-i18n="hero.title">Treine seu PvP no FiveM como um profissional</h1>
+      <p class="hero-sub" data-i18n="hero.subtitle">
+        Aim trainer 3D com a sua sensibilidade real do GTA V, rotinas diárias adaptativas e cotas de mata-mata que evoluem com você.
+      </p>
+      <div class="hero-cta">
+        <a id="download-btn" class="btn btn-primary btn-lg" href="https://github.com/KSKluc4/fivem-pvp-trainer/releases/latest" target="_blank" rel="noreferrer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-i18n="hero.download">Baixar para Windows</span>
+        </a>
+        <div class="hero-meta">
+          <span id="hero-version" class="hero-version">—</span>
+          <span class="hero-meta-sep">·</span>
+          <span data-i18n="hero.free">100% grátis</span>
+        </div>
+      </div>
+      <p class="hero-note" data-i18n="hero.note">Windows 10/11 · instalador .exe · não precisa de conta Steam</p>
+    </div>
+  </section>
+
+  <!-- ── Screenshots ──────────────────────────────────────────────────────── -->
+  <section class="section screenshots">
+    <div class="wrap">
+      <div class="shots-grid">
+
+        <!-- PLACEHOLDER 1/3 — Rotina diária (TrainingRoutine screen).
+             Swap: replace the <div class="shot-placeholder"> below with
+             <img src="/screenshots/routine.png" alt="..."> (keep the <picture> wrapper if you want to add a WebP source). -->
+        <figure class="shot">
+          <picture>
+            <div class="shot-placeholder">
+              <span class="shot-placeholder-icon">🖼️</span>
+              <span data-i18n="shots.routineLabel">Print: rotina diária</span>
+            </div>
+          </picture>
+          <figcaption data-i18n="shots.routineCaption">Rotina gerada pro seu perfil, com bloco de mata-mata</figcaption>
+        </figure>
+
+        <!-- PLACEHOLDER 2/3 — 3D aim trainer in action (TrainerView screen).
+             Swap: replace the <div class="shot-placeholder"> below with
+             <img src="/screenshots/trainer.png" alt="..."> -->
+        <figure class="shot">
+          <picture>
+            <div class="shot-placeholder">
+              <span class="shot-placeholder-icon">🎯</span>
+              <span data-i18n="shots.trainerLabel">Print: aim trainer 3D</span>
+            </div>
+          </picture>
+          <figcaption data-i18n="shots.trainerCaption">Treino de mira dentro do app, sensibilidade real do GTA V</figcaption>
+        </figure>
+
+        <!-- PLACEHOLDER 3/3 — Progress dashboard (Progress screen).
+             Swap: replace the <div class="shot-placeholder"> below with
+             <img src="/screenshots/dashboard.png" alt="..."> -->
+        <figure class="shot">
+          <picture>
+            <div class="shot-placeholder">
+              <span class="shot-placeholder-icon">📈</span>
+              <span data-i18n="shots.dashboardLabel">Print: dashboard de evolução</span>
+            </div>
+          </picture>
+          <figcaption data-i18n="shots.dashboardCaption">Streak, conquistas e histórico de sessões</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ─────────────────────────────────────────────────────────── -->
+  <section id="features" class="section">
+    <div class="wrap">
+      <h2 class="section-title" data-i18n="features.title">Tudo que você precisa pra evoluir</h2>
+      <div class="cards-grid">
+
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <h3 data-i18n="features.aim.title">Aim trainer 3D</h3>
+          <p data-i18n="features.aim.desc">Treino de tracking dentro do próprio app, usando a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <h3 data-i18n="features.routine.title">Rotina personalizada</h3>
+          <p data-i18n="features.routine.desc">Um questionário rápido define sua rotina diária — aquecimento, treino principal e aplicação em jogo, ajustados ao seu nível e tempo disponível.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">⚔️</div>
+          <h3 data-i18n="features.quotas.title">Cotas de mata-mata adaptativas</h3>
+          <p data-i18n="features.quotas.desc">A dificuldade das suas partidas sobe ou desce sozinha, dia após dia, de acordo com seu desempenho real.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h3 data-i18n="features.dashboard.title">Dashboard de evolução</h3>
+          <p data-i18n="features.dashboard.desc">Streak, sessões completas, conquistas e histórico — acompanhe sua evolução semana a semana.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">🎮</div>
+          <h3 data-i18n="features.converter.title">Conversor de sensibilidade</h3>
+          <p data-i18n="features.converter.desc">Converta sua sensibilidade do GTA V pra KovaaK's e Aim Lab automaticamente — sem contas de cabeça.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">💸</div>
+          <h3 data-i18n="features.free.title">100% grátis</h3>
+          <p data-i18n="features.free.desc">Sem assinatura, sem anúncio, sem pegadinha. Baixe e use.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ─────────────────────────────────────────────────────── -->
+  <section id="how" class="section section-alt">
+    <div class="wrap">
+      <h2 class="section-title" data-i18n="how.title">Como funciona</h2>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3 data-i18n="how.step1.title">Baixe e instale</h3>
+          <p data-i18n="how.step1.desc">Instalador simples pra Windows, pronto em menos de um minuto.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3 data-i18n="how.step2.title">Responda o questionário</h3>
+          <p data-i18n="how.step2.desc">Conte seu nível, tempo disponível e maiores dificuldades — a rotina se adapta a você.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3 data-i18n="how.step3.title">Treine e evolua</h3>
+          <p data-i18n="how.step3.desc">Siga a rotina diária, acompanhe seu progresso e veja a dificuldade subir junto com você.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ──────────────────────────────────────────────────────────────── -->
+  <section id="faq" class="section">
+    <div class="wrap wrap-narrow">
+      <h2 class="section-title" data-i18n="faq.title">Perguntas frequentes</h2>
+      <div class="faq-list">
+
+        <details class="faq-item" open>
+          <summary data-i18n="faq.q1">É grátis mesmo?</summary>
+          <p data-i18n="faq.a1">Sim, 100% grátis — sem assinatura, sem versão paga, sem anúncio.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.q2">Funciona com qualquer servidor de FiveM?</summary>
+          <p data-i18n="faq.a2">O treino de mira, reflexo e movimento funciona pra qualquer servidor. O bloco de mata-mata adaptativo (cotas de partida) foi calibrado pensando no servidor GOAT, mas você pode jogar em qualquer lugar — só a sugestão de cota pode não fazer tanto sentido fora dele.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.q3">Preciso de conta?</summary>
+          <p data-i18n="faq.a3">Sim, uma conta simples (usuário e senha, cadastro rápido) — é o que permite salvar sua rotina, seu progresso e seu histórico entre sessões.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.q4">Como a sensibilidade funciona?</summary>
+          <p data-i18n="faq.a4">Você informa a sensibilidade que já usa no GTA V e o DPI do seu mouse — o app converte matematicamente pra a mesma resposta de mouse (graus por contagem), tanto no treino 3D interno quanto nos valores equivalentes pra KovaaK's e Aim Lab.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary data-i18n="faq.q5">É seguro? Corre risco de ban / anticheat?</summary>
+          <p data-i18n="faq.a5">É uma ferramenta 100% externa: roda numa janela separada, fora do FiveM. O app não injeta nada no jogo, não lê nem modifica a memória do GTA V/FiveM e não interage com o processo do jogo de forma alguma — é só um treino de mira, sensibilidade e organização de rotina.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ────────────────────────────────────────────────────────── -->
+  <section class="section cta-final">
+    <div class="wrap">
+      <h2 data-i18n="ctaFinal.title">Pronto pra subir de nível?</h2>
+      <a class="btn btn-primary btn-lg" id="download-btn-2" href="https://github.com/KSKluc4/fivem-pvp-trainer/releases/latest" target="_blank" rel="noreferrer">
+        <span data-i18n="hero.download">Baixar para Windows</span>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <span>FiveM PvP Trainer</span>
+      <span class="footer-version">v<span id="footer-version">—</span></span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/KSKluc4/fivem-pvp-trainer" target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://github.com/KSKluc4/fivem-pvp-trainer/releases" target="_blank" rel="noreferrer" data-i18n="footer.releases">Releases</a>
+    </div>
+    <p class="footer-partners" data-i18n="footer.partners">
+      Comunidades parceiras de treino: servidores GOAT e PLF.
+    </p>
+  </div>
+</footer>
+
+<script src="/script.js"></script>
+</body>
+</html>
