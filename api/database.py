@@ -359,7 +359,6 @@ def get_admin_stats() -> dict:
     from collections import Counter
     sb = get_supabase()
 
-    today           = date.today().isoformat()
     seven_days_ago  = (date.today() - timedelta(days=7)).isoformat()
     thirty_days_ago = (date.today() - timedelta(days=30)).isoformat()
 
@@ -502,7 +501,7 @@ def invalidate_user_reset_tokens(user_id: int):
 # ── Stats (for /auth/me) ──────────────────────────────────────────────────────
 
 def get_user_stats(user_id: int) -> dict:
-    from datetime import date, timedelta
+    from datetime import date
     sb = get_supabase()
 
     all_sessions = (sb.table('training_sessions')
