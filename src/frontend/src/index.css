@@ -69,14 +69,25 @@ body {
   gap: 8px;
   padding: 0 14px;
   min-width: 0;
+  overflow: hidden;
+  flex-shrink: 1;
 }
+.topbar-brand .mantine-Text-root { min-width: 0; }
 /* Fills the middle so the drag region extends across the whole bar, not just
    behind the brand — click-dragging anywhere empty in the bar moves the
    window, and double-click there maximizes/restores (native, no JS needed). */
-.topbar-spacer { flex: 1; }
+.topbar-spacer { flex: 1; min-width: 0; }
+/* Single flat flex row for the whole right-hand cluster (language switcher,
+   user menu, window buttons as direct siblings) — flex-shrink:0 means this
+   cluster is never compressed by its neighbors. Under width pressure (very
+   narrow window, long localized app name) .topbar-brand truncates instead,
+   so the controls can never get squeezed into overlapping each other. */
 .topbar-controls {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 
@@ -84,6 +95,7 @@ body {
 .lang-chip {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   height: 32px;
   padding: 0 10px;
   border-radius: 6px;
@@ -97,6 +109,8 @@ body {
 .win-controls {
   display: flex;
   align-items: stretch;
+  align-self: stretch;
+  flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 .win-btn {

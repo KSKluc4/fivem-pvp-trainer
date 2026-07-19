@@ -1,4 +1,4 @@
-import { Group, Text } from '@mantine/core'
+import { Text } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import BrandIcon from './BrandIcon'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -10,6 +10,11 @@ import WindowControls from './WindowControls'
 // buttons), which is carved out via .topbar-controls (no-drag) so those stay
 // clickable — see index.css. Double-click on the empty drag area
 // maximizes/restores for free (native Windows drag-region behavior).
+//
+// .topbar-controls is a single flat flex row (language switcher, user menu,
+// window buttons as direct siblings) with flex-shrink:0, so it can never be
+// compressed/overlapped by its neighbors — .topbar-brand is the one that
+// truncates under width pressure instead (min-width:0 + Text truncate).
 //
 // Rendered identically on every screen: pre-login (loading/login/register/
 // forgot-password) screens just pass no children, so the right cluster shows
@@ -24,10 +29,8 @@ export default function TopBar({ children }) {
       </div>
       <div className="topbar-spacer" />
       <div className="topbar-controls">
-        <Group gap="xs" wrap="nowrap" px="xs">
-          <LanguageSwitcher />
-          {children}
-        </Group>
+        <LanguageSwitcher />
+        {children}
         <WindowControls />
       </div>
     </div>
