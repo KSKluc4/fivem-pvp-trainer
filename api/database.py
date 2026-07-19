@@ -1,6 +1,14 @@
 import os
 import json
-from supabase import create_client, Client
+import httpx
+from supabase import create_client, Client, ClientOptions
+
+# Vercel's Python runtime has no IPv6 egress. httpx/httpcore's happy-eyeballs
+# connect can still pick an AAAA record for the Supabase host and fail with
+# "httpx.ConnectError: [Errno 16] Device or resource busy" instead of falling
+# back to IPv4. Binding the transport to an IPv4 local address forces IPv4-only
+# connections and avoids that failure mode.
+_IPV4_TRANSPORT = httpx.HTTPTransport(local_address='0.0.0.0')
 
 
 def get_supabase() -> Client:
@@ -12,7 +20,8 @@ def get_supabase() -> Client:
     ).strip()
     if not url or not key:
         raise RuntimeError('SUPABASE_URL and SUPABASE_SECRET_KEY must be set')
-    return create_client(url, key)
+    options = ClientOptions(httpx_client=httpx.Client(transport=_IPV4_TRANSPORT))
+    return create_client(url, key, options=options)
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
