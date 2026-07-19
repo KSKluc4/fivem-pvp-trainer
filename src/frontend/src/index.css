@@ -51,30 +51,74 @@ body {
   50%       { transform: translate(-50%, -50%) scale(1.3); opacity: 0.3; }
 }
 
-/* ─── Custom title bar (native Windows title bar is hidden) ───────────────── */
-.titlebar {
-  height: 36px;
+/* ─── Top bar — single line: logo/name (drag) + language/user/window controls (no-drag) ─── */
+/* Window has frame:false (electron/main.js) — this is the only title bar the
+   app has, on every screen (pre-login screens render it with no children). */
+.topbar {
+  height: 48px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  padding: 0 0.75rem;
-  /* Reserve space for the native min/max/close overlay buttons drawn by
-     Windows on the right — see titleBarOverlay in electron/main.js. */
-  padding-right: 140px;
+  align-items: stretch;
   background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
-/* Standalone screens (loading/login/register) have no AppShell header right
-   below them, so the strip keeps a border to separate it from that content. */
-.titlebar--standalone { border-bottom: 1px solid var(--border); }
-/* Makes the rest of the AppShell header draggable too (Discord/Slack-style) —
-   paired with .titlebar-clickable on the interactive bits inside it. */
-.app-header-drag { -webkit-app-region: drag; }
-.titlebar-clickable { -webkit-app-region: no-drag; }
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  min-width: 0;
+}
+/* Fills the middle so the drag region extends across the whole bar, not just
+   behind the brand — click-dragging anywhere empty in the bar moves the
+   window, and double-click there maximizes/restores (native, no JS needed). */
+.topbar-spacer { flex: 1; }
+.topbar-controls {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+}
+
+/* ─── Language chip ─────────────────────────────────────────────────────────── */
+.lang-chip {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+  -webkit-app-region: no-drag;
+}
+.lang-chip:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+
+/* ─── Window control buttons (custom, replacing the native frame) ─────────── */
+.win-controls {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+}
+.win-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.win-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.win-btn:active { background: rgba(255, 255, 255, 0.13); }
+.win-btn--close:hover { background: #e81123; color: #fff; }
+.win-btn--close:active { background: #f1707a; }
 
 /* ─── Auth screens (Login/Register) — full-bleed gradient background ─────── */
 .auth-screen {
-  min-height: calc(100vh - 36px);
+  min-height: calc(100vh - 48px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,7 +141,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 36px);
+  min-height: calc(100vh - 48px);
   gap: 1.25rem;
   color: var(--text-secondary);
   animation: fadeInUp 0.3s ease;

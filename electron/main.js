@@ -125,6 +125,29 @@ ipcMain.handle('links:open', (_event, key) => {
   return { ok: true }
 })
 
+// ── Window controls (custom frame) ──────────────────────────────────────────
+//
+// frame:false means Windows draws no min/max/close buttons at all — the
+// renderer's TopBar renders its own and drives the window through these.
+// Handlers read `mainWindow` at call time, so declaring them before the
+// variable is assigned in createWindow() is safe.
+
+ipcMain.handle('window:minimize', () => {
+  mainWindow?.minimize()
+})
+
+ipcMain.handle('window:toggleMaximize', () => {
+  if (!mainWindow) return
+  if (mainWindow.isMaximized()) mainWindow.unmaximize()
+  else mainWindow.maximize()
+})
+
+ipcMain.handle('window:close', () => {
+  mainWindow?.close()
+})
+
+ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 let mainWindow = null
@@ -139,15 +162,12 @@ async function createWindow() {
     title:           'FiveM PvP Trainer',
     backgroundColor: '#080810',
     show:            false,
-    // Hides the native Windows title bar but keeps the min/max/close overlay
-    // buttons, drawn in colors matching the Mantine dark theme (theme.js:
-    // dark[7] header background, dark[0] text/symbol color).
-    titleBarStyle:    'hidden',
-    titleBarOverlay: {
-      color:       '#16162a',
-      symbolColor: '#e8e8f0',
-      height:      36,
-    },
+    // No native frame at all — the renderer draws its own single-line top
+    // bar (logo, language switcher, user menu, window controls) and reports
+    // window state back over IPC. Replaces the old titleBarStyle:'hidden' +
+    // titleBarOverlay approach, which drew native min/max/close buttons that
+    // could sit on top of web content in the same reserved strip.
+    frame: false,
     webPreferences: {
       nodeIntegration:  false,
       contextIsolation: true,
@@ -196,6 +216,8 @@ async function createWindow() {
   })
 
   mainWindow.on('closed', () => { mainWindow = null })
+  mainWindow.on('maximize',   () => mainWindow?.webContents.send('window:maximized-changed', true))
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized-changed', false))
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   mainWindow.webContents.on('will-navigate', (event, url) => {

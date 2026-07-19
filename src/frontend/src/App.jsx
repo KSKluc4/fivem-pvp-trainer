@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { AppShell, Group, Text, Center, Stack } from '@mantine/core'
+import { AppShell, Text, Center, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { secureStorage } from './services/storage'
-import BrandIcon         from './components/BrandIcon'
-import TitleBar         from './components/TitleBar'
+import TopBar            from './components/TopBar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
@@ -121,7 +120,7 @@ export default function App() {
     const msg = authState === 'loading' ? t('comum.loading.iniciando') : t('comum.loading.carregando_rotina')
     return (
       <>
-        <TitleBar />
+        <TopBar />
         <Center className="loading-screen">
           <Stack align="center" gap="md">
             <div className="loading-crosshair">
@@ -139,7 +138,7 @@ export default function App() {
   if (authState === 'login') {
     return (
       <>
-        <TitleBar />
+        <TopBar />
         <LoginForm
           onSuccess={handleAuthSuccess}
           onGoRegister={() => setAuthState('register')}
@@ -152,7 +151,7 @@ export default function App() {
   if (authState === 'register') {
     return (
       <>
-        <TitleBar />
+        <TopBar />
         <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
       </>
     )
@@ -161,35 +160,28 @@ export default function App() {
   if (authState === 'forgot-password') {
     return (
       <>
-        <TitleBar />
+        <TopBar />
         <ForgotPasswordForm onGoLogin={() => setAuthState('login')} />
       </>
     )
   }
 
   return (
-    <AppShell header={{ height: 96 }}>
+    <AppShell header={{ height: 48 }}>
       <AppShell.Header>
-        <TitleBar bare />
-        <Group h={60} px="md" justify="space-between" className="app-header-drag">
-          <Group gap="xs">
-            <BrandIcon size={26} />
-            <Text fw={800} size="lg">{t('comum.app_name')}</Text>
-          </Group>
+        <TopBar>
           {user && (
-            <div className="titlebar-clickable">
-              <UserMenu
-                user={user}
-                onLogout={handleLogout}
-                onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
-                onChangeProfile={handleChangeProfile}
-                onConverter={() => setView('converter')}
-                onTrainer={() => setView('trainer')}
-                onAdmin={() => setView('admin')}
-              />
-            </div>
+            <UserMenu
+              user={user}
+              onLogout={handleLogout}
+              onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+              onChangeProfile={handleChangeProfile}
+              onConverter={() => setView('converter')}
+              onTrainer={() => setView('trainer')}
+              onAdmin={() => setView('admin')}
+            />
           )}
-        </Group>
+        </TopBar>
       </AppShell.Header>
 
       <AppShell.Main>
