@@ -19,7 +19,7 @@ _SITE   = os.path.join(os.path.dirname(__file__), '..', 'site')
 # Top-level assets for the public landing page (site/) — named distinctly
 # from the Electron/React app's own (content-hashed) build output under
 # api/static/assets/, so the two can never collide.
-_SITE_ASSETS = {'style.css', 'script.js', 'favicon.ico', 'og-image.png'}
+_SITE_ASSETS = {'style.css', 'script.js', 'favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'og-image.png'}
 
 
 def _is_electron_request() -> bool:

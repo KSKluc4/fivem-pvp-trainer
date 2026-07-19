@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  FiveM PvP Trainer — brand mark on opaque dark background.
+  Used as the source for OS-level icons (.ico, apple-touch-icon, favicon)
+  where an opaque backdrop keeps the mark legible on light taskbars/browser
+  chrome. Background color matches theme.js dark[9] (#080810), same as
+  electron/main.js BrowserWindow backgroundColor.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="none">
+  <rect x="0" y="0" width="56" height="56" rx="12" fill="#080810"/>
+  <circle cx="28" cy="28" r="22" stroke="url(#g)" stroke-width="2.5"/>
+  <circle cx="28" cy="28" r="9" stroke="url(#g)" stroke-width="2"/>
+  <circle cx="28" cy="28" r="3" fill="url(#g)"/>
+  <line x1="28" y1="4"  x2="28" y2="16" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="28" y1="40" x2="28" y2="52" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="4"  y1="28" x2="16" y2="28" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="40" y1="28" x2="52" y2="28" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00d4ff"/>
+      <stop offset="1" stop-color="#7b2fd4"/>
+    </linearGradient>
+  </defs>
+</svg>

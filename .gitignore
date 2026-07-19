@@ -45,7 +45,10 @@ src/frontend/dist/
 out/
 
 # Build artifacts (PyInstaller temp)
-build/
+build/*
+# ...except the electron-builder app icon, which lives in build/ by convention
+# and must be committed (regenerate via `npm run icons`).
+!build/icon.ico
 
 # SQLite databases
 *.db

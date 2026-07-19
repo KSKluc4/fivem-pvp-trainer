@@ -13,7 +13,11 @@ def _reset_html(name: str, reset_url: str) -> str:
     return f"""
     <div style="background:#10101c;padding:40px 20px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;">
       <div style="max-width:480px;margin:0 auto;background:#16162a;border:1px solid #33334d;border-radius:12px;padding:32px;">
-        <p style="color:#00d4ff;font-weight:800;font-size:18px;margin:0 0 24px;">FiveM PvP Trainer</p>
+        <p style="margin:0 0 24px;">
+          <img src="https://fivem-pvp-trainer.vercel.app/apple-touch-icon.png" width="28" height="28"
+               alt="" style="vertical-align:middle;border-radius:6px;">
+          <span style="color:#00d4ff;font-weight:800;font-size:18px;vertical-align:middle;margin-left:8px;">FiveM PvP Trainer</span>
+        </p>
 
         <h1 style="color:#e8e8f0;font-size:20px;margin:0 0 16px;">Redefinir senha</h1>
         <p style="color:#a0a0b8;font-size:14px;line-height:1.5;margin:0 0 20px;">

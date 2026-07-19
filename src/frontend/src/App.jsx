@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { AppShell, Group, Text, Center, Stack } from '@mantine/core'
-import { IconTargetArrow } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { secureStorage } from './services/storage'
+import BrandIcon         from './components/BrandIcon'
 import TitleBar         from './components/TitleBar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
@@ -173,7 +173,7 @@ export default function App() {
         <TitleBar bare />
         <Group h={60} px="md" justify="space-between" className="app-header-drag">
           <Group gap="xs">
-            <IconTargetArrow size={26} color="var(--mantine-color-brandCyan-5)" />
+            <BrandIcon size={26} />
             <Text fw={800} size="lg">{t('comum.app_name')}</Text>
           </Group>
           {user && (

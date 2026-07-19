@@ -1,5 +1,6 @@
-import { Text } from '@mantine/core'
+import { Group, Text } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
+import BrandIcon from './BrandIcon'
 import LanguageSwitcher from './LanguageSwitcher'
 
 // Custom drag region replacing the native Windows title bar (hidden via
@@ -16,7 +17,12 @@ export default function TitleBar({ bare = false }) {
   const { t } = useTranslation()
   return (
     <div className={`titlebar ${bare ? '' : 'titlebar--standalone'}`}>
-      {!bare && <Text size="xs" c="dimmed">{t('comum.app_name')}</Text>}
+      {!bare && (
+        <Group gap={6}>
+          <BrandIcon size={14} />
+          <Text size="xs" c="dimmed">{t('comum.app_name')}</Text>
+        </Group>
+      )}
       <div className="titlebar-clickable" style={{ marginLeft: 'auto' }}>
         <LanguageSwitcher />
       </div>
