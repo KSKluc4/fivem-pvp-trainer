@@ -222,6 +222,14 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }
     return () => clearTimeout(t)
   }, [phase, countdownN])
 
+  // The canvas renders continuously (60fps rAF loop) for this component's
+  // whole lifetime, not just the 'playing' phase — hide the decorative
+  // AppBackground behind it so it isn't animating/compositing for nothing.
+  useEffect(() => {
+    document.body.classList.add('trainer-active')
+    return () => document.body.classList.remove('trainer-active')
+  }, [])
+
   const handleSensDone = () => {
     sensRef.current = loadTrainerSensSettings()
     setPhase('setup')

@@ -23,8 +23,6 @@ html { scroll-behavior: smooth; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-primary);
-  background-image: radial-gradient(circle at 1px 1px, rgba(0, 212, 255, 0.055) 1px, transparent 0);
-  background-size: 28px 28px;
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.75;
@@ -130,55 +128,73 @@ body {
 .win-btn--close:hover { background: #e81123; color: #fff; }
 .win-btn--close:active { background: #f1707a; }
 
-/* ─── Auth screens (Login/Register/Forgot) — layered, minimal background ──
-   Three static/near-static layers behind the card, cheapest first:
+/* ─── AppBackground — single reusable layered background, shared by every
+   screen (see components/AppBackground.jsx). Fixed behind all content, two
+   static/near-static layers, cheapest first:
    1) ::before — a very faint crosshair/reticle grid (aim-training motif),
       masked so it fades out near the edges instead of tiling edge-to-edge.
    2) ::after  — two brand-color glows (blue top-left, purple bottom-right)
       plus a vignette, combined in one layer so a single slow opacity pulse
       "breathes" all three together — no JS, no layout cost.
-   The card sits in a third, explicitly stacked layer above both. */
+   Intensity ("full" on auth screens, "subtle" everywhere else) is purely a
+   set of custom-property overrides — the gradients themselves are defined
+   once. The pulse pauses when the window loses focus (data-focused). ─── */
+.app-background {
+  --grid-alpha:   .06;
+  --glow-blue:    .12;
+  --glow-purple:  .10;
+  --pulse-lo:     .82;
+  --pulse-hi:     1;
+  position: fixed;
+  top: 48px; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-primary);
+}
+.app-background--subtle {
+  --grid-alpha:   .025;
+  --glow-blue:    .06;
+  --glow-purple:  .05;
+  --pulse-lo:     .9;
+}
+.app-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(to right,  rgba(232,232,240,var(--grid-alpha)) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(to bottom, rgba(232,232,240,var(--grid-alpha)) 0 1px, transparent 1px 56px);
+  mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
+}
+.app-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 10% 8%,  rgba(0,212,255,var(--glow-blue)) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 42% at 90% 94%, rgba(123,47,212,var(--glow-purple)) 0%, transparent 62%),
+    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 55%, rgba(8,8,16,.5) 100%);
+  animation: appBgGlowPulse 9s ease-in-out infinite;
+}
+.app-background[data-focused="false"]::after { animation-play-state: paused; }
+/* The 3D exercise canvas owns its own opaque background and renders
+   continuously at 60fps — the decorative layer behind it is pure waste, so
+   ExercisePlayer toggles this class on <body> for as long as it's mounted. */
+body.trainer-active .app-background { display: none; }
+@keyframes appBgGlowPulse {
+  0%, 100% { opacity: var(--pulse-lo); }
+  50%      { opacity: var(--pulse-hi); }
+}
+
+/* ─── Auth screens (Login/Register/Forgot) — center the card over AppBackground */
 .auth-screen {
-  position: relative;
   min-height: calc(100vh - 48px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  overflow: hidden;
-  background: var(--bg-primary);
-}
-.auth-screen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    repeating-linear-gradient(to right,  rgba(232,232,240,.06) 0 1px, transparent 1px 56px),
-    repeating-linear-gradient(to bottom, rgba(232,232,240,.06) 0 1px, transparent 1px 56px);
-  mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
-  pointer-events: none;
-}
-.auth-screen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 55% 45% at 10% 8%,  rgba(0,212,255,.12) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 42% at 90% 94%, rgba(123,47,212,.10) 0%, transparent 62%),
-    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 55%, rgba(8,8,16,.5) 100%);
-  animation: authGlowPulse 9s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes authGlowPulse {
-  0%, 100% { opacity: .82; }
-  50%      { opacity: 1; }
-}
-.auth-card {
-  position: relative;
-  z-index: 1;
 }
 .auth-card-icon svg { display: block; }
 .auth-submit-btn {

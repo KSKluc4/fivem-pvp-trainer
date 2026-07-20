@@ -3,6 +3,7 @@ import { AppShell, Text, Center, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
 import { tokenStore } from './services/storage'
+import AppBackground     from './components/AppBackground'
 import TopBar            from './components/TopBar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
@@ -119,10 +120,15 @@ export default function App() {
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  // "full" glows/grid on the auth flow, "subtle" everywhere behind the app —
+  // rendered once per branch below via the single shared AppBackground.
+  const bgIntensity = ['login', 'register', 'forgot-password'].includes(authState) ? 'full' : 'subtle'
+
   if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
     const msg = authState === 'loading' ? t('comum.loading.iniciando') : t('comum.loading.carregando_rotina')
     return (
       <>
+        <AppBackground intensity={bgIntensity} />
         <TopBar />
         <Center className="loading-screen">
           <Stack align="center" gap="md">
@@ -141,6 +147,7 @@ export default function App() {
   if (authState === 'login') {
     return (
       <>
+        <AppBackground intensity={bgIntensity} />
         <TopBar />
         <LoginForm
           onSuccess={handleAuthSuccess}
@@ -154,6 +161,7 @@ export default function App() {
   if (authState === 'register') {
     return (
       <>
+        <AppBackground intensity={bgIntensity} />
         <TopBar />
         <RegisterForm onSuccess={handleAuthSuccess} onGoLogin={() => setAuthState('login')} />
       </>
@@ -163,6 +171,7 @@ export default function App() {
   if (authState === 'forgot-password') {
     return (
       <>
+        <AppBackground intensity={bgIntensity} />
         <TopBar />
         <ForgotPasswordForm onGoLogin={() => setAuthState('login')} />
       </>
@@ -170,88 +179,91 @@ export default function App() {
   }
 
   return (
-    <AppShell header={{ height: 48 }}>
-      <AppShell.Header>
-        <TopBar>
-          {user && (
-            <UserMenu
-              user={user}
-              onLogout={handleLogout}
-              onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
-              onChangeProfile={handleChangeProfile}
-              onConverter={() => setView('converter')}
-              onTrainer={() => { setTrainerHint(null); setView('trainer') }}
-              onAdmin={() => setView('admin')}
+    <>
+      <AppBackground intensity={bgIntensity} />
+      <AppShell header={{ height: 48 }}>
+        <AppShell.Header>
+          <TopBar>
+            {user && (
+              <UserMenu
+                user={user}
+                onLogout={handleLogout}
+                onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+                onChangeProfile={handleChangeProfile}
+                onConverter={() => setView('converter')}
+                onTrainer={() => { setTrainerHint(null); setView('trainer') }}
+                onAdmin={() => setView('admin')}
+              />
+            )}
+          </TopBar>
+        </AppShell.Header>
+
+        <AppShell.Main>
+          <UpdateBanner />
+
+          {view === 'questionnaire' && (
+            <Questionnaire
+              key="questionnaire"
+              username={user?.name || ''}
+              onComplete={handleQuestionnaireComplete}
             />
           )}
-        </TopBar>
-      </AppShell.Header>
 
-      <AppShell.Main>
-        <UpdateBanner />
+          {view === 'routine' && routine && (
+            <TrainingRoutine
+              key={`routine-${sessionId}`}
+              userId={user?.id}
+              sessionId={sessionId}
+              routine={routine}
+              username={user?.name || ''}
+              onViewProgress={() => setView('progress')}
+              onChangeProfile={handleChangeProfile}
+              onConverter={() => setView('converter')}
+              onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
+            />
+          )}
 
-        {view === 'questionnaire' && (
-          <Questionnaire
-            key="questionnaire"
-            username={user?.name || ''}
-            onComplete={handleQuestionnaireComplete}
-          />
-        )}
+          {view === 'trainer' && (
+            <TrainerView
+              key="trainer"
+              initialHint={trainerHint}
+              onBack={() => setView('routine')}
+            />
+          )}
 
-        {view === 'routine' && routine && (
-          <TrainingRoutine
-            key={`routine-${sessionId}`}
-            userId={user?.id}
-            sessionId={sessionId}
-            routine={routine}
-            username={user?.name || ''}
-            onViewProgress={() => setView('progress')}
-            onChangeProfile={handleChangeProfile}
-            onConverter={() => setView('converter')}
-            onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
-          />
-        )}
+          {view === 'progress' && (
+            <Progress
+              key="progress"
+              userId={user?.id}
+              username={user?.name || ''}
+              onBack={() => setView('routine')}
+            />
+          )}
 
-        {view === 'trainer' && (
-          <TrainerView
-            key="trainer"
-            initialHint={trainerHint}
-            onBack={() => setView('routine')}
-          />
-        )}
+          {view === 'converter' && (
+            <SensConverter
+              key="converter"
+              onBack={() => setView('routine')}
+            />
+          )}
 
-        {view === 'progress' && (
-          <Progress
-            key="progress"
-            userId={user?.id}
-            username={user?.name || ''}
-            onBack={() => setView('routine')}
-          />
-        )}
+          {view === 'admin' && user?.is_admin && (
+            <AdminPanel
+              key="admin"
+              onBack={() => setView('routine')}
+            />
+          )}
+        </AppShell.Main>
 
-        {view === 'converter' && (
-          <SensConverter
-            key="converter"
-            onBack={() => setView('routine')}
-          />
-        )}
-
-        {view === 'admin' && user?.is_admin && (
-          <AdminPanel
-            key="admin"
-            onBack={() => setView('routine')}
-          />
-        )}
-      </AppShell.Main>
-
-      <EmailPromptModal
-        opened={emailPromptOpen}
-        onClose={() => setEmailPromptOpen(false)}
-        onLinked={() => {
-          setUser((u) => ({ ...u, has_email: true }))
-          setEmailPromptOpen(false)
-        }}
-      />
-    </AppShell>
+        <EmailPromptModal
+          opened={emailPromptOpen}
+          onClose={() => setEmailPromptOpen(false)}
+          onLinked={() => {
+            setUser((u) => ({ ...u, has_email: true }))
+            setEmailPromptOpen(false)
+          }}
+        />
+      </AppShell>
+    </>
   )
 }
