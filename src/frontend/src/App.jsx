@@ -5,6 +5,7 @@ import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from '
 import { tokenStore } from './services/storage'
 import AppBackground     from './components/AppBackground'
 import TopBar            from './components/TopBar'
+import Sidebar           from './components/Sidebar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
@@ -13,10 +14,13 @@ import Questionnaire    from './components/Questionnaire'
 import TrainingRoutine  from './components/TrainingRoutine'
 import Progress         from './components/Progress'
 import SensConverter    from './components/SensConverter'
-import UserMenu         from './components/UserMenu'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
 import TrainerView      from './trainer/TrainerView'
+
+const SIDEBAR_COLLAPSED_KEY = 'pvp_sidebar_collapsed'
+const SIDEBAR_WIDTH_EXPANDED = 240
+const SIDEBAR_WIDTH_COLLAPSED = 64
 
 async function retryNetworkCall(fn, retries = 5, delay = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -37,6 +41,15 @@ export default function App() {
   const [routine,   setRoutine]   = useState(null)
   const [emailPromptOpen, setEmailPromptOpen] = useState(false)
   const [trainerHint, setTrainerHint] = useState(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1')
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0')
+      return next
+    })
+  }
 
   // Check existing training profile; route accordingly
   async function loadTraining(u) {
@@ -124,22 +137,25 @@ export default function App() {
   // rendered once per branch below via the single shared AppBackground.
   const bgIntensity = ['login', 'register', 'forgot-password'].includes(authState) ? 'full' : 'subtle'
 
-  if (authState === 'loading' || (authState === 'app' && view === 'loading')) {
-    const msg = authState === 'loading' ? t('comum.loading.iniciando') : t('comum.loading.carregando_rotina')
+  const loadingSpinner = (msg) => (
+    <Center className="loading-screen">
+      <Stack align="center" gap="md">
+        <div className="loading-crosshair">
+          <div className="lc-ring lc-ring-1" />
+          <div className="lc-ring lc-ring-2" />
+          <div className="lc-dot" />
+        </div>
+        <Text c="dimmed" size="sm">{msg}</Text>
+      </Stack>
+    </Center>
+  )
+
+  if (authState === 'loading') {
     return (
       <>
         <AppBackground intensity={bgIntensity} />
         <TopBar />
-        <Center className="loading-screen">
-          <Stack align="center" gap="md">
-            <div className="loading-crosshair">
-              <div className="lc-ring lc-ring-1" />
-              <div className="lc-ring lc-ring-2" />
-              <div className="lc-dot" />
-            </div>
-            <Text c="dimmed" size="sm">{msg}</Text>
-          </Stack>
-        </Center>
+        {loadingSpinner(t('comum.loading.iniciando'))}
       </>
     )
   }
@@ -181,25 +197,31 @@ export default function App() {
   return (
     <>
       <AppBackground intensity={bgIntensity} />
-      <AppShell header={{ height: 48 }}>
+      <AppShell
+        header={{ height: 48 }}
+        navbar={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED, breakpoint: 0 }}
+      >
         <AppShell.Header>
-          <TopBar>
-            {user && (
-              <UserMenu
-                user={user}
-                onLogout={handleLogout}
-                onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
-                onChangeProfile={handleChangeProfile}
-                onConverter={() => setView('converter')}
-                onTrainer={() => { setTrainerHint(null); setView('trainer') }}
-                onAdmin={() => setView('admin')}
-              />
-            )}
-          </TopBar>
+          <TopBar minimal />
         </AppShell.Header>
 
+        <AppShell.Navbar>
+          <Sidebar
+            user={user}
+            activeView={view}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={toggleSidebar}
+            onNavigate={(v) => { if (v === 'trainer') setTrainerHint(null); setView(v) }}
+            onLogout={handleLogout}
+            onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
+            onChangeProfile={handleChangeProfile}
+          />
+        </AppShell.Navbar>
+
         <AppShell.Main>
-          <UpdateBanner />
+          {view === 'loading' && loadingSpinner(t('comum.loading.carregando_rotina'))}
+
+          {view !== 'loading' && <UpdateBanner />}
 
           {view === 'questionnaire' && (
             <Questionnaire

@@ -11,7 +11,11 @@ const LANGS = {
   en: { code: 'EN', label: 'English' },
 }
 
-export default function LanguageSwitcher() {
+// `position` lets callers flip the dropdown to open upward (sidebar footer,
+// near the bottom of the window) instead of the topbar's default downward
+// open. `compact` hides the language code text, leaving just the globe icon
+// — used for the collapsed (icon-only) sidebar rail.
+export default function LanguageSwitcher({ position = 'bottom-end', compact = false }) {
   const { i18n } = useTranslation()
   // i18n.language is the single source of truth for what's "active" — this
   // re-renders whenever changeLanguage() resolves, so the chip always shows
@@ -19,13 +23,13 @@ export default function LanguageSwitcher() {
   const current = LANGS[i18n.language] ? i18n.language : 'en'
 
   return (
-    <Menu position="bottom-end" shadow="md" width={170}>
+    <Menu position={position} shadow="md" width={170}>
       <Menu.Target>
         <UnstyledButton className="lang-chip" title="Language / Idioma">
           <Group gap={5} wrap="nowrap">
             <IconWorld size={14} />
-            <Text size="xs" fw={700}>{LANGS[current].code}</Text>
-            <IconChevronDown size={12} style={{ opacity: 0.7 }} />
+            {!compact && <Text size="xs" fw={700}>{LANGS[current].code}</Text>}
+            {!compact && <IconChevronDown size={12} style={{ opacity: 0.7 }} />}
           </Group>
         </UnstyledButton>
       </Menu.Target>

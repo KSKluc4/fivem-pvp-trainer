@@ -128,6 +128,100 @@ body {
 .win-btn--close:hover { background: #e81123; color: #fff; }
 .win-btn--close:active { background: #f1707a; }
 
+/* ─── Sidebar (AppShell.Navbar) — replaces the old top-bar navigation ──────
+   Mantine's own transition covers the mobile show/hide slide, but changing
+   `navbar.width` directly (expanded ↔ icon-rail) isn't animated by Mantine
+   itself, so the width/padding transition below is ours. ─── */
+.mantine-AppShell-navbar { transition: width 0.18s ease; }
+.mantine-AppShell-main { transition: padding-left 0.18s ease; }
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.sidebar.collapsed .sidebar-brand { justify-content: center; padding: 0; }
+.sidebar-brand .mantine-Text-root { min-width: 0; }
+
+.sidebar-nav {
+  flex: 1;
+  padding: 10px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  border-left: 3px solid transparent;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.sidebar-nav-item:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+.sidebar-nav-item.active {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--text-primary);
+  border-left-color: var(--color-primary);
+}
+.sidebar.collapsed .sidebar-nav-item { justify-content: center; }
+
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.sidebar-collapse-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+.sidebar.collapsed .sidebar-collapse-btn { justify-content: center; }
+
+.sidebar-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 2px 0;
+}
+.sidebar-footer-row.collapsed {
+  flex-direction: column-reverse;
+  justify-content: center;
+  gap: 8px;
+}
+.sidebar-user-btn {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  border-radius: 8px;
+  padding: 4px;
+  transition: background 0.12s ease;
+}
+.sidebar-footer-row.collapsed .sidebar-user-btn { flex: none; }
+.sidebar-user-btn:hover { background: rgba(255, 255, 255, 0.06); }
+
 /* ─── AppBackground — single reusable layered background, shared by every
    screen (see components/AppBackground.jsx). Fixed behind all content, two
    static/near-static layers, cheapest first:

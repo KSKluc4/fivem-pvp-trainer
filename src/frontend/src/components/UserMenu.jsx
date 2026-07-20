@@ -33,7 +33,7 @@ function avatarHue(username) {
   return hues[h % hues.length]
 }
 
-export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin }) {
+export default function UserMenu({ user, collapsed = false, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin }) {
   const { t } = useTranslation()
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
@@ -83,20 +83,30 @@ export default function UserMenu({ user, onLogout, onUserUpdate, onChangeProfile
     <Popover
       opened={open}
       onChange={setOpen}
-      position="bottom-end"
+      position={collapsed ? 'right-end' : 'top-start'}
       shadow="md"
       width={300}
       closeOnClickOutside={!editing}
     >
       <Popover.Target>
-        <Avatar
-          radius="xl"
-          color="initials"
-          style={{ background: `hsl(${hue}, 70%, 40%)`, cursor: 'pointer' }}
-          onClick={() => setOpen((p) => !p)}
-        >
-          {inits}
-        </Avatar>
+        <UnstyledButton className="sidebar-user-btn" onClick={() => setOpen((p) => !p)}>
+          <Group gap="xs" wrap="nowrap">
+            <Avatar
+              radius="xl"
+              size="sm"
+              color="initials"
+              style={{ background: `hsl(${hue}, 70%, 40%)`, flexShrink: 0 }}
+            >
+              {inits}
+            </Avatar>
+            {!collapsed && (
+              <Stack gap={0} style={{ minWidth: 0 }}>
+                <Text fw={700} size="xs" truncate>{user.name}</Text>
+                <Text size="10px" c="dimmed" truncate>@{user.username}</Text>
+              </Stack>
+            )}
+          </Group>
+        </UnstyledButton>
       </Popover.Target>
 
       <Popover.Dropdown>

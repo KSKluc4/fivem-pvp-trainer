@@ -16,11 +16,24 @@ import WindowControls from './WindowControls'
 // compressed/overlapped by its neighbors — .topbar-brand is the one that
 // truncates under width pressure instead (min-width:0 + Text truncate).
 //
-// Rendered identically on every screen: pre-login (loading/login/register/
-// forgot-password) screens just pass no children, so the right cluster shows
-// only the language switcher + window controls, no user menu.
-export default function TopBar({ children }) {
+// Pre-login (loading/login/register/forgot-password) screens render the full
+// bar: brand + language switcher + window controls, no user menu.
+//
+// `minimal` is used once the sidebar exists (authenticated app shell) — brand,
+// language switcher and user menu all live in the sidebar there instead, so
+// the top bar shrinks to just the drag region + window controls.
+export default function TopBar({ children, minimal = false }) {
   const { t } = useTranslation()
+  if (minimal) {
+    return (
+      <div className="topbar">
+        <div className="topbar-spacer" />
+        <div className="topbar-controls">
+          <WindowControls />
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="topbar">
       <div className="topbar-brand">

@@ -1,4 +1,13 @@
 {
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "rotina": "Today's routine",
+    "treinar": "Train",
+    "conversor": "Sensitivity converter",
+    "admin": "Admin",
+    "recolher": "Collapse menu",
+    "expandir": "Expand menu"
+  },
   "comum": {
     "app_name": "FiveM PvP Trainer",
     "tagline": "Training System",
