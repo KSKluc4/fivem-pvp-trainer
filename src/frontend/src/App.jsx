@@ -14,6 +14,7 @@ import Questionnaire    from './components/Questionnaire'
 import TrainingRoutine  from './components/TrainingRoutine'
 import Progress         from './components/Progress'
 import SensConverter    from './components/SensConverter'
+import Profile          from './components/Profile'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
 import TrainerView      from './trainer/TrainerView'
@@ -272,6 +273,15 @@ export default function App() {
           {view === 'admin' && user?.is_admin && (
             <AdminPanel
               key="admin"
+              onBack={() => setView('routine')}
+            />
+          )}
+
+          {view === 'profile' && (
+            <Profile
+              key="profile"
+              user={user}
+              onUserUpdate={(updated) => setUser((u) => ({ ...u, ...updated }))}
               onBack={() => setView('routine')}
             />
           )}

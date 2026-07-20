@@ -17,21 +17,24 @@ def get_supabase() -> Client:
 
 # ── Users ─────────────────────────────────────────────────────────────────────
 
+_USER_FIELDS = 'id,name,username,email,created_at,is_admin,avatar_url,banner_url,bio'
+
+
 def get_user_by_username(username: str):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,email,password_hash,created_at,is_admin').eq('username', username).limit(1).execute()
+    res = sb.table('users').select(_USER_FIELDS + ',password_hash').eq('username', username).limit(1).execute()
     return res.data[0] if res.data else None
 
 
 def get_user_by_id(user_id: int):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,email,created_at,is_admin').eq('id', user_id).limit(1).execute()
+    res = sb.table('users').select(_USER_FIELDS).eq('id', user_id).limit(1).execute()
     return res.data[0] if res.data else None
 
 
 def get_user_by_email(email: str):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,email,password_hash,created_at,is_admin').eq('email', email).limit(1).execute()
+    res = sb.table('users').select(_USER_FIELDS + ',password_hash').eq('email', email).limit(1).execute()
     return res.data[0] if res.data else None
 
 
@@ -77,6 +80,24 @@ def username_taken_by_other(username: str, user_id: int) -> bool:
     sb = get_supabase()
     res = sb.table('users').select('id').eq('username', username).neq('id', user_id).limit(1).execute()
     return bool(res.data)
+
+
+def update_user_bio(user_id: int, bio: str):
+    sb = get_supabase()
+    res = sb.table('users').update({'bio': bio}).eq('id', user_id).execute()
+    return res.data[0] if res.data else None
+
+
+def update_user_avatar_url(user_id: int, avatar_url):
+    sb = get_supabase()
+    res = sb.table('users').update({'avatar_url': avatar_url}).eq('id', user_id).execute()
+    return res.data[0] if res.data else None
+
+
+def update_user_banner_url(user_id: int, banner_url):
+    sb = get_supabase()
+    res = sb.table('users').update({'banner_url': banner_url}).eq('id', user_id).execute()
+    return res.data[0] if res.data else None
 
 
 # ── Sessions (refresh tokens) ─────────────────────────────────────────────────

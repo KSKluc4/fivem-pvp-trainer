@@ -11,6 +11,7 @@ from routes.progress      import progress_bp
 from routes.sensitivity   import sensitivity_bp
 from routes.admin         import admin_bp
 from routes.trainer       import trainer_bp
+from routes.profile       import profile_bp
 
 _STATIC = os.path.join(os.path.dirname(__file__), 'static')
 _PAGES  = os.path.join(os.path.dirname(__file__), 'pages')
@@ -29,6 +30,11 @@ def _is_electron_request() -> bool:
 app = Flask(__name__)
 CORS(app, resources={r'/api/*': {'origins': '*'}})
 
+# Banner uploads are capped at 4MB (see routes/profile.py) — this global cap
+# is a bit above that to leave room for multipart overhead, and doubles as a
+# blanket defense against oversized bodies on every other (JSON) route.
+app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
+
 
 @app.after_request
 def security_headers(response):
@@ -39,6 +45,11 @@ def security_headers(response):
     return response
 
 
+@app.errorhandler(413)
+def request_too_large(_e):
+    return jsonify({'error': 'Arquivo excede o tamanho máximo permitido'}), 413
+
+
 app.register_blueprint(auth_bp,           url_prefix='/api')
 app.register_blueprint(questionnaire_bp,  url_prefix='/api')
 app.register_blueprint(training_bp,       url_prefix='/api')
@@ -46,6 +57,7 @@ app.register_blueprint(progress_bp,       url_prefix='/api')
 app.register_blueprint(sensitivity_bp,    url_prefix='/api')
 app.register_blueprint(admin_bp,          url_prefix='/api')
 app.register_blueprint(trainer_bp,        url_prefix='/api')
+app.register_blueprint(profile_bp,        url_prefix='/api')
 
 
 @app.route('/api/health')

@@ -2,6 +2,7 @@ import { Tooltip, UnstyledButton, Group, Text, Stack, Divider } from '@mantine/c
 import {
   IconLayoutDashboard, IconClipboardList, IconTargetArrow, IconDeviceGamepad2,
   IconShieldLock, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand,
+  IconUserCircle,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import BrandIcon from './BrandIcon'
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { view: 'routine',   labelKey: 'sidebar.rotina',    icon: IconClipboardList },
   { view: 'trainer',   labelKey: 'sidebar.treinar',   icon: IconTargetArrow },
   { view: 'converter', labelKey: 'sidebar.conversor', icon: IconDeviceGamepad2 },
+  { view: 'profile',   labelKey: 'sidebar.perfil',    icon: IconUserCircle },
 ]
 
 const ADMIN_ITEM = { view: 'admin', labelKey: 'sidebar.admin', icon: IconShieldLock }
@@ -80,6 +82,7 @@ export default function Sidebar({
               onConverter={() => onNavigate('converter')}
               onTrainer={() => onNavigate('trainer')}
               onAdmin={() => onNavigate('admin')}
+              onProfile={() => onNavigate('profile')}
             />
           )}
           <LanguageSwitcher position="top-start" compact={collapsed} />

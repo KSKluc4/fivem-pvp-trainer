@@ -5,11 +5,12 @@ import {
 } from '@mantine/core'
 import {
   IconPencil, IconSettings, IconDeviceGamepad2, IconShieldLock, IconLogout,
-  IconAlertCircle, IconTargetArrow,
+  IconAlertCircle, IconTargetArrow, IconUserCircle,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { getMe, updateProfile } from '../services/api'
 import { toast } from '../services/toast'
+import { initials, avatarHue } from '../services/avatar'
 
 const LEVELS = [
   { min: 50, key: 'elite',        icon: '🏆', color: '#ffa502' },
@@ -22,18 +23,7 @@ const LEVELS = [
 
 function getLevel(n) { return LEVELS.find((l) => n >= l.min) || LEVELS[LEVELS.length - 1] }
 
-function initials(name) {
-  return (name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-}
-
-function avatarHue(username) {
-  let h = 0
-  for (const c of (username || '')) h = (h * 31 + c.charCodeAt(0)) & 0xfffff
-  const hues = [195, 270, 350, 145, 35]
-  return hues[h % hues.length]
-}
-
-export default function UserMenu({ user, collapsed = false, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin }) {
+export default function UserMenu({ user, collapsed = false, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin, onProfile }) {
   const { t } = useTranslation()
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
@@ -92,6 +82,7 @@ export default function UserMenu({ user, collapsed = false, onLogout, onUserUpda
         <UnstyledButton className="sidebar-user-btn" onClick={() => setOpen((p) => !p)}>
           <Group gap="xs" wrap="nowrap">
             <Avatar
+              src={user.avatar_url || undefined}
               radius="xl"
               size="sm"
               color="initials"
@@ -111,7 +102,7 @@ export default function UserMenu({ user, collapsed = false, onLogout, onUserUpda
 
       <Popover.Dropdown>
         <Group wrap="nowrap" mb="sm">
-          <Avatar radius="xl" size="lg" style={{ background: `hsl(${hue}, 70%, 35%)` }}>{inits}</Avatar>
+          <Avatar src={user.avatar_url || undefined} radius="xl" size="lg" style={{ background: `hsl(${hue}, 70%, 35%)` }}>{inits}</Avatar>
           <Stack gap={0} style={{ minWidth: 0 }}>
             <Text fw={700} size="sm" truncate>{user.name}</Text>
             <Text size="xs" c="dimmed" truncate>@{user.username}</Text>
@@ -164,6 +155,9 @@ export default function UserMenu({ user, collapsed = false, onLogout, onUserUpda
           </Stack>
         ) : (
           <Stack gap={2}>
+            <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onProfile?.() }}>
+              <Group gap="xs"><IconUserCircle size={15} /><Text size="sm">{t('comum.user_menu.ver_perfil')}</Text></Group>
+            </UnstyledButton>
             <UnstyledButton className="ud-action-btn" onClick={startEdit}>
               <Group gap="xs"><IconPencil size={15} /><Text size="sm">{t('comum.user_menu.editar_perfil')}</Text></Group>
             </UnstyledButton>

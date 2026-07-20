@@ -12,6 +12,7 @@ _JWT_ALGORITHM = 'HS256'
 _ACCESS_TTL    = timedelta(hours=24)
 _REFRESH_TTL   = timedelta(days=30)
 _EMAIL_RE      = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+_HTML_TAG_RE   = re.compile(r'<[^>]*>')
 
 
 def _secret() -> str:
@@ -38,6 +39,15 @@ def verify_password(password: str, stored: str) -> bool:
 
 def is_valid_email(email: str) -> bool:
     return bool(email) and len(email) <= 254 and bool(_EMAIL_RE.match(email))
+
+
+# ── Text sanitization ─────────────────────────────────────────────────────────
+# Bio is always rendered as plain text by the frontend (JSX escapes it, never
+# dangerouslySetInnerHTML) — this strip is defense-in-depth for the rare case
+# the value gets reused somewhere that isn't auto-escaping (e.g. an email).
+
+def strip_html_tags(text: str) -> str:
+    return _HTML_TAG_RE.sub('', text)
 
 
 # ── Password reset tokens ─────────────────────────────────────────────────────

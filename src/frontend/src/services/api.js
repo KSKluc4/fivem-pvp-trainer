@@ -97,6 +97,25 @@ export const saveProgress        = (data)   => api.post('/progress', data)
 export const convertSensitivity    = (data) => api.post('/sensitivity/convert', data)
 export const getSensitivityHistory = ()     => api.get('/sensitivity/history')
 
+// ── Profile ───────────────────────────────────────────────────────────────────
+export const updateBio    = (bio) => api.patch('/profile', { bio })
+export const deleteAvatar = ()    => api.delete('/profile/avatar')
+export const deleteBanner = ()    => api.delete('/profile/banner')
+
+function uploadProfileImage(kind, file, onProgress) {
+  const form = new FormData()
+  form.append(kind, file)
+  return api.post(`/profile/${kind}`, form, {
+    // The shared `api` instance defaults Content-Type to application/json —
+    // clearing it here lets the browser set multipart/form-data itself,
+    // including the boundary param axios/XHR can't add if we set it by hand.
+    headers: { 'Content-Type': undefined },
+    onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
+  })
+}
+export const uploadAvatar = (file, onProgress) => uploadProfileImage('avatar', file, onProgress)
+export const uploadBanner = (file, onProgress) => uploadProfileImage('banner', file, onProgress)
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const getAdminStats = () => api.get('/admin/stats')
 export const getAdminUsers = () => api.get('/admin/users')

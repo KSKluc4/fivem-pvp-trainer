@@ -4,9 +4,28 @@
     "rotina": "Rotina do dia",
     "treinar": "Treinar",
     "conversor": "Conversor de sensibilidade",
+    "perfil": "Perfil",
     "admin": "Admin",
     "recolher": "Recolher menu",
     "expandir": "Expandir menu"
+  },
+  "perfil": {
+    "titulo": "Perfil",
+    "voltar_ao_treino": "Voltar ao Treino",
+    "bio_placeholder": "Conte um pouco sobre você...",
+    "bio_salva": "Bio atualizada com sucesso!",
+    "trocar_avatar": "Trocar foto de perfil",
+    "trocar_banner": "Trocar banner",
+    "remover_avatar": "Remover foto",
+    "remover_banner": "Remover banner",
+    "erro_tipo": "Formato inválido. Use JPEG, PNG ou WEBP.",
+    "erro_tamanho": "Arquivo muito grande (máximo {{mb}}MB).",
+    "erro_upload": "Erro ao enviar imagem. Tente novamente.",
+    "stats": {
+      "streak": "streak",
+      "nivel_aim": "Nível de aim",
+      "sessoes": "sessões completas"
+    }
   },
   "comum": {
     "app_name": "FiveM PvP Trainer",
@@ -36,6 +55,7 @@
       "dias": "dias",
       "streak": "streak",
       "exercicios": "exercícios",
+      "ver_perfil": "Ver perfil",
       "editar_perfil": "Editar perfil",
       "alterar_perfil_treino": "Alterar perfil de treino",
       "treinar_agora": "Treinar agora",

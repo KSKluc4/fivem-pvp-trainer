@@ -24,7 +24,8 @@ FORGOT_PASSWORD_MSG = 'Se este email estiver cadastrado, enviamos um link de red
 
 
 def _build_auth_response(user_id: int, name: str, username: str,
-                          is_admin: bool = False, email: str = None, status: int = 200):
+                          is_admin: bool = False, email: str = None,
+                          avatar_url: str = None, status: int = 200):
     access_token  = create_access_token(user_id)
     refresh_token = create_refresh_token()
     create_session(user_id, refresh_token, refresh_token_expiry())
@@ -33,7 +34,7 @@ def _build_auth_response(user_id: int, name: str, username: str,
         'refresh_token': refresh_token,
         'user': {
             'id': user_id, 'name': name, 'username': username, 'is_admin': is_admin,
-            'has_email': bool(email),
+            'has_email': bool(email), 'avatar_url': avatar_url,
         },
     }), status
 
@@ -90,7 +91,8 @@ def login():
         update_password(user['id'], hash_password(password))
 
     return _build_auth_response(user['id'], user['name'], user['username'],
-                                is_admin=bool(user.get('is_admin', 0)), email=user.get('email'))
+                                is_admin=bool(user.get('is_admin', 0)), email=user.get('email'),
+                                avatar_url=user.get('avatar_url'))
 
 
 @auth_bp.route('/auth/refresh', methods=['POST'])
@@ -123,7 +125,8 @@ def refresh():
         return jsonify({'error': 'Usuário não encontrado'}), 404
 
     return _build_auth_response(user_id, user['name'], user['username'],
-                                is_admin=bool(user.get('is_admin', 0)), email=user.get('email'))
+                                is_admin=bool(user.get('is_admin', 0)), email=user.get('email'),
+                                avatar_url=user.get('avatar_url'))
 
 
 @auth_bp.route('/auth/me', methods=['GET'])
@@ -140,6 +143,9 @@ def get_me():
         'is_admin':   bool(user.get('is_admin', 0)),
         'has_email':  bool(user.get('email')),
         'created_at': user.get('created_at'),
+        'avatar_url': user.get('avatar_url'),
+        'banner_url': user.get('banner_url'),
+        'bio':        user.get('bio') or '',
         'stats':      stats,
     })
 
