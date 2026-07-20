@@ -1,6 +1,6 @@
 import { Box, Text, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
-import { ZONES, zoneForCm, gaugePercent } from '../services/sensitivityZones'
+import { ZONES, zoneForCm, angleForCm, zoneAngleRange } from '../services/sensitivityZones'
 
 // Semicircular gauge: angle -90° = far left (slowest zone) through 0° = top
 // to +90° = far right (fastest zone) — a continuous domain with no 0/360
@@ -19,9 +19,10 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 
 // Displayed slow (left) -> fast (right), matching the -100..+100 slider's
 // own left-to-right reading direction. ZONES itself is ordered fast->slow
-// (see sensitivityZones.js), so this is simply that list reversed.
+// (see sensitivityZones.js), so this is simply that list reversed. Used for
+// the legend only — each segment's own angle range (below) is computed
+// independently via zoneAngleRange, so render order doesn't affect position.
 const DISPLAY_ORDER = [...ZONES].reverse()
-const SEGMENT_SPAN = 180 / DISPLAY_ORDER.length
 
 const CX = 120
 const CY = 108
@@ -30,15 +31,14 @@ const R  = 90
 export default function SensitivityGauge({ cm }) {
   const { t } = useTranslation()
   const activeZone = zoneForCm(cm)
-  const needleAngle = -90 + (gaugePercent(cm) / 100) * 180
+  const needleAngle = angleForCm(cm)
 
   return (
     <Stack gap="sm" align="center">
       <Box style={{ width: '100%', maxWidth: 320 }}>
         <svg viewBox="0 0 240 122" style={{ width: '100%', display: 'block' }}>
-          {DISPLAY_ORDER.map((zone, i) => {
-            const start = -90 + i * SEGMENT_SPAN
-            const end   = start + SEGMENT_SPAN
+          {ZONES.map((zone) => {
+            const [start, end] = zoneAngleRange(zone)
             const isActive = zone.id === activeZone.id
             return (
               <path
@@ -52,7 +52,9 @@ export default function SensitivityGauge({ cm }) {
               />
             )
           })}
-          {/* Needle */}
+          {/* Needle — angleForCm() is the exact function zoneAngleRange() used
+              to place the segments above, so it always lands inside the
+              active zone's own segment, never a neighboring one. */}
           <line
             x1={CX} y1={CY}
             x2={polarToCartesian(CX, CY, R - 22, needleAngle).x}
