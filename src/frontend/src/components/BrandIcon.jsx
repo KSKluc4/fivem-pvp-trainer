@@ -1,8 +1,8 @@
 import { useId } from 'react'
 
 // Icon-only crosshair mark — mirrors assets/brand/logo.svg (the project's
-// single source of truth for the brand mark). Used standalone in the app
-// header / title bar, and combined with the wordmark in BrandLogo.
+// single source of truth for the brand mark). Used in the app header/title
+// bar and as the centered mark on the auth screens (login/register/forgot).
 export default function BrandIcon({ size = 28 }) {
   const gradientId = useId()
   return (

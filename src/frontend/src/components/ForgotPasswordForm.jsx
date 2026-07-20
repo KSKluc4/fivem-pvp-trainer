@@ -3,7 +3,7 @@ import { Card, TextInput, Button, Stack, Title, Text, Anchor, Alert } from '@man
 import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { forgotPassword } from '../services/api'
-import BrandLogo from './BrandLogo'
+import BrandIcon from './BrandIcon'
 
 function useFriendlyError() {
   const { t } = useTranslation()
@@ -42,13 +42,14 @@ export default function ForgotPasswordForm({ onGoLogin }) {
 
   return (
     <div className="auth-screen">
-      <Card w="100%" maw={420} p="xl">
-        <BrandLogo />
-
-        <Title order={2} mt="lg" mb={4}>{t('auth.forgot_password.title')}</Title>
-        <Text c="dimmed" size="sm" mb="xl">
-          {t('auth.forgot_password.subtitle')}
-        </Text>
+      <Card w="100%" maw={400} p="xl" className="auth-card">
+        <Stack align="center" gap={2} mb="lg">
+          <div className="auth-card-icon"><BrandIcon size={36} /></div>
+          <Title order={2} ta="center" mt="xs">{t('auth.forgot_password.title')}</Title>
+          <Text c="dimmed" size="sm" ta="center">
+            {t('auth.forgot_password.subtitle')}
+          </Text>
+        </Stack>
 
         {sent ? (
           <Alert color="teal" variant="light" icon={<IconCheck size={16} />}>
@@ -56,7 +57,7 @@ export default function ForgotPasswordForm({ onGoLogin }) {
           </Alert>
         ) : (
           <form onSubmit={handleSubmit}>
-            <Stack gap="md">
+            <Stack gap="sm">
               <TextInput
                 label={t('auth.forgot_password.email_label')}
                 type="email"
@@ -74,7 +75,17 @@ export default function ForgotPasswordForm({ onGoLogin }) {
                 </Alert>
               )}
 
-              <Button type="submit" size="md" fullWidth loading={loading} disabled={!email}>
+              <Button
+                type="submit"
+                size="md"
+                fullWidth
+                mt="xs"
+                variant="gradient"
+                gradient={{ from: 'brandCyan.5', to: 'brandPurple.5', deg: 120 }}
+                className="auth-submit-btn"
+                loading={loading}
+                disabled={!email}
+              >
                 {t('auth.forgot_password.submit')}
               </Button>
             </Stack>

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Card, TextInput, PasswordInput, Button, Stack, Title, Text, Anchor, Alert } from '@mantine/core'
+import { Card, TextInput, PasswordInput, Checkbox, Button, Stack, Group, Title, Text, Anchor, Alert } from '@mantine/core'
 import { IconAlertCircle } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { login } from '../services/api'
-import BrandLogo from './BrandLogo'
+import BrandIcon from './BrandIcon'
 
 function useFriendlyError() {
   const { t } = useTranslation()
@@ -22,8 +22,9 @@ function useFriendlyError() {
 export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword }) {
   const { t } = useTranslation()
   const friendlyError = useFriendlyError()
-  const [username, setUsername] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [error,    setError]    = useState(null)
   const [loading,  setLoading]  = useState(false)
 
@@ -34,8 +35,8 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
     const MAX = 5
     for (let attempt = 0; attempt < MAX; attempt++) {
       try {
-        const res = await login({ username, password })
-        onSuccess(res.data)
+        const res = await login({ identifier, password })
+        onSuccess(res.data, remember)
         return
       } catch (err) {
         if (err.response || attempt === MAX - 1) {
@@ -50,19 +51,20 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
 
   return (
     <div className="auth-screen">
-      <Card w="100%" maw={420} p="xl">
-        <BrandLogo />
-
-        <Title order={2} mt="lg" mb={4}>{t('auth.login.title')}</Title>
-        <Text c="dimmed" size="sm" mb="xl">{t('auth.login.subtitle')}</Text>
+      <Card w="100%" maw={400} p="xl" className="auth-card">
+        <Stack align="center" gap={2} mb="lg">
+          <div className="auth-card-icon"><BrandIcon size={48} /></div>
+          <Title order={2} ta="center" mt="xs">{t('auth.login.title')}</Title>
+          <Text c="dimmed" size="sm" ta="center">{t('auth.login.subtitle')}</Text>
+        </Stack>
 
         <form onSubmit={handleSubmit}>
-          <Stack gap="md">
+          <Stack gap="sm">
             <TextInput
-              label={t('auth.login.username_label')}
-              placeholder={t('auth.login.username_placeholder')}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              label={t('auth.login.identifier_label')}
+              placeholder={t('auth.login.identifier_placeholder')}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               autoFocus
               autoComplete="username"
               required
@@ -76,9 +78,17 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
               required
             />
 
-            <Anchor component="button" type="button" size="sm" onClick={onForgotPassword} style={{ alignSelf: 'flex-start' }}>
-              {t('auth.login.forgot_password')}
-            </Anchor>
+            <Group justify="space-between" mt={2}>
+              <Checkbox
+                size="sm"
+                label={t('auth.login.remember_me')}
+                checked={remember}
+                onChange={(e) => setRemember(e.currentTarget.checked)}
+              />
+              <Anchor component="button" type="button" size="sm" onClick={onForgotPassword}>
+                {t('auth.login.forgot_password')}
+              </Anchor>
+            </Group>
 
             {error && (
               <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />}>
@@ -86,7 +96,17 @@ export default function LoginForm({ onSuccess, onGoRegister, onForgotPassword })
               </Alert>
             )}
 
-            <Button type="submit" size="md" fullWidth loading={loading} disabled={!username || !password}>
+            <Button
+              type="submit"
+              size="md"
+              fullWidth
+              mt="xs"
+              variant="gradient"
+              gradient={{ from: 'brandCyan.5', to: 'brandPurple.5', deg: 120 }}
+              className="auth-submit-btn"
+              loading={loading}
+              disabled={!identifier || !password}
+            >
               {t('auth.login.submit')}
             </Button>
           </Stack>

@@ -3,7 +3,7 @@ import { Card, TextInput, PasswordInput, Button, Stack, Title, Text, Anchor, Ale
 import { IconAlertCircle } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { register } from '../services/api'
-import BrandLogo from './BrandLogo'
+import BrandIcon from './BrandIcon'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
@@ -59,14 +59,15 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
 
   return (
     <div className="auth-screen">
-      <Card w="100%" maw={420} p="xl">
-        <BrandLogo />
-
-        <Title order={2} mt="lg" mb={4}>{t('auth.register.title')}</Title>
-        <Text c="dimmed" size="sm" mb="xl">{t('auth.register.subtitle')}</Text>
+      <Card w="100%" maw={400} p="xl" className="auth-card">
+        <Stack align="center" gap={2} mb="lg">
+          <div className="auth-card-icon"><BrandIcon size={36} /></div>
+          <Title order={2} ta="center" mt="xs">{t('auth.register.title')}</Title>
+          <Text c="dimmed" size="sm" ta="center">{t('auth.register.subtitle')}</Text>
+        </Stack>
 
         <form onSubmit={handleSubmit}>
-          <Stack gap="md">
+          <Stack gap="sm">
             <TextInput
               label={t('auth.register.name_label')}
               placeholder={t('auth.register.name_placeholder')}
@@ -116,6 +117,10 @@ export default function RegisterForm({ onSuccess, onGoLogin }) {
               type="submit"
               size="md"
               fullWidth
+              mt="xs"
+              variant="gradient"
+              gradient={{ from: 'brandCyan.5', to: 'brandPurple.5', deg: 120 }}
+              className="auth-submit-btn"
               loading={loading}
               disabled={!form.name || !form.username || !form.email || !form.password}
             >

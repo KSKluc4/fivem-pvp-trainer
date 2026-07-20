@@ -55,9 +55,10 @@
     "login": {
       "title": "Entrar",
       "subtitle": "Acesse sua conta para continuar treinando",
-      "username_label": "Username",
-      "username_placeholder": "username",
+      "identifier_label": "Username ou email",
+      "identifier_placeholder": "username ou email",
       "password_label": "Senha",
+      "remember_me": "Lembrar de mim",
       "forgot_password": "Esqueceu a senha?",
       "submit": "Entrar →",
       "no_account": "Não tem conta?",

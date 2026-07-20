@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { AppShell, Text, Center, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { refreshTokenApi, getTraining, setAccessToken, clearAccessToken } from './services/api'
-import { secureStorage } from './services/storage'
+import { tokenStore } from './services/storage'
 import TopBar            from './components/TopBar'
 import LoginForm        from './components/LoginForm'
 import RegisterForm     from './components/RegisterForm'
@@ -53,20 +53,20 @@ export default function App() {
   // Boot: restore session via refresh token
   useEffect(() => {
     async function boot() {
-      const refreshToken = await secureStorage.get('refresh_token')
+      const refreshToken = await tokenStore.getRefreshToken()
       if (!refreshToken) { setAuthState('login'); return }
 
       try {
         const res = await retryNetworkCall(() => refreshTokenApi(refreshToken))
         const { access_token, refresh_token: newRefresh, user: u } = res.data
         setAccessToken(access_token)
-        await secureStorage.set('refresh_token', newRefresh)
+        await tokenStore.updateRefreshToken(newRefresh)
         setUser(u)
         setEmailPromptOpen(!u.has_email)
         setAuthState('app')
         await loadTraining(u)
       } catch {
-        await secureStorage.remove('refresh_token')
+        await tokenStore.clear()
         clearAccessToken()
         setAuthState('login')
       }
@@ -81,10 +81,12 @@ export default function App() {
     return () => window.removeEventListener('pvp:logout', handler)
   }, [])
 
-  // Called by LoginForm / RegisterForm with full JWT response
-  const handleAuthSuccess = async ({ access_token, refresh_token, user: u }) => {
+  // Called by LoginForm / RegisterForm with the full JWT response. `remember`
+  // controls whether the refresh token survives closing the app (LoginForm's
+  // "remember me" checkbox) — RegisterForm always remembers the new session.
+  const handleAuthSuccess = async ({ access_token, refresh_token, user: u }, remember = true) => {
     setAccessToken(access_token)
-    await secureStorage.set('refresh_token', refresh_token)
+    await tokenStore.setRefreshToken(refresh_token, remember)
     setUser(u)
     setEmailPromptOpen(!u.has_email)
     setView('loading')
@@ -105,8 +107,8 @@ export default function App() {
   }
 
   const handleLogout = async () => {
-    const refreshToken = await secureStorage.get('refresh_token')
-    await secureStorage.remove('refresh_token')
+    const refreshToken = await tokenStore.getRefreshToken()
+    await tokenStore.clear()
     clearAccessToken()
     setUser(null); setSessionId(null); setRoutine(null)
     setView('loading'); setAuthState('login')

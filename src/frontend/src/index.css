@@ -130,23 +130,65 @@ body {
 .win-btn--close:hover { background: #e81123; color: #fff; }
 .win-btn--close:active { background: #f1707a; }
 
-/* ─── Auth screens (Login/Register) — full-bleed gradient background ─────── */
+/* ─── Auth screens (Login/Register/Forgot) — layered, minimal background ──
+   Three static/near-static layers behind the card, cheapest first:
+   1) ::before — a very faint crosshair/reticle grid (aim-training motif),
+      masked so it fades out near the edges instead of tiling edge-to-edge.
+   2) ::after  — two brand-color glows (blue top-left, purple bottom-right)
+      plus a vignette, combined in one layer so a single slow opacity pulse
+      "breathes" all three together — no JS, no layout cost.
+   The card sits in a third, explicitly stacked layer above both. */
 .auth-screen {
+  position: relative;
   min-height: calc(100vh - 48px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background:
-    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,212,255,.07) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 80% 90%, rgba(123,47,212,.06) 0%, transparent 60%),
-    var(--bg-primary);
+  overflow: hidden;
+  background: var(--bg-primary);
 }
-.auth-brand {
-  background: linear-gradient(135deg, #00d4ff 0%, #7b2fd4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.auth-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(to right,  rgba(232,232,240,.06) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(to bottom, rgba(232,232,240,.06) 0 1px, transparent 1px 56px);
+  mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 0%, transparent 78%);
+  pointer-events: none;
+}
+.auth-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 10% 8%,  rgba(0,212,255,.12) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 42% at 90% 94%, rgba(123,47,212,.10) 0%, transparent 62%),
+    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 55%, rgba(8,8,16,.5) 100%);
+  animation: authGlowPulse 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes authGlowPulse {
+  0%, 100% { opacity: .82; }
+  50%      { opacity: 1; }
+}
+.auth-card {
+  position: relative;
+  z-index: 1;
+}
+.auth-card-icon svg { display: block; }
+.auth-submit-btn {
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+.auth-submit-btn:hover {
+  box-shadow: 0 0 0 1px rgba(0,212,255,.35), 0 6px 22px -4px rgba(123,47,212,.55);
+}
+.auth-submit-btn:active {
+  transform: translateY(1px);
 }
 
 /* ─── Boot / route-transition loading screen ──────────────────────────────── */

@@ -55,9 +55,10 @@
     "login": {
       "title": "Log in",
       "subtitle": "Access your account to keep training",
-      "username_label": "Username",
-      "username_placeholder": "username",
+      "identifier_label": "Username or email",
+      "identifier_placeholder": "username or email",
       "password_label": "Password",
+      "remember_me": "Remember me",
       "forgot_password": "Forgot your password?",
       "submit": "Log in →",
       "no_account": "Don't have an account?",

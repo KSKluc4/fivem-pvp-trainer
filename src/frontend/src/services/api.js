@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { secureStorage } from './storage'
+import { tokenStore } from './storage'
 
 // All requests use relative URLs — works both on Vercel (same origin)
 // and in Electron (which loads the Vercel URL directly).
@@ -51,14 +51,14 @@ api.interceptors.response.use(
       _isRefreshing   = true
 
       try {
-        const refreshToken = await secureStorage.get('refresh_token')
+        const refreshToken = await tokenStore.getRefreshToken()
         if (!refreshToken) throw new Error('No refresh token')
 
         const res = await axios.post('/api/auth/refresh', { refresh_token: refreshToken })
         const { access_token, refresh_token: newRefresh } = res.data
 
         setAccessToken(access_token)
-        await secureStorage.set('refresh_token', newRefresh)
+        await tokenStore.updateRefreshToken(newRefresh)
 
         processQueue(null, access_token)
         original.headers.Authorization = `Bearer ${access_token}`
@@ -66,7 +66,7 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null)
         clearAccessToken()
-        await secureStorage.remove('refresh_token')
+        await tokenStore.clear()
         window.dispatchEvent(new Event('pvp:logout'))
         return Promise.reject(refreshErr)
       } finally {

@@ -71,14 +71,14 @@ def register():
 
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
-    data     = request.get_json() or {}
-    username = str(data.get('username', '')).strip().lower()
-    password = str(data.get('password', ''))
+    data       = request.get_json() or {}
+    identifier = str(data.get('identifier', '')).strip().lower()
+    password   = str(data.get('password', ''))
 
-    if not username or not password:
-        return jsonify({'error': 'Username e senha são obrigatórios'}), 400
+    if not identifier or not password:
+        return jsonify({'error': 'Username/email e senha são obrigatórios'}), 400
 
-    user = get_user_by_username(username)
+    user = get_user_by_email(identifier) if '@' in identifier else get_user_by_username(identifier)
     if not user or not user.get('password_hash'):
         return jsonify({'error': 'Username ou senha incorretos'}), 401
 

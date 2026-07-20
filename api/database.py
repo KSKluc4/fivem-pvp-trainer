@@ -31,7 +31,7 @@ def get_user_by_id(user_id: int):
 
 def get_user_by_email(email: str):
     sb = get_supabase()
-    res = sb.table('users').select('id,name,username,email,created_at,is_admin').eq('email', email).limit(1).execute()
+    res = sb.table('users').select('id,name,username,email,password_hash,created_at,is_admin').eq('email', email).limit(1).execute()
     return res.data[0] if res.data else None
 
 
