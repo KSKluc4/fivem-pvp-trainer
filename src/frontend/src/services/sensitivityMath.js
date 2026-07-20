@@ -49,6 +49,21 @@ export function calcLocal(gtaSens, dpi) {
   }
 }
 
+// Inverse of calcLocal(): the GTA sens value that would produce a given
+// cm/360 at a given DPI. Used by the gauge to place zone-boundary cm/360
+// thresholds onto the sens-scale arc (sensitivityGaugeAxis.js) — NOT used
+// for the main conversion, which always goes sens -> cm.
+//
+// Division by cm=0 or cm=Infinity resolves to +-Infinity in JS (never NaN,
+// since the numerator is always positive and dpi > 0), which is exactly the
+// right answer for the two open-ended zone boundaries ("faster than any
+// finite cm" / "slower than any finite cm") — callers clip the result to
+// the visible -100..100 domain themselves.
+export function sensForCm(cm, dpi) {
+  const magnitude = (360 / (dpi * GTA_YAW * cm)) * 2.54
+  return (magnitude - SENS_BASE) / SENS_SLOPE
+}
+
 // Degrees the trainer's 3D camera should rotate per raw mouse "count"
 // (movementX/movementY), derived from the same yaw constant as GTA V itself.
 //

@@ -1,9 +1,10 @@
 import { Box, Text, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
-import { ZONES, zoneForCm, angleForCm, zoneAngleRange } from '../services/sensitivityZones'
+import { ZONES, zoneForCm } from '../services/sensitivityZones'
+import { AXIS_MIN, AXIS_MAX, angleForSens, zoneAngleRangeForDpi } from '../services/sensitivityGaugeAxis'
 
-// Semicircular gauge: angle -90° = far left (slowest zone) through 0° = top
-// to +90° = far right (fastest zone) — a continuous domain with no 0/360
+// Semicircular gauge: angle -90° = far left (sens -100) through 0° = top
+// to +90° = far right (sens +100) — a continuous domain with no 0/360
 // wraparound to worry about.
 function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180
@@ -21,24 +22,29 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 // own left-to-right reading direction. ZONES itself is ordered fast->slow
 // (see sensitivityZones.js), so this is simply that list reversed. Used for
 // the legend only — each segment's own angle range (below) is computed
-// independently via zoneAngleRange, so render order doesn't affect position.
+// independently via zoneAngleRangeForDpi, so render order doesn't affect
+// position.
 const DISPLAY_ORDER = [...ZONES].reverse()
 
 const CX = 120
-const CY = 108
-const R  = 90
+const CY = 104
+const R  = 86
 
-export default function SensitivityGauge({ cm }) {
+const TICKS = [AXIS_MIN, 0, AXIS_MAX]
+
+export default function SensitivityGauge({ sens, dpi, cm }) {
   const { t } = useTranslation()
   const activeZone = zoneForCm(cm)
-  const needleAngle = angleForCm(cm)
+  const needleAngle = angleForSens(sens)
 
   return (
     <Stack gap="sm" align="center">
       <Box style={{ width: '100%', maxWidth: 320 }}>
-        <svg viewBox="0 0 240 122" style={{ width: '100%', display: 'block' }}>
+        <svg viewBox="0 0 240 136" style={{ width: '100%', display: 'block' }}>
           {ZONES.map((zone) => {
-            const [start, end] = zoneAngleRange(zone)
+            const range = zoneAngleRangeForDpi(zone, dpi)
+            if (!range) return null
+            const [start, end] = range
             const isActive = zone.id === activeZone.id
             return (
               <path
@@ -52,9 +58,37 @@ export default function SensitivityGauge({ cm }) {
               />
             )
           })}
-          {/* Needle — angleForCm() is the exact function zoneAngleRange() used
-              to place the segments above, so it always lands inside the
-              active zone's own segment, never a neighboring one. */}
+
+          {/* Fixed ticks at -100 / 0 / +100 — the arc's own scale, independent
+              of DPI or the zone segments drawn above. */}
+          {TICKS.map((tickSens) => {
+            const angle = angleForSens(tickSens)
+            const outer = polarToCartesian(CX, CY, R + 8, angle)
+            const inner = polarToCartesian(CX, CY, R - 6, angle)
+            const labelPos = polarToCartesian(CX, CY, R + 22, angle)
+            return (
+              <g key={tickSens}>
+                <line
+                  x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
+                  stroke="var(--mantine-color-dimmed)" strokeWidth={1.5}
+                />
+                <text
+                  x={labelPos.x} y={labelPos.y}
+                  fill="var(--mantine-color-dimmed)"
+                  fontSize={10}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {tickSens > 0 ? `+${tickSens}` : tickSens}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* Needle — angleForSens() places it directly at the configured
+              sens value, on the same -100..100 scale the zone segments are
+              measured against, so it always lands inside the active zone's
+              own segment, never a neighboring one. */}
           <line
             x1={CX} y1={CY}
             x2={polarToCartesian(CX, CY, R - 22, needleAngle).x}
