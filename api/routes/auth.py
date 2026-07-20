@@ -6,7 +6,7 @@ from database import (
     email_taken_by_other, set_user_email,
     create_session, get_session, delete_session, get_user_stats,
     count_recent_password_reset_requests, create_password_reset_token,
-    get_valid_reset_token, invalidate_user_reset_tokens,
+    get_valid_reset_token, invalidate_user_reset_tokens, get_user_sensitivity,
 )
 from utils import (
     require_auth, hash_password, verify_password,
@@ -136,6 +136,15 @@ def get_me():
     if not user:
         return jsonify({'error': 'Usuário não encontrado'}), 404
     stats = get_user_stats(g.user_id)
+
+    # Best-effort — migration v10 (gta_sensitivity/dpi/fine_tune_multiplier)
+    # may not be applied yet on every deploy; a missing column here must
+    # never break the rest of the profile response.
+    try:
+        sens = get_user_sensitivity(g.user_id) or {}
+    except Exception:
+        sens = {}
+
     return jsonify({
         'id':         user['id'],
         'name':       user['name'],
@@ -146,6 +155,9 @@ def get_me():
         'avatar_url': user.get('avatar_url'),
         'banner_url': user.get('banner_url'),
         'bio':        user.get('bio') or '',
+        'gta_sensitivity':      sens.get('gta_sensitivity'),
+        'dpi':                  sens.get('dpi'),
+        'fine_tune_multiplier': sens.get('fine_tune_multiplier') if sens.get('fine_tune_multiplier') is not None else 1.0,
         'stats':      stats,
     })
 

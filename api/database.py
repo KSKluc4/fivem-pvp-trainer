@@ -16,7 +16,14 @@ def get_supabase() -> Client:
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
-
+#
+# Sensitivity fields (gta_sensitivity/dpi/fine_tune_multiplier, migration v10)
+# are deliberately NOT in this shared field list — it's selected on every
+# login/register/refresh, and a user running the app before that migration
+# is applied would otherwise break the entire login flow with a missing-
+# column error. get_user_sensitivity() below fetches them separately, only
+# where actually displayed (/auth/me), wrapped by the caller so a missing
+# migration degrades to "no sensitivity set yet" instead of a 500.
 _USER_FIELDS = 'id,name,username,email,created_at,is_admin,avatar_url,banner_url,bio'
 
 
@@ -97,6 +104,28 @@ def update_user_avatar_url(user_id: int, avatar_url):
 def update_user_banner_url(user_id: int, banner_url):
     sb = get_supabase()
     res = sb.table('users').update({'banner_url': banner_url}).eq('id', user_id).execute()
+    return res.data[0] if res.data else None
+
+
+def get_user_sensitivity(user_id: int):
+    """Fetched separately from _USER_FIELDS (see comment above it) — callers
+    must catch the exception this raises when migration v10 hasn't run yet."""
+    sb = get_supabase()
+    res = (sb.table('users').select('gta_sensitivity,dpi,fine_tune_multiplier')
+             .eq('id', user_id).limit(1).execute())
+    return res.data[0] if res.data else None
+
+
+def update_user_sensitivity(user_id: int, gta_sensitivity: float, dpi: int, fine_tune_multiplier: float = None):
+    """Single source of truth for the user's sensitivity — read/written by
+    both the "Minha Sensibilidade" screen and the in-app trainer. `fine_tune_multiplier`
+    is trainer-only polish; omit it (None) to leave whatever value is already
+    saved untouched (e.g. when saving from the main sensitivity screen)."""
+    sb = get_supabase()
+    payload = {'gta_sensitivity': gta_sensitivity, 'dpi': dpi}
+    if fine_tune_multiplier is not None:
+        payload['fine_tune_multiplier'] = fine_tune_multiplier
+    res = sb.table('users').update(payload).eq('id', user_id).execute()
     return res.data[0] if res.data else None
 
 
@@ -234,34 +263,6 @@ def get_progress_history(user_id: int, limit: int = 30):
         }
         for s in sessions_res.data
     ]
-
-
-# ── Sensitivity conversions ───────────────────────────────────────────────────
-
-def save_sensitivity_conversion(user_id: int, gta_sens: float, dpi: int,
-                                 cm_360: float, kovaak: float, aimlab: float,
-                                 inverted: int):
-    sb = get_supabase()
-    sb.table('sensitivity_conversions').insert({
-        'user_id':         user_id,
-        'gta_sensitivity': gta_sens,
-        'dpi':             dpi,
-        'cm_per_360':      cm_360,
-        'kovaak_sens':     kovaak,
-        'aimlab_sens':     aimlab,
-        'inverted':        inverted,
-    }).execute()
-
-
-def get_sensitivity_history(user_id: int, limit: int = 15):
-    sb = get_supabase()
-    res = (sb.table('sensitivity_conversions')
-             .select('id,gta_sensitivity,dpi,cm_per_360,kovaak_sens,aimlab_sens,inverted,created_at')
-             .eq('user_id', user_id)
-             .order('created_at', desc=True)
-             .limit(limit)
-             .execute())
-    return res.data or []
 
 
 # ── Aim trainer scores ────────────────────────────────────────────────────────

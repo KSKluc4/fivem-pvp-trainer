@@ -1,5 +1,5 @@
 import { Box, Card, Group, Stack, Text, Title, Button, Badge, SimpleGrid } from '@mantine/core'
-import { IconArrowLeft, IconRefresh, IconTrophy, IconTarget } from '@tabler/icons-react'
+import { IconArrowLeft, IconRefresh, IconTrophy, IconTarget, IconCheck } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 function DeltaBadge({ current, compare }) {
@@ -15,7 +15,10 @@ function DeltaBadge({ current, compare }) {
   )
 }
 
-export default function ResultsScreen({ result, exerciseName, lastAttempt, personalBest, savedRemotely, onRetry, onBack }) {
+export default function ResultsScreen({
+  result, exerciseName, lastAttempt, personalBest, savedRemotely,
+  roundInfo, isFinalRound, onRetry, onBack, onComplete,
+}) {
   const { t } = useTranslation()
   const isNewRecord = personalBest == null || result.score > personalBest.score
   const difficultyLabel = t(`trainer.dificuldades.${result.difficulty}`, result.difficulty)
@@ -26,9 +29,16 @@ export default function ResultsScreen({ result, exerciseName, lastAttempt, perso
 
   return (
     <Box className="trainer-results" p="xl" style={{ maxWidth: 640, margin: '0 auto' }}>
-      <Group gap={6} mb="lg">
-        <IconTrophy size={22} color="var(--mantine-color-yellow-5)" />
-        <Title order={2} size="h3">{t('trainer.resultado.titulo', { exercise: exerciseName })}</Title>
+      <Group justify="space-between" mb="lg" wrap="wrap">
+        <Group gap={6}>
+          <IconTrophy size={22} color="var(--mantine-color-yellow-5)" />
+          <Title order={2} size="h3">{t('trainer.resultado.titulo', { exercise: exerciseName })}</Title>
+        </Group>
+        {roundInfo && (
+          <Badge size="lg" variant="light" color="brandCyan">
+            {t('trainer.resultado.rodada_progresso', { current: roundInfo.current, total: roundInfo.total })}
+          </Badge>
+        )}
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="lg">
@@ -71,10 +81,18 @@ export default function ResultsScreen({ result, exerciseName, lastAttempt, perso
         </Text>
       )}
 
-      <Group>
-        <Button leftSection={<IconRefresh size={16} />} onClick={onRetry}>{t('trainer.resultado.tentar_novamente')}</Button>
-        <Button variant="light" color="gray" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>{t('trainer.resultado.voltar')}</Button>
-      </Group>
+      {isFinalRound ? (
+        <Button leftSection={<IconCheck size={16} />} onClick={onComplete}>
+          {t('trainer.resultado.concluir_rotina')}
+        </Button>
+      ) : (
+        <Group>
+          <Button leftSection={<IconRefresh size={16} />} onClick={onRetry}>
+            {roundInfo ? t('trainer.resultado.proxima_rodada') : t('trainer.resultado.tentar_novamente')}
+          </Button>
+          <Button variant="light" color="gray" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>{t('trainer.resultado.voltar')}</Button>
+        </Group>
+      )}
     </Box>
   )
 }

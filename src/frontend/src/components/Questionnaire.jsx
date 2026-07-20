@@ -12,7 +12,6 @@ import {
   IconClock, IconGauge, IconBoltFilled,
   IconLineDashed, IconWaveSine, IconArrowsShuffle,
   IconBattery1, IconBattery2, IconBatteryCharging,
-  IconDeviceGamepad2, IconInfinity, IconDownload,
 } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { submitQuestionnaire } from '../services/api'
@@ -78,15 +77,6 @@ const QUESTIONS = [
       { value: 25, icon: IconBattery1,        color: 'brandCyan' },
       { value: 45, icon: IconBattery2,        color: 'brandPurple' },
       { value: 65, icon: IconBatteryCharging, color: 'orange' },
-    ],
-  },
-  {
-    id: 'preferred_tool',
-    options: [
-      { value: 'kovaak', icon: IconDeviceGamepad2, color: 'orange' },
-      { value: 'aimlab', icon: IconTargetArrow,     color: 'green' },
-      { value: 'ambos',  icon: IconInfinity,        color: 'brandCyan' },
-      { value: 'nenhum', icon: IconDownload,        color: 'gray' },
     ],
   },
 ]
@@ -169,7 +159,7 @@ export default function Questionnaire({ username, onComplete }) {
               <Text c="dimmed" mb="lg">{t(`${qBase}.subtitle`)}</Text>
 
               <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
-                <SimpleGrid cols={{ base: 1, sm: current.id === 'preferred_tool' ? 2 : 1 }} spacing="sm">
+                <SimpleGrid cols={1} spacing="sm">
                   {current.options.map((opt) => (
                     <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
                       <Group wrap="nowrap" align="center" gap="sm">

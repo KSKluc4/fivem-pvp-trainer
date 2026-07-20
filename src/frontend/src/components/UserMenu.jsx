@@ -4,7 +4,7 @@ import {
   Divider, Alert,
 } from '@mantine/core'
 import {
-  IconPencil, IconSettings, IconDeviceGamepad2, IconShieldLock, IconLogout,
+  IconPencil, IconSettings, IconAdjustmentsHorizontal, IconShieldLock, IconLogout,
   IconAlertCircle, IconTargetArrow, IconUserCircle,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
@@ -23,7 +23,7 @@ const LEVELS = [
 
 function getLevel(n) { return LEVELS.find((l) => n >= l.min) || LEVELS[LEVELS.length - 1] }
 
-export default function UserMenu({ user, collapsed = false, onLogout, onUserUpdate, onChangeProfile, onConverter, onTrainer, onAdmin, onProfile }) {
+export default function UserMenu({ user, collapsed = false, onLogout, onUserUpdate, onChangeProfile, onSensibilidade, onTrainer, onAdmin, onProfile }) {
   const { t } = useTranslation()
   const [open,    setOpen]    = useState(false)
   const [profile, setProfile] = useState(null)
@@ -167,8 +167,8 @@ export default function UserMenu({ user, collapsed = false, onLogout, onUserUpda
             <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onTrainer?.() }}>
               <Group gap="xs"><IconTargetArrow size={15} /><Text size="sm">{t('comum.user_menu.treinar_agora')}</Text></Group>
             </UnstyledButton>
-            <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onConverter?.() }}>
-              <Group gap="xs"><IconDeviceGamepad2 size={15} /><Text size="sm">{t('comum.user_menu.conversor_sensibilidade')}</Text></Group>
+            <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onSensibilidade?.() }}>
+              <Group gap="xs"><IconAdjustmentsHorizontal size={15} /><Text size="sm">{t('comum.user_menu.minha_sensibilidade')}</Text></Group>
             </UnstyledButton>
             {user.is_admin && (
               <UnstyledButton className="ud-action-btn" onClick={() => { setOpen(false); onAdmin?.() }}>

@@ -13,11 +13,12 @@ import EmailPromptModal from './components/EmailPromptModal'
 import Questionnaire    from './components/Questionnaire'
 import TrainingRoutine  from './components/TrainingRoutine'
 import Progress         from './components/Progress'
-import SensConverter    from './components/SensConverter'
+import Sensitivity      from './components/Sensitivity'
 import Profile          from './components/Profile'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
 import TrainerView      from './trainer/TrainerView'
+import { syncTrainerSensFromServer } from './trainer/sensitivity/trainerSensitivity'
 
 const SIDEBAR_COLLAPSED_KEY = 'pvp_sidebar_collapsed'
 const SIDEBAR_WIDTH_EXPANDED = 240
@@ -42,7 +43,13 @@ export default function App() {
   const [routine,   setRoutine]   = useState(null)
   const [emailPromptOpen, setEmailPromptOpen] = useState(false)
   const [trainerHint, setTrainerHint] = useState(null)
+  const [pendingCompletion, setPendingCompletion] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1')
+
+  // Keep the trainer's local sensitivity cache in sync with the backend's
+  // canonical value (see trainerSensitivity.js) — runs on every login/boot,
+  // not just once, since `user` also updates on profile edits.
+  useEffect(() => { syncTrainerSensFromServer(user) }, [user])
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -241,8 +248,10 @@ export default function App() {
               username={user?.name || ''}
               onViewProgress={() => setView('progress')}
               onChangeProfile={handleChangeProfile}
-              onConverter={() => setView('converter')}
+              onSensibilidade={() => setView('sensibilidade')}
               onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
+              pendingCompletion={pendingCompletion}
+              onPendingCompletionConsumed={() => setPendingCompletion(null)}
             />
           )}
 
@@ -251,6 +260,11 @@ export default function App() {
               key="trainer"
               initialHint={trainerHint}
               onBack={() => setView('routine')}
+              onRoutineComplete={(exerciseName) => {
+                setTrainerHint(null)
+                setPendingCompletion(exerciseName)
+                setView('routine')
+              }}
             />
           )}
 
@@ -263,9 +277,9 @@ export default function App() {
             />
           )}
 
-          {view === 'converter' && (
-            <SensConverter
-              key="converter"
+          {view === 'sensibilidade' && (
+            <Sensitivity
+              key="sensibilidade"
               onBack={() => setView('routine')}
             />
           )}

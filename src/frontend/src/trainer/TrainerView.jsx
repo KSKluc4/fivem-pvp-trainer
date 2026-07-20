@@ -38,10 +38,10 @@ function bestScoreFor(scores) {
 
 // Trainer entry point — a selection screen with one card per exercise
 // (Tracking Suave from Phase 1 + the 3 Phase 2 drills), an overall aim
-// level header, and an optional `initialHint` (exercise + difficulty) that
-// skips straight to ExercisePlayer — used by the daily routine's "Train
-// in-app" recommendation.
-export default function TrainerView({ onBack, initialHint = null }) {
+// level header, and an optional `initialHint` (exercise + difficulty, plus
+// optionally rounds + exerciseName) that skips straight to ExercisePlayer —
+// used by the daily routine's per-card "Treinar" deep-link.
+export default function TrainerView({ onBack, initialHint = null, onRoutineComplete }) {
   const { t } = useTranslation()
   const { scoresByExercise, loading } = useAllTrainerScores()
   const [selection, setSelection] = useState(
@@ -49,11 +49,20 @@ export default function TrainerView({ onBack, initialHint = null }) {
   )
 
   if (selection) {
+    // Only a routine deep-link (initialHint) carries `rounds`/`exerciseName`
+    // — free play from the selection grid below has neither, so
+    // ExercisePlayer just loops rounds manually with no auto-return.
+    const isHintedSelection = initialHint?.exercise === selection.exercise
+    const targetRounds  = isHintedSelection ? initialHint.rounds : null
+    const exerciseName  = isHintedSelection ? (initialHint.exerciseName || initialHint.exercise) : null
+
     return (
       <ExercisePlayer
         exerciseId={selection.exercise}
         initialDifficulty={selection.difficulty}
+        targetRounds={targetRounds}
         onBack={() => setSelection(null)}
+        onRoutineComplete={targetRounds ? () => onRoutineComplete?.(exerciseName) : undefined}
       />
     )
   }

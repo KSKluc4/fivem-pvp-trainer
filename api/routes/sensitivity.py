@@ -1,86 +1,66 @@
-import traceback
 from flask import Blueprint, request, jsonify, g
 from utils import require_auth
-from database import save_sensitivity_conversion, get_sensitivity_history
+from database import update_user_sensitivity
 
 sensitivity_bp = Blueprint('sensitivity', __name__)
 
-# Community-validated yaw values (degrees/count per sensitivity unit)
-# Source: mouse-sensitivity.com — verified against community posts on r/FPSAimTrainer
-GTA_YAW    = 0.0009  # GTA V, sensitivity scale 0–100 (in-game slider)
-KOVAAK_YAW = 0.022   # KovaaK's FPS Aim Trainer
-AIMLAB_YAW = 0.022   # Aim Lab (same effective yaw as KovaaK's)
+# Community-validated yaw value (degrees/count per sensitivity unit).
+# Source: mouse-sensitivity.com — verified against community posts on
+# r/FPSAimTrainer. This is the only conversion this app ever needs now — the
+# in-app trainer replaces third-party tools entirely, so there's no more
+# KovaaK's/Aim Lab yaw to convert to.
+GTA_YAW = 0.0009  # GTA V, sensitivity scale 0–100 (in-game slider)
 
 
-def _do_convert(gta_sens: float, dpi: int) -> dict:
-    abs_sens = abs(gta_sens)
-    cm_360   = (360 / (dpi * abs_sens * GTA_YAW)) * 2.54
-    # target_sens = 360*2.54 / (dpi * target_yaw * cm_360)
-    kovaak = (360 * 2.54) / (dpi * KOVAAK_YAW * cm_360)
-    aimlab = (360 * 2.54) / (dpi * AIMLAB_YAW * cm_360)
-    return {
-        'cm_per_360':        round(cm_360, 4),
-        'kovaak_sensitivity': round(kovaak, 4),
-        'aimlab_sensitivity': round(aimlab, 4),
-        'inverted':          gta_sens < 0,
-        'gta_sensitivity':   gta_sens,
-        'dpi':               dpi,
-    }
+def _cm_per_360(gta_sens: float, dpi: int) -> float:
+    return (360 / (dpi * abs(gta_sens) * GTA_YAW)) * 2.54
 
 
-@sensitivity_bp.route('/sensitivity/convert', methods=['POST'])
+@sensitivity_bp.route('/sensitivity', methods=['PUT'])
 @require_auth
-def convert_sensitivity():
+def update_sensitivity():
+    """Single source of truth for the user's sensitivity — read/written by
+    both the "Minha Sensibilidade" screen and the in-app trainer's own setup
+    flow. `fine_tune_multiplier` is optional (trainer-only refinement); when
+    omitted, whatever value is already saved is left untouched."""
     data = request.get_json() or {}
 
-    gta_sens_raw = data.get('gta_sensitivity')
-    dpi_raw      = data.get('dpi')
-
-    # Validation
     try:
-        gta_sens = float(gta_sens_raw)
+        gta_sens = float(data.get('gta_sensitivity'))
     except (TypeError, ValueError):
         return jsonify({'error': 'Sensibilidade do GTA V inválida.'}), 400
-
     if gta_sens == 0:
         return jsonify({'error': 'Sensibilidade não pode ser zero (resultaria em rotação infinita).'}), 400
-
     if abs(gta_sens) > 100:
         return jsonify({'error': 'Sensibilidade do GTA V deve estar entre -100 e 100.'}), 400
 
     try:
-        dpi = int(dpi_raw)
+        dpi = int(data.get('dpi'))
     except (TypeError, ValueError):
         return jsonify({'error': 'DPI inválido.'}), 400
-
     if dpi <= 0:
         return jsonify({'error': 'DPI deve ser um número positivo.'}), 400
 
-    result = _do_convert(gta_sens, dpi)
+    fine_tune = None
+    if 'fine_tune_multiplier' in data:
+        try:
+            fine_tune = float(data['fine_tune_multiplier'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Ajuste fino inválido.'}), 400
+        if not (0.5 <= fine_tune <= 1.5):
+            return jsonify({'error': 'Ajuste fino deve estar entre 0.5 e 1.5.'}), 400
 
-    # Persist to history (best-effort — graceful if table doesn't exist yet)
     try:
-        save_sensitivity_conversion(
-            user_id  = g.user_id,
-            gta_sens = gta_sens,
-            dpi      = dpi,
-            cm_360   = result['cm_per_360'],
-            kovaak   = result['kovaak_sensitivity'],
-            aimlab   = result['aimlab_sensitivity'],
-            inverted = 1 if result['inverted'] else 0,
-        )
+        updated = update_user_sensitivity(g.user_id, gta_sens, dpi, fine_tune)
     except Exception:
-        traceback.print_exc()  # log but don't fail the response
+        return jsonify({'error': 'Sensibilidade indisponível no momento. Tente novamente mais tarde.'}), 503
+    if not updated:
+        return jsonify({'error': 'Usuário não encontrado'}), 404
 
-    return jsonify(result), 200
-
-
-@sensitivity_bp.route('/sensitivity/history', methods=['GET'])
-@require_auth
-def sensitivity_history():
-    try:
-        rows = get_sensitivity_history(g.user_id)
-        return jsonify(rows), 200
-    except Exception as exc:
-        traceback.print_exc()
-        return jsonify({'error': str(exc)}), 500
+    return jsonify({
+        'gta_sensitivity':      updated.get('gta_sensitivity'),
+        'dpi':                  updated.get('dpi'),
+        'fine_tune_multiplier': updated.get('fine_tune_multiplier') if updated.get('fine_tune_multiplier') is not None else 1.0,
+        'cm_per_360':           round(_cm_per_360(gta_sens, dpi), 4),
+        'inverted':             gta_sens < 0,
+    })

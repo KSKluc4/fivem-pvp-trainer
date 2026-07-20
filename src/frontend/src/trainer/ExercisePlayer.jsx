@@ -23,7 +23,13 @@ const CENTER_NDC = new THREE.Vector2(0, 0)
 // "click" scenarios (Shot Grid / Quick Flick / Micro Adjust — click-to-hit +
 // timeout) — the mode-specific bits are isolated in the mount-once engine
 // effect below, everything else (countdown, results, sens setup) is shared.
-export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }) {
+//
+// `targetRounds` (only set on a routine "Treinar" deep-link — see
+// TrainerView) turns the normal "retry forever until you click back" loop
+// into a fixed-length block: the results screen shows round progress, and
+// once the last round finishes `onRoutineComplete` fires instead of offering
+// another retry, so the daily routine can auto-check the exercise off.
+export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRounds = null, onBack, onRoutineComplete }) {
   const { t } = useTranslation()
   const scenario = SCENARIOS[exerciseId]
 
@@ -47,6 +53,8 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }
   const [hud, setHud] = useState({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
   const [result, setResult] = useState(null)
   const [comparison, setComparison] = useState({ lastAttempt: null, personalBest: null })
+  const roundsCompletedRef = useRef(0)
+  const [roundsDone, setRoundsDone] = useState(0)
 
   const { lastAttemptFor, personalBestFor, saveScore } = useTrainerScores(scenario.id)
 
@@ -77,6 +85,9 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }
     setComparison({ lastAttempt: snapshotLast, personalBest: snapshotBest })
     setPhase('results')
     if (document.pointerLockElement) document.exitPointerLock()
+
+    roundsCompletedRef.current += 1
+    setRoundsDone(roundsCompletedRef.current)
 
     const entry = {
       exercise:   scenario.id,
@@ -242,6 +253,9 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }
     canvasRef.current?.requestPointerLock()
   }, [])
 
+  const isFinalRound = targetRounds != null && roundsDone >= targetRounds
+  const roundInfo     = targetRounds != null ? { current: roundsDone, total: targetRounds } : null
+
   const active = phase === 'countdown' || phase === 'playing' || phase === 'paused'
   const exerciseName = t(`trainer.exercicios.${exerciseId}.nome`)
 
@@ -289,8 +303,11 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, onBack }
                 lastAttempt={comparison.lastAttempt}
                 personalBest={comparison.personalBest}
                 savedRemotely={result.savedRemotely}
+                roundInfo={roundInfo}
+                isFinalRound={isFinalRound}
                 onRetry={handleRetry}
                 onBack={onBack}
+                onComplete={isFinalRound ? () => onRoutineComplete?.() : undefined}
               />
             </Card>
           </div>

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Box, Stack, Group, Text, Title, NumberInput, Slider, Button, Card, Badge } from '@mantine/core'
 import { IconTarget, IconDeviceGamepad2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { getSensitivityHistory } from '../../services/api'
 import { calcLocal } from '../../services/sensitivityMath'
 import { loadTrainerSensSettings, saveTrainerSensSettings, effectiveDegPerCount } from './trainerSensitivity'
 
@@ -14,29 +13,19 @@ export default function SensitivitySetup({ onDone }) {
   const [gtaSens, setGtaSens] = useState(50)
   const [dpi, setDpi]         = useState(800)
   const [fineTune, setFineTune] = useState(1.0)
-  const [loadedFromHistory, setLoadedFromHistory] = useState(false)
   const previewRef  = useRef(null)
   const previewAngle = useRef(0)
 
+  // The local cache is kept fresh from the server on every login/boot (see
+  // App.jsx) — this screen only mounts at all when it's genuinely empty
+  // (a brand new account that has never set sensitivity anywhere).
   useEffect(() => {
     const existing = loadTrainerSensSettings()
     if (existing.gtaSens != null) {
       setGtaSens(existing.gtaSens)
       setDpi(existing.dpi)
       setFineTune(existing.fineTuneMultiplier)
-      return
     }
-    // First run — try to prefill from the sensitivity converter's history
-    getSensitivityHistory()
-      .then((res) => {
-        const last = res.data?.[0]
-        if (last) {
-          setGtaSens(last.gta_sensitivity)
-          setDpi(last.dpi)
-          setLoadedFromHistory(true)
-        }
-      })
-      .catch(() => {})
   }, [])
 
   const preview = (() => {
@@ -77,7 +66,6 @@ export default function SensitivitySetup({ onDone }) {
       </Group>
       <Text size="sm" c="dimmed" mb="lg">
         {t('trainer.sensitivity_setup.descricao')}
-        {loadedFromHistory && ' ' + t('trainer.sensitivity_setup.carregado_historico')}
       </Text>
 
       <Group align="flex-start" gap="lg" wrap="wrap">

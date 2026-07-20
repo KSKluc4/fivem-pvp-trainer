@@ -3,7 +3,7 @@
     "dashboard": "Dashboard",
     "rotina": "Rotina do dia",
     "treinar": "Treinar",
-    "conversor": "Conversor de sensibilidade",
+    "sensibilidade": "Minha Sensibilidade",
     "perfil": "Perfil",
     "admin": "Admin",
     "recolher": "Recolher menu",
@@ -59,7 +59,7 @@
       "editar_perfil": "Editar perfil",
       "alterar_perfil_treino": "Alterar perfil de treino",
       "treinar_agora": "Treinar agora",
-      "conversor_sensibilidade": "Conversor de sensibilidade",
+      "minha_sensibilidade": "Minha Sensibilidade",
       "painel_admin": "Painel admin",
       "sair": "Sair",
       "desktop": "Desktop",
@@ -205,16 +205,6 @@
           "45": { "label": "30–60 min", "description": "Sessão completa com aquecimento e revisão" },
           "65": { "label": "60+ min", "description": "Treino intensivo para evolução acelerada" }
         }
-      },
-      "preferred_tool": {
-        "question": "Qual ferramenta de treino você usa?",
-        "subtitle": "Os exercícios serão adaptados para sua ferramenta",
-        "opcoes": {
-          "kovaak": { "label": "KovaaK's", "description": "Focado em FPS, altamente customizável" },
-          "aimlab": { "label": "Aim Lab", "description": "Gratuito, interface moderna, boas métricas" },
-          "ambos":  { "label": "Ambos", "description": "Uso as duas ferramentas" },
-          "nenhum": { "label": "Nenhum (ainda)", "description": "Vou baixar agora — Aim Lab é gratuito na Steam" }
-        }
       }
     }
   },
@@ -222,12 +212,14 @@
     "titulo": "Rotina de Hoje",
     "saudacao": "Olá, <bold>{{name}}</bold> • Foco:",
     "progresso": "Progresso",
-    "conversor": "Conversor",
-    "conversor_tooltip": "Conversor de sensibilidade GTA V → KovaaK / Aim Lab",
+    "sensibilidade": "Sensibilidade",
+    "sensibilidade_tooltip": "Configure sua sensibilidade GTA V — usada também pelo treinador interno",
     "alterar_perfil": "Alterar perfil",
     "alterar_perfil_tooltip": "Refazer questionário de perfil",
-    "treinar_no_app": "Treinar no app",
-    "recomendado": "Recomendado: {{difficulty}}",
+    "treinar": "Treinar",
+    "rodadas_one": "{{count}} rodada",
+    "rodadas_other": "{{count}} rodadas",
+    "exercicio_concluido_auto": "Exercício concluído automaticamente!",
     "nivel": "Nível {{level}}",
     "reflexao_placeholder": "📝 Sessão de reflexão — anote suas observações e identifique o que melhorou hoje.",
     "exercicios_concluidos": "{{completed}}/{{total}} exercícios concluídos",
@@ -334,21 +326,6 @@
       "reflex": "Reflexo",
       "movement": "Movimento"
     },
-    "playlists": {
-      "titulo": "Playlists Recomendadas — {{tool}}",
-      "subtitulo": "Coleções curadas para acelerar sua evolução",
-      "acessar": "Acessar →",
-      "kovaak": {
-        "voltaic_benchmark": { "nome": "Voltaic Benchmark", "desc": "O padrão ouro — avalia seu nível real com 6 cenários de tracking, flick e controle", "tag": "Benchmark" },
-        "smooth_click": { "nome": "Smooth & Click", "desc": "Progressão de tracking suave a flick shots precisos — ideal para iniciantes e intermediários", "tag": "Progressivo" },
-        "voltaic_fps_pack": { "nome": "Voltaic FPS Pack", "desc": "Cenários validados pela comunidade competitiva — referência de treino para FPS", "tag": "Competitivo" }
-      },
-      "aimlab": {
-        "aim_lab_routines": { "nome": "Aim Lab Routines", "desc": "Rotinas oficiais organizadas por nível — iniciante, intermediário e avançado", "tag": "Oficial" },
-        "gridshot_challenge": { "nome": "Gridshot Challenge", "desc": "O exercício mais famoso do Aim Lab — mede velocidade, precisão e consistência", "tag": "Popular" },
-        "tracking_fundamentals": { "nome": "Tracking Fundamentals", "desc": "Progressão de tracking básico a avançado — do Circletrack ao Multilitrack", "tag": "Tracking" }
-      }
-    },
     "servidores": {
       "titulo": "💡 Onde treinar no FiveM",
       "subtitulo": "Entre no Discord do servidor para ver como conectar e jogar",
@@ -427,12 +404,14 @@
       "vs_ultima": "vs última",
       "sync_indisponivel": "⚠️ Sincronização indisponível no momento — este resultado foi salvo só neste dispositivo.",
       "tentar_novamente": "Tentar novamente",
-      "voltar": "Voltar"
+      "voltar": "Voltar",
+      "rodada_progresso": "Rodada {{current}} de {{total}}",
+      "proxima_rodada": "Próxima rodada",
+      "concluir_rotina": "Concluir e voltar à rotina"
     },
     "sensitivity_setup": {
       "titulo": "Configurar sensibilidade",
       "descricao": "O treino usa a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.",
-      "carregado_historico": "Preenchido a partir do seu último conversor salvo.",
       "gta_sens_label": "Sensibilidade GTA V",
       "gta_sens_desc": "Escala 0–100 · a mesma que você usa no jogo",
       "dpi_label": "DPI do Mouse",
@@ -500,23 +479,23 @@
       "em_andamento": "● Em andamento"
     }
   },
-  "conversor": {
-    "titulo": "Conversor de Sensibilidade",
-    "subtitulo": "GTA V / FiveM → KovaaK's · Aim Lab",
+  "sensibilidade": {
+    "titulo": "Minha Sensibilidade",
+    "subtitulo": "Configure sua sensibilidade GTA V — a mesma usada pelo treinador interno",
     "voltar_ao_treino": "Voltar ao Treino",
     "configuracao": "Configuração",
     "gta_sens_label": "Sensibilidade GTA V",
-    "gta_sens_desc": "Escala 0–100 · aceita negativo para eixo invertido",
+    "gta_sens_desc": "Escala -100 a 100 · aceita negativo para eixo invertido",
     "gta_sens_placeholder": "ex: 50 ou -35",
     "config_hint": "Configure em GTA V → <code>Opções → Controles → Sensibilidade do Mouse</code>",
     "dpi_label": "DPI do Mouse",
     "dpi_placeholder": "ex: 800",
-    "converter_salvar": "Converter e Salvar",
+    "salvar": "Salvar",
+    "salvo_sucesso": "Sensibilidade salva com sucesso!",
+    "usado_pelo_treinador": "Essa configuração é usada automaticamente pelo treinador interno.",
     "como_calculamos": "Como calculamos isso?",
     "formula": {
       "gta_yaw": "GTA V yaw",
-      "kovaak_yaw": "KovaaK's yaw",
-      "aimlab_yaw": "Aim Lab yaw",
       "formula_texto": "cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54",
       "validado_por": "Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer"
     },
@@ -524,15 +503,9 @@
     "salvo": "Salvo",
     "eixo_invertido": "↕ Eixo invertido detectado — os valores de sensibilidade são corretos, mas o mouse estará com direções Y trocadas.",
     "cm_360": "cm / 360°",
-    "kovaak": "KovaaK's",
-    "aimlab": "Aim Lab",
     "baixa_sens": "Baixa sens. (alto cm)",
     "alta_sens": "Alta sens. (baixo cm)",
     "resultado_vazio": "Informe a sensibilidade e o DPI para ver o resultado em tempo real",
-    "historico": "Histórico",
-    "conversoes_count": "{{count}} conversões",
-    "historico_indisponivel": "⚠️ Histórico indisponível. Execute a migration v2 no Supabase primeiro.",
-    "historico_vazio": "📭 Nenhuma conversão salva ainda. Clique em \"Converter e Salvar\" para registrar.",
     "copiado": "Copiado!",
     "copiar": "Copiar",
     "erros": {

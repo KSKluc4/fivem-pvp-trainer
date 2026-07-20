@@ -1,6 +1,6 @@
 import { Tooltip, UnstyledButton, Group, Text, Stack, Divider } from '@mantine/core'
 import {
-  IconLayoutDashboard, IconClipboardList, IconTargetArrow, IconDeviceGamepad2,
+  IconLayoutDashboard, IconClipboardList, IconTargetArrow, IconAdjustmentsHorizontal,
   IconShieldLock, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand,
   IconUserCircle,
 } from '@tabler/icons-react'
@@ -10,11 +10,11 @@ import LanguageSwitcher from './LanguageSwitcher'
 import UserMenu from './UserMenu'
 
 const NAV_ITEMS = [
-  { view: 'progress',  labelKey: 'sidebar.dashboard', icon: IconLayoutDashboard },
-  { view: 'routine',   labelKey: 'sidebar.rotina',    icon: IconClipboardList },
-  { view: 'trainer',   labelKey: 'sidebar.treinar',   icon: IconTargetArrow },
-  { view: 'converter', labelKey: 'sidebar.conversor', icon: IconDeviceGamepad2 },
-  { view: 'profile',   labelKey: 'sidebar.perfil',    icon: IconUserCircle },
+  { view: 'progress',      labelKey: 'sidebar.dashboard',    icon: IconLayoutDashboard },
+  { view: 'routine',       labelKey: 'sidebar.rotina',       icon: IconClipboardList },
+  { view: 'trainer',       labelKey: 'sidebar.treinar',      icon: IconTargetArrow },
+  { view: 'sensibilidade', labelKey: 'sidebar.sensibilidade', icon: IconAdjustmentsHorizontal },
+  { view: 'profile',       labelKey: 'sidebar.perfil',       icon: IconUserCircle },
 ]
 
 const ADMIN_ITEM = { view: 'admin', labelKey: 'sidebar.admin', icon: IconShieldLock }
@@ -79,7 +79,7 @@ export default function Sidebar({
               onLogout={onLogout}
               onUserUpdate={onUserUpdate}
               onChangeProfile={onChangeProfile}
-              onConverter={() => onNavigate('converter')}
+              onSensibilidade={() => onNavigate('sensibilidade')}
               onTrainer={() => onNavigate('trainer')}
               onAdmin={() => onNavigate('admin')}
               onProfile={() => onNavigate('profile')}

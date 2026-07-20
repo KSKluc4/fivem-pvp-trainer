@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box, Group, Stack, Title, Text, Badge, Button, Card, Checkbox, Progress,
-  SimpleGrid,
 } from '@mantine/core'
 import {
-  IconChartBar, IconDeviceGamepad2, IconSettings, IconFlame, IconBolt,
+  IconChartBar, IconAdjustmentsHorizontal, IconSettings, IconFlame, IconBolt,
   IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords, IconTargetArrow,
 } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
 
-const DIFFICULTY_COLORS = { beginner: '#2ed573', intermediate: '#ffa502', advanced: '#ff4757' }
+// Legacy KovaaK's/Aim Lab exercise difficulty tiers — only ever seen on
+// routines generated before the internal-drills-only rewrite.
+const LEGACY_DIFFICULTY_COLORS = { beginner: '#2ed573', intermediate: '#ffa502', advanced: '#ff4757' }
+// Internal trainer drill difficulty tiers (facil/medio/dificil).
+const DRILL_DIFFICULTY_COLORS = { facil: '#2ed573', medio: '#ffa502', dificil: '#ff4757' }
 
 // New routines carry a machine-stable section key ('aquecimento' etc.).
 // Routines generated before this existed carry the old PT prose directly in
@@ -81,7 +84,10 @@ function exerciseTitle(t, ex) {
       focus: t(`rotina.focos.${ex.focus}.label`),
     })
   }
-  return ex.name // proper noun (regular exercise) or legacy pre-built match title
+  // New-format aim drill: name is the internal trainer id — translate it via
+  // the trainer's own copy instead of carrying a duplicate translation here.
+  if (ex.exercise) return t(`trainer.exercicios.${ex.exercise}.nome`)
+  return ex.name // proper noun (legacy KovaaK's/Aim Lab exercise) or legacy pre-built match title
 }
 
 function exerciseSubtitle(t, ex) {
@@ -89,22 +95,9 @@ function exerciseSubtitle(t, ex) {
     if (ex.index != null) return t(`rotina.focos.${ex.focus}.instrucao`)
     return ex.description || '' // legacy match — already-built PT prose
   }
-  if (ex.key) return t(`rotina.exercicios.${ex.key}`)
+  if (ex.exercise) return t(`trainer.exercicios.${ex.exercise}.descricao`)
+  if (ex.key) return t(`rotina.exercicios.${ex.key}`) // legacy KovaaK's/Aim Lab exercise
   return ex.description || '' // legacy regular exercise
-}
-
-// ── Recommended playlists ─────────────────────────────────────────────────────
-const PLAYLIST_IDS = {
-  kovaak: ['voltaic_benchmark', 'smooth_click', 'voltaic_fps_pack'],
-  aimlab: ['aim_lab_routines', 'gridshot_challenge', 'tracking_fundamentals'],
-}
-const PLAYLIST_META = {
-  voltaic_benchmark:       { url: 'https://discord.gg/voltaic', color: '#ffa502' },
-  smooth_click:            { url: 'https://steamcommunity.com/workshop/browse/?appid=824270&searchtext=smooth+click+training', color: '#00d4ff' },
-  voltaic_fps_pack:        { url: 'https://steamcommunity.com/workshop/browse/?appid=824270&searchtext=voltaic+fps', color: '#7b2fd4' },
-  aim_lab_routines:        { url: 'https://aimlab.gg/routines', color: '#2ed573' },
-  gridshot_challenge:      { url: 'https://aimlab.gg/aim/tasks/gridshot', color: '#ffa502' },
-  tracking_fundamentals:   { url: 'https://aimlab.gg/aim/tasks?mode=tracking', color: '#7b2fd4' },
 }
 
 // ── FiveM servers ──────────────────────────────────────────────────────────────
@@ -119,7 +112,10 @@ const FIVEM_SERVERS = [
   { name: 'PLF',  descKey: 'plf_desc',  discordKey: 'discord-plf',  discordUrl: 'https://discord.gg/plfpvp' },
 ]
 
-export default function TrainingRoutine({ userId, sessionId, routine, username, onViewProgress, onChangeProfile, onConverter, onTrainer }) {
+export default function TrainingRoutine({
+  userId, sessionId, routine, username, onViewProgress, onChangeProfile, onSensibilidade, onTrainer,
+  pendingCompletion, onPendingCompletionConsumed,
+}) {
   const { t } = useTranslation()
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
@@ -127,11 +123,20 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
 
   const checkableExercises = routine.sections.flatMap((s) => (isCheckableSection(s) ? s.exercises || [] : []))
   const completedCount = Object.values(completed).filter(Boolean).length
-  const toolLabel      = routine.tool === 'kovaak' ? "KovaaK's" : 'Aim Lab'
-  const toolColor      = routine.tool === 'kovaak' ? 'orange' : 'green'
-  const playlistIds     = PLAYLIST_IDS[routine.tool] || PLAYLIST_IDS.aimlab
 
   const toggleExercise = (name) => setCompleted((p) => ({ ...p, [name]: !p[name] }))
+
+  // A "Treinar" deep-link that ran its full round count auto-checks its card
+  // when control returns here — more fluid than making the user manually
+  // tick a box for work they just finished. Early-exits (back before
+  // finishing all rounds) never reach this — nothing gets auto-marked.
+  useEffect(() => {
+    if (!pendingCompletion) return
+    setCompleted((p) => ({ ...p, [pendingCompletion]: true }))
+    toast.success(t('rotina.exercicio_concluido_auto'))
+    onPendingCompletionConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCompletion])
 
   const openDiscord = (server) => {
     if (window.electronAPI?.openLink) {
@@ -173,7 +178,6 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
               <Trans i18nKey="rotina.saudacao" values={{ name: username }} components={{ bold: <Text span fw={700} c="var(--mantine-color-text)" /> }} />
             </Text>
             <Badge variant="light">{t(`rotina.foco_label.${routine.focus_area}`, routine.focus_area)}</Badge>
-            <Badge variant="light" color={toolColor}>{toolLabel}</Badge>
             <Badge variant="light" color="gray">{routine.total_duration} min</Badge>
           </Group>
         </Box>
@@ -183,11 +187,11 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           </Button>
           <Button
             variant="subtle" color="gray"
-            leftSection={<IconDeviceGamepad2 size={16} />}
-            onClick={onConverter}
-            title={t('rotina.conversor_tooltip')}
+            leftSection={<IconAdjustmentsHorizontal size={16} />}
+            onClick={onSensibilidade}
+            title={t('rotina.sensibilidade_tooltip')}
           >
-            {t('rotina.conversor')}
+            {t('rotina.sensibilidade')}
           </Button>
           <Button
             variant="subtle" color="gray"
@@ -213,21 +217,7 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                   <Title order={3} size="h4">{sectionTitle(t, section)}</Title>
                   {section.level != null && <Badge size="xs" variant="light" color="gray">{t('rotina.nivel', { level: section.level })}</Badge>}
                 </Group>
-                <Group gap="xs">
-                  {(section.name === 'treino_principal' || section.name === 'Treino Principal') && routine.focus_area === 'aim' && onTrainer && (
-                    <Button
-                      size="xs" variant="light" color="brandCyan"
-                      leftSection={<IconTargetArrow size={14} />}
-                      onClick={() => onTrainer(routine.recommended_trainer)}
-                    >
-                      {t('rotina.treinar_no_app')}
-                      {routine.recommended_trainer && (
-                        <> · {t('rotina.recomendado', { difficulty: t(`trainer.dificuldades.${routine.recommended_trainer.difficulty}`) })}</>
-                      )}
-                    </Button>
-                  )}
-                  <Badge variant="default">{section.duration} min</Badge>
-                </Group>
+                <Badge variant="default">{section.duration} min</Badge>
               </Group>
               <Text size="sm" c="dimmed" mb={noteText ? 4 : 'md'}>💡 {sectionTip(t, routine, section)}</Text>
               {noteText && (
@@ -240,7 +230,12 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                 <Stack gap="xs">
                   {section.exercises.map((ex, idx) => {
                     const isInGame    = ex.category === 'in-game'
-                    const diff        = ex.difficulty ? { label: t(`rotina.dificuldade.${ex.difficulty}`, ex.difficulty), color: DIFFICULTY_COLORS[ex.difficulty] || '#8892a4' } : null
+                    const isDrill     = !!ex.exercise // new-format internal-trainer drill (warmup or main)
+                    const diff        = ex.difficulty
+                      ? isDrill
+                        ? { label: t(`trainer.dificuldades.${ex.difficulty}`, ex.difficulty), color: DRILL_DIFFICULTY_COLORS[ex.difficulty] || '#8892a4' }
+                        : { label: t(`rotina.dificuldade.${ex.difficulty}`, ex.difficulty), color: LEGACY_DIFFICULTY_COLORS[ex.difficulty] || '#8892a4' }
+                      : null
                     const isCheckable = isCheckableSection(section)
                     const isDone      = !!completed[ex.name]
 
@@ -263,20 +258,32 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
                               </Text>
                               <Text size="xs" c="dimmed">{exerciseSubtitle(t, ex)}</Text>
                               <Group gap={6} mt={4}>
-                                {isInGame ? (
+                                {isInGame && (
                                   <Badge size="xs" variant="light" color="indigo">{t('rotina.in_game_badge')}</Badge>
-                                ) : (
-                                  <Badge size="xs" variant="light" color={toolColor}>{toolLabel}</Badge>
                                 )}
                                 {diff && (
                                   <Badge size="xs" variant="outline" style={{ color: diff.color, borderColor: diff.color }}>
                                     {diff.label}
                                   </Badge>
                                 )}
+                                {isDrill && (
+                                  <Badge size="xs" variant="light" color="gray">
+                                    {t('rotina.rodadas', { count: ex.rounds })}
+                                  </Badge>
+                                )}
                               </Group>
                             </Box>
                           </Group>
                           <Group wrap="nowrap" gap="sm">
+                            {isDrill && onTrainer && (
+                              <Button
+                                size="xs" variant="light" color="brandCyan"
+                                leftSection={<IconTargetArrow size={14} />}
+                                onClick={(e) => { e.stopPropagation(); onTrainer({ exercise: ex.exercise, difficulty: ex.difficulty, rounds: ex.rounds, exerciseName: ex.name }) }}
+                              >
+                                {t('rotina.treinar')}
+                              </Button>
+                            )}
                             <Text size="xs" c="dimmed">{ex.duration} min</Text>
                             {isCheckable && <Checkbox checked={isDone} readOnly tabIndex={-1} style={{ pointerEvents: 'none' }} />}
                           </Group>
@@ -319,36 +326,6 @@ export default function TrainingRoutine({ userId, sessionId, routine, username, 
           )}
         </Group>
       </Card>
-
-      {/* ── Recommended Playlists ── */}
-      <Box mb="lg">
-        <Title order={3} size="h4">{t('rotina.playlists.titulo', { tool: toolLabel })}</Title>
-        <Text size="sm" c="dimmed" mb="sm">{t('rotina.playlists.subtitulo')}</Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-          {playlistIds.map((id) => {
-            const meta = PLAYLIST_META[id]
-            const base = `rotina.playlists.${routine.tool === 'kovaak' ? 'kovaak' : 'aimlab'}.${id}`
-            return (
-              <Card
-                key={id}
-                component="a"
-                href={meta.url}
-                target="_blank"
-                rel="noreferrer"
-                className="playlist-card"
-                style={{ '--pl-color': meta.color, cursor: 'pointer' }}
-              >
-                <Badge variant="outline" style={{ color: meta.color, borderColor: meta.color }} mb="xs">
-                  {t(`${base}.tag`)}
-                </Badge>
-                <Text fw={700} size="sm">{t(`${base}.nome`)}</Text>
-                <Text size="xs" c="dimmed" mb="xs">{t(`${base}.desc`)}</Text>
-                <Text size="xs" fw={700} c="var(--mantine-color-brandCyan-5)">{t('rotina.playlists.acessar')}</Text>
-              </Card>
-            )
-          })}
-        </SimpleGrid>
-      </Box>
 
       {/* ── Training Tip ── */}
       <Card>

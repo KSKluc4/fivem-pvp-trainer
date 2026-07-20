@@ -2,114 +2,113 @@ import random
 from datetime import date
 
 from services.level_service import initial_level_for_experience, kill_quota_for_level
-from services.aim_level import recommended_difficulty
+from services.aim_level import recommended_difficulty, EXERCISES as INTERNAL_EXERCISE_IDS
 
-# Exercise catalog. `name` is the scenario's real, third-party name in
-# KovaaK's/Aim Lab (never translated). `key` is a stable slug the frontend
-# uses to look up the translated description in locales/<lang>/translation.json
-# under rotina.exercicios.<key> — this module carries no display prose itself.
-EXERCISES = {
-    'aim': {
-        'kovaak': [
-            {'name': 'Smoothbot', 'key': 'smoothbot', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'popcorn nightmare', 'key': 'popcorn_nightmare', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Valorant Medium Strafes Goated', 'key': 'valorant_medium_strafes_goated', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Air Angelic 4', 'key': 'air_angelic_4', 'duration': 5, 'difficulty': 'advanced'},
-            {'name': 'Thin Gauntlet', 'key': 'thin_gauntlet', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-        'aimlab': [
-            {'name': 'Gridshot Ultimate', 'key': 'gridshot_ultimate', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'Microshot', 'key': 'microshot', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Strafetrack', 'key': 'strafetrack', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Multilitrack', 'key': 'multilitrack', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-    },
-    'reflex': {
-        'kovaak': [
-            {'name': 'Tile Frenzy', 'key': 'tile_frenzy', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': '1w4ts_Goated', 'key': '1w4ts_goated', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'Bounce 180', 'key': 'bounce_180', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'psalmsfasttargets', 'key': 'psalmsfasttargets', 'duration': 5, 'difficulty': 'advanced'},
-            {'name': 'Revosect', 'key': 'revosect', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-        'aimlab': [
-            {'name': 'Reflexshot', 'key': 'reflexshot', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'Spidershot', 'key': 'spidershot', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Motionshot', 'key': 'motionshot', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-    },
-    'movement': {
-        'kovaak': [
-            {'name': 'Strafing Tiles', 'key': 'strafing_tiles', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'Movement Redirect', 'key': 'movement_redirect', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'B180 Goated', 'key': 'b180_goated', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Pasu Voltaic', 'key': 'pasu_voltaic', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-        'aimlab': [
-            {'name': 'Circletrack', 'key': 'circletrack', 'duration': 5, 'difficulty': 'beginner'},
-            {'name': 'Strafetrack', 'key': 'strafetrack', 'duration': 5, 'difficulty': 'intermediate'},
-            {'name': 'Multilitrack', 'key': 'multilitrack', 'duration': 5, 'difficulty': 'advanced'},
-        ],
-    },
+# ── Aim block: internal trainer drills only ──────────────────────────────────
+#
+# KovaaK's/Aim Lab are gone — every day's aim training happens with our own
+# 4 drills (see src/frontend/src/trainer/scenarios). Which drills make the
+# cut, and in what order, comes from the questionnaire's aim_difficulty/
+# reflex_level answers; each drill's difficulty comes from the user's own
+# per-exercise aim level (services.aim_level), the same system the in-app
+# trainer's own recommendation uses.
+
+# Emphasis bonus per questionnaire answer — higher score sorts first and is
+# more likely to make the cut when only 2-3 drills fit the time budget.
+AIM_DIFFICULTY_EMPHASIS = {
+    'tracking': {'tracking_suave': 2},
+    'flick':    {'quick_flick': 2, 'shot_grid': 1},
+    'close':    {'micro_adjust': 2, 'shot_grid': 1},
+}
+REFLEX_EMPHASIS = {
+    'lento': {'quick_flick': 1},
 }
 
-WARMUP = {
-    'kovaak': [
-        {'name': 'Smoothbot', 'key': 'smoothbot_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
-        {'name': 'Tile Frenzy', 'key': 'tile_frenzy_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
-    ],
-    'aimlab': [
-        {'name': 'Gridshot Ultimate', 'key': 'gridshot_ultimate_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
-        {'name': 'Reflexshot', 'key': 'reflexshot_aquecimento', 'duration': 3, 'difficulty': 'beginner'},
-    ],
-}
+# One difficulty step down from the day's recommended one — used for the
+# warmup drill (same drill as the day's top priority, just eased in).
+DIFFICULTY_STEP_DOWN = {'facil': 'facil', 'medio': 'facil', 'dificil': 'medio'}
 
-DIFFICULTY_MAP = {
-    'iniciante':     ['beginner'],
-    'intermediario': ['beginner', 'intermediate'],
-    'avancado':      ['beginner', 'intermediate', 'advanced'],
-}
+ROUND_SECONDS           = 60  # matches every drill's SESSION_DURATION_S
+ROUND_OVERHEAD_SECONDS  = 15  # brief reset/reposition between rounds
+SLOT_SECONDS            = ROUND_SECONDS + ROUND_OVERHEAD_SECONDS
 
-# Maps a catalog exercise (its stable `key`) to the in-app trainer exercise
-# it's conceptually equivalent to, if any — used to recommend a difficulty
-# for the "Train in-app" button (see _recommended_trainer_exercise). Exercises
-# with no clear equivalent (movement-focused drills, mostly) are simply
-# absent and get no recommendation.
-EXTERNAL_TO_INTERNAL_EXERCISE = {
-    'smoothbot':                      'tracking_suave',
-    'gridshot_ultimate':              'shot_grid',
-    'tile_frenzy':                    'shot_grid',
-    'microshot':                      'micro_adjust',
-    'popcorn_nightmare':              'micro_adjust',
-    'reflexshot':                     'quick_flick',
-    'valorant_medium_strafes_goated': 'quick_flick',
-    '1w4ts_goated':                   'quick_flick',
-    'bounce_180':                     'quick_flick',
-    'spidershot':                     'quick_flick',
-}
+WARMUP_ROUNDS         = 1
+MIN_MAIN_ROUNDS       = 2
+MAX_MAIN_ROUNDS       = 5
+MAIN_RESERVE_SECONDS  = 300  # slack reserved off the daily_time budget, same idea as the old "-5 min"
 
 
-def _recommended_trainer_exercise(main_exercises: list, aim_levels: dict):
-    """Returns {'exercise', 'difficulty'} for the first exercise in the
-    day's main section that has an in-app equivalent, or None if none do.
-    `aim_levels` is {internal_exercise: level_or_None}, as returned by
-    services.aim_level.compute_per_exercise_levels — missing/None just
-    means "not enough data yet", which recommended_difficulty treats as a
-    medium-difficulty default."""
-    for ex in main_exercises:
-        internal = EXTERNAL_TO_INTERNAL_EXERCISE.get(ex['key'])
-        if not internal:
-            continue
-        level = (aim_levels or {}).get(internal)
-        return {'exercise': internal, 'difficulty': recommended_difficulty(level)}
-    return None
+def _drill_priority(aim_difficulty: str, reflex_level: str) -> list:
+    """The 4 internal exercise ids ordered by how much today's profile
+    emphasizes them (highest first); ties keep the catalog's own order."""
+    scores = {ex: 1 for ex in INTERNAL_EXERCISE_IDS}
+    for ex, bonus in AIM_DIFFICULTY_EMPHASIS.get(aim_difficulty, {}).items():
+        scores[ex] = scores.get(ex, 1) + bonus
+    for ex, bonus in REFLEX_EMPHASIS.get(reflex_level, {}).items():
+        scores[ex] = scores.get(ex, 1) + bonus
+    return sorted(INTERNAL_EXERCISE_IDS, key=lambda ex: (-scores[ex], INTERNAL_EXERCISE_IDS.index(ex)))
+
+
+def _main_drill_count(daily_time: int) -> int:
+    return 2 if daily_time <= 30 else 3
+
+
+def _rounds_for_budget(daily_time: int, drill_count: int) -> int:
+    budget = daily_time * 60 - (WARMUP_ROUNDS * SLOT_SECONDS) - MAIN_RESERVE_SECONDS
+    if drill_count <= 0 or budget <= 0:
+        return MIN_MAIN_ROUNDS
+    rounds = round(budget / drill_count / SLOT_SECONDS)
+    return max(MIN_MAIN_ROUNDS, min(MAX_MAIN_ROUNDS, rounds))
+
+
+def _minutes_for_rounds(rounds: int) -> int:
+    return max(1, round(rounds * SLOT_SECONDS / 60))
+
+
+def _build_aim_block(profile: dict, aim_levels: dict):
+    """Returns (warmup_exercises, main_exercises) — both lists of dicts shaped
+    {name, exercise, difficulty, rounds, duration}. `exercise` is the internal
+    trainer id (tracking_suave/shot_grid/quick_flick/micro_adjust), used
+    directly as the "Treinar" deep-link target. `name` is a routine-wide
+    unique key (warmup and main never collide even when they pick the same
+    drill) used for progress tracking on the frontend."""
+    daily_time = int(profile.get('daily_time', 30))
+    aim_levels = aim_levels or {}
+
+    priority    = _drill_priority(profile.get('aim_difficulty', ''), profile.get('reflex_level', ''))
+    drill_count = _main_drill_count(daily_time)
+    main_ids    = priority[:drill_count]
+    rounds      = _rounds_for_budget(daily_time, drill_count)
+
+    top_id         = priority[0]
+    top_difficulty = recommended_difficulty(aim_levels.get(top_id))
+    warmup = [{
+        'name':       f'aquecimento_{top_id}',
+        'exercise':   top_id,
+        'difficulty': DIFFICULTY_STEP_DOWN.get(top_difficulty, 'facil'),
+        'rounds':     WARMUP_ROUNDS,
+        'duration':   _minutes_for_rounds(WARMUP_ROUNDS),
+    }]
+
+    main = [
+        {
+            'name':       ex_id,
+            'exercise':   ex_id,
+            'difficulty': recommended_difficulty(aim_levels.get(ex_id)),
+            'rounds':     rounds,
+            'duration':   _minutes_for_rounds(rounds),
+        }
+        for ex_id in main_ids
+    ]
+
+    return warmup, main
 
 
 # Valid codes for the Treino Principal tip — the frontend builds the actual
 # tip text from routine['focus_area'] / routine['main_weapon'] /
 # routine['specific_weakness'], skipping any that aren't one of these (unset
 # or a legacy/unrecognized value).
-FOCUS_TIP_CODES    = {'aim', 'reflex', 'movement'}
+FOCUS_TIP_CODES     = {'aim', 'reflex', 'movement'}
 WEAPON_TIP_CODES    = {'pistola', 'rifle', 'shotgun', 'misto'}
 WEAKNESS_TIP_CODES  = {'moving_target', 'headshot', 'long_range', 'reaction'}
 
@@ -117,7 +116,8 @@ WEAKNESS_TIP_CODES  = {'moving_target', 'headshot', 'long_range', 'reaction'}
 #
 # Closes the daily routine with real matches instead of a passive review —
 # each match is its own challenge: a kill quota (scaled by the user's
-# adaptive level, see services.level_service) and a distinct focus.
+# adaptive level, see services.level_service) and a distinct focus. Untouched
+# by the KovaaK's/Aim Lab removal.
 MATCH_DURATION = 15
 
 MATCH_COUNT_BY_DAILY_TIME = [
@@ -165,30 +165,11 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
     focus      = profile.get('focus_area', 'aim')
     experience = profile.get('experience_level', 'iniciante')
     daily_time = int(profile.get('daily_time', 30))
-    tool       = str(profile.get('preferred_tool', 'aimlab')).lower()
     weapon     = profile.get('main_weapon', '')
     weakness   = profile.get('specific_weakness', '')
     today      = today or date.today()
 
-    if tool not in ('kovaak', 'aimlab'):
-        tool = 'aimlab'
-
-    allowed     = DIFFICULTY_MAP.get(experience, ['beginner', 'intermediate'])
-    warmup_list = WARMUP.get(tool, WARMUP['aimlab'])
-    warmup_time = sum(e['duration'] for e in warmup_list)
-
-    candidates = [
-        e for e in EXERCISES.get(focus, EXERCISES['aim']).get(tool, [])
-        if e['difficulty'] in allowed
-    ]
-
-    main   = []
-    budget = daily_time - warmup_time - 5
-    for ex in candidates:
-        if budget <= 0:
-            break
-        main.append(ex)
-        budget -= ex['duration']
+    warmup, main = _build_aim_block(profile, aim_levels)
 
     match_count = match_count_for_daily_time(daily_time)
     focus_order = _daily_focus_order(today)[:match_count]
@@ -208,25 +189,26 @@ def generate_routine(profile, today: date = None, action_level: int = None, acti
             'focus':       focus_opt['id'],
         })
 
+    warmup_time = sum(e['duration'] for e in warmup)
+    main_time   = sum(e['duration'] for e in main)
+
     return {
         'focus_area':          focus,
         'experience_level':    experience,
-        'tool':                tool,
         'main_weapon':         weapon,
         'specific_weakness':   weakness,
-        'recommended_trainer': _recommended_trainer_exercise(main, aim_levels),
-        'total_duration':      warmup_time + sum(e['duration'] for e in main) + match_count * MATCH_DURATION,
+        'total_duration':      warmup_time + main_time + match_count * MATCH_DURATION,
         'sections': [
             {
                 'name':      'aquecimento',
                 'duration':  warmup_time,
-                'exercises': warmup_list,
+                'exercises': warmup,
                 'checkable': False,
                 'tip':       '',
             },
             {
                 'name':      'treino_principal',
-                'duration':  sum(e['duration'] for e in main),
+                'duration':  main_time,
                 'exercises': main,
                 'checkable': True,
                 'tip':       '',
