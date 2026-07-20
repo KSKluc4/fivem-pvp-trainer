@@ -115,7 +115,7 @@
     "perguntas": {
       "specific_weakness": {
         "question": "What's your biggest specific weakness?",
-        "subtitle": "Let's target your biggest technical bottleneck",
+        "subtitle": "This gap becomes the priority in your warm-up and main drills",
         "opcoes": {
           "moving_target": { "label": "Moving Targets", "description": "I miss a lot when the enemy is moving" },
           "headshot":      { "label": "Consistent Headshots", "description": "I hit body shots but rarely headshots" },
@@ -124,8 +124,8 @@
         }
       },
       "focus_area": {
-        "question": "What's your biggest challenge in PvP?",
-        "subtitle": "Sets the main focus of the generated drills",
+        "question": "Which pillar of your gameplay do you want to focus on?",
+        "subtitle": "Sets the main focus of the generated drills — pick your weakest point.",
         "opcoes": {
           "aim":      { "label": "Aim", "description": "I miss a lot when shooting, crosshair is imprecise or shaky" },
           "reflex":   { "label": "Reflex", "description": "I react slowly, I'm slow to draw and shoot" },
@@ -134,7 +134,7 @@
       },
       "experience_level": {
         "question": "What's your experience level in PvP?",
-        "subtitle": "Sets the difficulty of the generated drills",
+        "subtitle": "Sets the difficulty of every drill in your routine",
         "opcoes": {
           "iniciante":     { "label": "Beginner", "description": "I started playing FiveM PvP recently" },
           "intermediario": { "label": "Intermediate", "description": "I've been playing for a few months, I win some fights" },
@@ -143,7 +143,7 @@
       },
       "aim_difficulty": {
         "question": "What kind of aim is hardest for you?",
-        "subtitle": "Pick your biggest struggle with the crosshair",
+        "subtitle": "This becomes the focus of your precision drills",
         "opcoes": {
           "tracking": { "label": "Tracking", "description": "Keeping the crosshair on moving enemies" },
           "flick":    { "label": "Flick Shot", "description": "Quick flicks onto distant targets" },
@@ -161,7 +161,7 @@
       },
       "movement_quality": {
         "question": "How's your movement during a fight?",
-        "subtitle": "Unpredictable movement is one of the most important skills",
+        "subtitle": "Your unpredictability sets the intensity of your movement drills",
         "opcoes": {
           "previsivel":   { "label": "Predictable", "description": "I stand still or walk in a line, I take a lot of damage" },
           "moderado":     { "label": "Moderate", "description": "Sometimes I manage to confuse the enemy" },

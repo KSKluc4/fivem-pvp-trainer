@@ -1,80 +1,92 @@
 import { useState } from 'react'
 import {
   Box, Stepper, Progress, Radio, SimpleGrid, Text, Title, Button,
-  Group, Stack, Center, Alert, Transition,
+  Group, Stack, Center, Alert, Transition, ThemeIcon,
 } from '@mantine/core'
-import { IconAlertCircle, IconChevronLeft, IconTargetArrow } from '@tabler/icons-react'
+import {
+  IconAlertCircle, IconChevronLeft, IconTargetArrow,
+  IconRun, IconTarget, IconTelescope, IconHeartRateMonitor,
+  IconCrosshair, IconBolt, IconArrowsMove,
+  IconSwords, IconCrown,
+  IconFocusCentered, IconSparkles,
+  IconClock, IconGauge, IconBoltFilled,
+  IconLineDashed, IconWaveSine, IconArrowsShuffle,
+  IconBattery1, IconBattery2, IconBatteryCharging,
+  IconDeviceGamepad2, IconInfinity, IconDownload,
+} from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { submitQuestionnaire } from '../services/api'
 
 // Question copy (question/subtitle/option label+description) lives in the
 // locale files under questionario.perguntas.<id> — this array only carries
-// the structural bits (order, option values/icons) that drive the UI.
+// the structural bits (order, option values/icon/color) that drive the UI.
+// `value` is what actually gets submitted to the backend — untouched by the
+// icon/copy polish, so existing routines and saved answers stay compatible.
 const QUESTIONS = [
   {
     id: 'specific_weakness',
     options: [
-      { value: 'moving_target', icon: '🏃' },
-      { value: 'headshot',      icon: '🎯' },
-      { value: 'long_range',    icon: '🔭' },
-      { value: 'reaction',      icon: '⚡' },
+      { value: 'moving_target', icon: IconRun,              color: 'brandCyan' },
+      { value: 'headshot',      icon: IconTarget,            color: 'brandPurple' },
+      { value: 'long_range',    icon: IconTelescope,         color: 'orange' },
+      { value: 'reaction',      icon: IconHeartRateMonitor,  color: 'red' },
     ],
   },
   {
     id: 'focus_area',
     options: [
-      { value: 'aim',      icon: '🎯' },
-      { value: 'reflex',   icon: '⚡' },
-      { value: 'movement', icon: '🏃' },
+      { value: 'aim',      icon: IconCrosshair,  color: 'brandCyan' },
+      { value: 'reflex',   icon: IconBolt,        color: 'brandPurple' },
+      { value: 'movement', icon: IconArrowsMove,  color: 'orange' },
     ],
   },
   {
     id: 'experience_level',
     options: [
-      { value: 'iniciante',     icon: '🌱' },
-      { value: 'intermediario', icon: '⚔️' },
-      { value: 'avancado',      icon: '🏆' },
+      { value: 'iniciante',     icon: IconTarget, color: 'gray' },
+      { value: 'intermediario', icon: IconSwords, color: 'brandCyan' },
+      { value: 'avancado',      icon: IconCrown,   color: 'brandPurple' },
     ],
   },
   {
     id: 'aim_difficulty',
     options: [
-      { value: 'tracking', icon: '👁️' },
-      { value: 'flick',    icon: '💥' },
-      { value: 'close',    icon: '🔫' },
+      { value: 'tracking', icon: IconFocusCentered, color: 'brandCyan' },
+      { value: 'flick',    icon: IconSparkles,       color: 'brandPurple' },
+      { value: 'close',    icon: IconTargetArrow,    color: 'orange' },
     ],
   },
   {
     id: 'reflex_level',
     options: [
-      { value: 'lento',  icon: '🐢' },
-      { value: 'medio',  icon: '⏱️' },
-      { value: 'rapido', icon: '🐆' },
+      { value: 'lento',  icon: IconClock,       color: 'gray' },
+      { value: 'medio',  icon: IconGauge,        color: 'brandCyan' },
+      { value: 'rapido', icon: IconBoltFilled,   color: 'brandPurple' },
     ],
   },
   {
     id: 'movement_quality',
     options: [
-      { value: 'previsivel',   icon: '🪆' },
-      { value: 'moderado',     icon: '🎲' },
-      { value: 'imprevisivel', icon: '🌪️' },
+      { value: 'previsivel',   icon: IconLineDashed,    color: 'gray' },
+      { value: 'moderado',     icon: IconWaveSine,      color: 'brandCyan' },
+      { value: 'imprevisivel', icon: IconArrowsShuffle, color: 'brandPurple' },
     ],
   },
   {
     id: 'daily_time',
     options: [
-      { value: 25, icon: '⚡' },
-      { value: 45, icon: '🔥' },
-      { value: 65, icon: '💪' },
+      { value: 25, icon: IconBattery1,        color: 'brandCyan' },
+      { value: 45, icon: IconBattery2,        color: 'brandPurple' },
+      { value: 65, icon: IconBatteryCharging, color: 'orange' },
     ],
   },
   {
     id: 'preferred_tool',
     options: [
-      { value: 'kovaak', icon: '🎮' },
-      { value: 'aimlab', icon: '🎯' },
-      { value: 'ambos',  icon: '⚡' },
-      { value: 'nenhum', icon: '🆕' },
+      { value: 'kovaak', icon: IconDeviceGamepad2, color: 'orange' },
+      { value: 'aimlab', icon: IconTargetArrow,     color: 'green' },
+      { value: 'ambos',  icon: IconInfinity,        color: 'brandCyan' },
+      { value: 'nenhum', icon: IconDownload,        color: 'gray' },
     ],
   },
 ]
@@ -152,43 +164,47 @@ export default function Questionnaire({ username, onComplete }) {
       <Transition mounted transition="slide-left" duration={250} timingFunction="ease">
         {(styles) => (
           <div key={step} style={styles}>
-            <Title order={2} mb={4}>{t(`${qBase}.question`)}</Title>
-            <Text c="dimmed" mb="lg">{t(`${qBase}.subtitle`)}</Text>
+            <Box maw={640} mx="auto">
+              <Title order={2} mb={4}>{t(`${qBase}.question`)}</Title>
+              <Text c="dimmed" mb="lg">{t(`${qBase}.subtitle`)}</Text>
 
-            <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
-              <SimpleGrid cols={{ base: 1, sm: current.options.length > 3 ? 2 : 1 }} spacing="sm">
-                {current.options.map((opt) => (
-                  <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
-                    <Group wrap="nowrap" align="flex-start" gap="sm">
-                      <Radio.Indicator />
-                      <Text size="xl" style={{ lineHeight: 1 }}>{opt.icon}</Text>
-                      <Box style={{ flex: 1 }}>
-                        <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
-                        <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
-                      </Box>
-                    </Group>
-                  </Radio.Card>
-                ))}
-              </SimpleGrid>
-            </Radio.Group>
+              <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
+                <SimpleGrid cols={{ base: 1, sm: current.id === 'preferred_tool' ? 2 : 1 }} spacing="sm">
+                  {current.options.map((opt) => (
+                    <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
+                      <Group wrap="nowrap" align="center" gap="sm">
+                        <Radio.Indicator />
+                        <ThemeIcon size={40} radius="md" variant="light" color={opt.color}>
+                          <opt.icon size={22} />
+                        </ThemeIcon>
+                        <Box style={{ flex: 1 }}>
+                          <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
+                          <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
+                        </Box>
+                      </Group>
+                    </Radio.Card>
+                  ))}
+                </SimpleGrid>
+              </Radio.Group>
 
-            {error && (
-              <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />} mt="md">
-                {error}
-              </Alert>
-            )}
+              {error && (
+                <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />} mt="md">
+                  {error}
+                </Alert>
+              )}
 
-            {step > 0 && (
-              <Button
-                variant="subtle"
-                color="gray"
-                leftSection={<IconChevronLeft size={16} />}
-                onClick={handleBack}
-                mt="lg"
-              >
-                {t('questionario.pergunta_anterior')}
-              </Button>
-            )}
+              {step > 0 && (
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconChevronLeft size={16} />}
+                  onClick={handleBack}
+                  mt="lg"
+                >
+                  {t('questionario.pergunta_anterior')}
+                </Button>
+              )}
+            </Box>
           </div>
         )}
       </Transition>

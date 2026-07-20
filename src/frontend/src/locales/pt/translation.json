@@ -115,7 +115,7 @@
     "perguntas": {
       "specific_weakness": {
         "question": "Qual é sua maior dificuldade específica?",
-        "subtitle": "Vamos focar no seu maior gargalo técnico",
+        "subtitle": "Esse gargalo vira prioridade nos exercícios de aquecimento e treino principal",
         "opcoes": {
           "moving_target": { "label": "Mira em Movimento", "description": "Erro muito quando o inimigo se movimenta" },
           "headshot":      { "label": "Headshot Consistente", "description": "Acerto no corpo mas raramente na cabeça" },
@@ -124,8 +124,8 @@
         }
       },
       "focus_area": {
-        "question": "Qual é seu maior desafio no PvP?",
-        "subtitle": "Define o foco principal dos exercícios gerados",
+        "question": "Em qual pilar do seu gameplay você quer focar?",
+        "subtitle": "Define o foco principal dos exercícios gerados — escolha seu ponto mais fraco.",
         "opcoes": {
           "aim":      { "label": "Mira", "description": "Erro muito ao atirar, crosshair impreciso ou tremido" },
           "reflex":   { "label": "Reflexo", "description": "Reajo lento, demoro para sacar e atirar" },
@@ -134,7 +134,7 @@
       },
       "experience_level": {
         "question": "Qual é seu nível de experiência em PvP?",
-        "subtitle": "Define a dificuldade dos exercícios gerados",
+        "subtitle": "Define a dificuldade de todos os exercícios da sua rotina",
         "opcoes": {
           "iniciante":     { "label": "Iniciante", "description": "Comecei a jogar FiveM PvP recentemente" },
           "intermediario": { "label": "Intermediário", "description": "Jogo há alguns meses, ganho algumas fights" },
@@ -143,7 +143,7 @@
       },
       "aim_difficulty": {
         "question": "Que tipo de mira é mais difícil para você?",
-        "subtitle": "Selecione sua maior dificuldade com o crosshair",
+        "subtitle": "Essa dificuldade vira o foco dos exercícios de precisão",
         "opcoes": {
           "tracking": { "label": "Tracking", "description": "Manter a mira em inimigos que se movem" },
           "flick":    { "label": "Flick Shot", "description": "Miras rápidas para alvos distantes" },
@@ -161,7 +161,7 @@
       },
       "movement_quality": {
         "question": "Como é seu movimento durante o combate?",
-        "subtitle": "Movimento imprevisível é uma das habilidades mais importantes",
+        "subtitle": "Sua imprevisibilidade define a intensidade dos exercícios de movimento",
         "opcoes": {
           "previsivel":   { "label": "Previsível", "description": "Fico parado ou ando linear, levo muito dano" },
           "moderado":     { "label": "Moderado", "description": "Às vezes consigo confundir o inimigo" },
