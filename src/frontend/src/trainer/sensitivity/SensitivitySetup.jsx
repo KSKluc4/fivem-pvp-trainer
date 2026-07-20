@@ -31,13 +31,13 @@ export default function SensitivitySetup({ onDone }) {
   const preview = (() => {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
     const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
-    if (isNaN(s) || s === 0 || isNaN(d) || d <= 0) return null
+    if (isNaN(s) || isNaN(d) || d <= 0) return null
     return calcLocal(s, d)
   })()
 
   const degPerCount = (() => {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
-    if (isNaN(s) || s === 0) return FALLBACK_DEG_PER_COUNT
+    if (isNaN(s)) return FALLBACK_DEG_PER_COUNT
     return effectiveDegPerCount({ gtaSens: s, fineTuneMultiplier: fineTune })
   })()
 

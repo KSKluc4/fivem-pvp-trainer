@@ -485,7 +485,8 @@
     "voltar_ao_treino": "Back to Training",
     "configuracao": "Settings",
     "gta_sens_label": "GTA V Sensitivity",
-    "gta_sens_desc": "-100 to 100 scale · accepts negative for inverted axis",
+    "gta_sens_desc": "-100 to 100 scale — the higher, the faster the turn",
+    "gta_sens_legenda": "-100 = slower · +100 = faster",
     "gta_sens_placeholder": "e.g. 50 or -35",
     "config_hint": "Set this in GTA V → <code>Options → Controls → Mouse Sensitivity</code>",
     "dpi_label": "Mouse DPI",
@@ -496,20 +497,45 @@
     "como_calculamos": "How do we calculate this?",
     "formula": {
       "gta_yaw": "GTA V yaw",
-      "formula_texto": "cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54",
+      "formula_texto": "cm/360 ≈ (360 ÷ (DPI × effective sensitivity × yaw)) × 2.54",
       "validado_por": "Values validated by the community via mouse-sensitivity.com and r/FPSAimTrainer"
     },
     "resultado": "Result",
     "salvo": "Saved",
-    "eixo_invertido": "↕ Inverted axis detected — the sensitivity values are correct, but the mouse will have swapped Y directions.",
     "cm_360": "cm / 360°",
-    "baixa_sens": "Low sens. (high cm)",
-    "alta_sens": "High sens. (low cm)",
+    "giro_180": "To turn 180°: ~<bold>{{cm}}</bold> cm of mousepad",
     "resultado_vazio": "Enter your sensitivity and DPI to see the result in real time",
     "copiado": "Copied!",
     "copiar": "Copy",
+    "zonas": {
+      "muito_rapida": {
+        "nome": "Very fast",
+        "resumo": "You turn fast with little arm movement — great for reacting to enemies from any direction. In exchange, fine adjustments and precise shots at range take more control.",
+        "referencia": "Faster than most precision players"
+      },
+      "agil": {
+        "nome": "Agile",
+        "resumo": "A good balance for fast turns and flicks — in exchange, fine aim on distant targets takes a bit more care.",
+        "referencia": "A bit faster than average"
+      },
+      "equilibrada": {
+        "nome": "Balanced",
+        "resumo": "The classic balance between turn speed and precision — the most common range among competitive players.",
+        "referencia": "In the most common range among precision players"
+      },
+      "controlada": {
+        "nome": "Controlled",
+        "resumo": "Your aim favors precision and stability in duels — in exchange, quick turns take more arm movement.",
+        "referencia": "A bit slower than average"
+      },
+      "muito_lenta": {
+        "nome": "Very slow",
+        "resumo": "Maximum precision and stability on target — in exchange, turning fast or reacting to enemies from behind takes a lot of mousepad space and arm movement.",
+        "referencia": "Slower than most precision players"
+      }
+    },
     "erros": {
-      "sens_invalida": "Enter a valid sensitivity (non-zero).",
+      "sens_invalida": "Enter a valid sensitivity.",
       "sens_fora_faixa": "Sensitivity must be between -100 and 100.",
       "dpi_invalido": "Enter a valid DPI (positive number)."
     }

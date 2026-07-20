@@ -1,18 +1,26 @@
 import { useState, useEffect } from 'react'
 import {
   Box, Grid, Card, Group, Stack, Text, Title, Button, NumberInput, Badge,
-  CopyButton, Tooltip, ActionIcon, Collapse, Code, Progress as MProgress,
+  CopyButton, Tooltip, ActionIcon, Collapse, Code,
 } from '@mantine/core'
-import { IconArrowLeft, IconTarget, IconRuler2, IconCopy, IconCheck, IconChevronDown } from '@tabler/icons-react'
+import { IconArrowLeft, IconTarget, IconRulerMeasure, IconCopy, IconCheck, IconChevronDown } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { calcLocal } from '../services/sensitivityMath'
+import { zoneForCm } from '../services/sensitivityZones'
 import { loadTrainerSensSettings, saveTrainerSensSettings } from '../trainer/sensitivity/trainerSensitivity'
 import { toast } from '../services/toast'
+import SensitivityGauge from './SensitivityGauge'
 
 const DPI_PRESETS = [400, 800, 1200, 1600, 3200]
 
 function fmt(n, dp = 3) {
   return typeof n === 'number' ? n.toFixed(dp) : '—'
+}
+
+// "Para girar 180°: ~X cm" — half the 360 distance, rounded to a friendly
+// whole number (nobody measures mousepad distance to the millimeter).
+function halfTurnCm(cm360) {
+  return Math.round(cm360 / 2)
 }
 
 function CopyChip({ value }) {
@@ -34,6 +42,10 @@ function CopyChip({ value }) {
 // This is the SAME value the in-app trainer uses (see
 // trainer/sensitivity/trainerSensitivity.js) — saving here updates it
 // everywhere, no separate KovaaK's/Aim Lab conversion anymore.
+//
+// The -100..+100 slider is a continuous speed dial (negative = slower,
+// positive = faster) — there is no "inverted axis" concept, see
+// services/sensitivityMath.js for the corrected, strictly-monotonic math.
 export default function Sensitivity({ onBack }) {
   const { t } = useTranslation()
   const [gtaSens, setGtaSens] = useState(50)
@@ -50,10 +62,11 @@ export default function Sensitivity({ onBack }) {
     }
   }, [])
 
+  // Live-updates on every keystroke, before saving.
   const preview = (() => {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
     const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
-    if (!isNaN(s) && s !== 0 && !isNaN(d) && d > 0) return calcLocal(s, d)
+    if (!isNaN(s) && !isNaN(d) && d > 0) return calcLocal(s, d)
     return null
   })()
 
@@ -62,7 +75,7 @@ export default function Sensitivity({ onBack }) {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
     const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
 
-    if (isNaN(s) || s === 0) { toast.error(t('sensibilidade.erros.sens_invalida')); return }
+    if (isNaN(s))            { toast.error(t('sensibilidade.erros.sens_invalida')); return }
     if (Math.abs(s) > 100)   { toast.error(t('sensibilidade.erros.sens_fora_faixa')); return }
     if (isNaN(d) || d <= 0)  { toast.error(t('sensibilidade.erros.dpi_invalido')); return }
 
@@ -76,6 +89,8 @@ export default function Sensitivity({ onBack }) {
       setSaving(false)
     }
   }
+
+  const zone = preview ? zoneForCm(preview.cm_per_360) : null
 
   return (
     <Box className="sens-view">
@@ -112,9 +127,7 @@ export default function Sensitivity({ onBack }) {
                     placeholder={t('sensibilidade.gta_sens_placeholder')}
                     autoFocus
                   />
-                  <Text size="xs" c="dimmed" mt={-8}>
-                    <Trans i18nKey="sensibilidade.config_hint" components={{ code: <Code /> }} />
-                  </Text>
+                  <Text size="xs" c="dimmed" mt={-8}>{t('sensibilidade.gta_sens_legenda')}</Text>
 
                   <NumberInput
                     label={t('sensibilidade.dpi_label')}
@@ -146,7 +159,7 @@ export default function Sensitivity({ onBack }) {
               </form>
             </Card>
 
-            {/* Formula info — collapsible */}
+            {/* Formula/technical detail — collapsible */}
             <Card>
               <Button
                 variant="subtle" color="gray" size="xs" p={0}
@@ -157,6 +170,15 @@ export default function Sensitivity({ onBack }) {
               </Button>
               <Collapse in={showFormula}>
                 <Stack gap={6} mt="md">
+                  {preview && (
+                    <Group justify="space-between">
+                      <Text size="xs" c="dimmed">{t('sensibilidade.cm_360')}</Text>
+                      <Group gap={4}>
+                        <Code>{fmt(preview.cm_per_360, 2)} cm</Code>
+                        <CopyChip value={fmt(preview.cm_per_360, 2)} />
+                      </Group>
+                    </Group>
+                  )}
                   <Group justify="space-between"><Text size="xs" c="dimmed">{t('sensibilidade.formula.gta_yaw')}</Text><Code>0.0009 °/count</Code></Group>
                   <Text size="xs" ta="center" mt={4}>{t('sensibilidade.formula.formula_texto')}</Text>
                   <Text size="xs" c="dimmed" ta="center">{t('sensibilidade.formula.validado_por')}</Text>
@@ -170,7 +192,7 @@ export default function Sensitivity({ onBack }) {
         <Grid.Col span={{ base: 12, md: 7 }}>
           {preview ? (
             <Card>
-              <Group justify="space-between" mb="xs">
+              <Group justify="space-between" mb="md">
                 <Group gap={6}>
                   <IconTarget size={18} color="var(--mantine-color-brandCyan-5)" />
                   <Text fw={700} size="sm">{t('sensibilidade.resultado')}</Text>
@@ -178,32 +200,26 @@ export default function Sensitivity({ onBack }) {
                 {saved && <Badge color="green" variant="light">{t('sensibilidade.salvo')}</Badge>}
               </Group>
 
-              {preview.inverted && (
-                <Text size="xs" c="orange" mb="sm">
-                  {t('sensibilidade.eixo_invertido')}
+              <SensitivityGauge cm={preview.cm_per_360} />
+
+              <Text size="sm" ta="center" mt="md" lh={1.5}>
+                {t(`sensibilidade.zonas.${zone.id}.resumo`)}
+              </Text>
+
+              <Group justify="center" gap="xs" mt="md" p="sm" style={{ borderRadius: 8, background: 'var(--bg-card-hover)' }}>
+                <IconRulerMeasure size={18} color="var(--mantine-color-brandCyan-5)" />
+                <Text size="sm">
+                  <Trans
+                    i18nKey="sensibilidade.giro_180"
+                    values={{ cm: halfTurnCm(preview.cm_per_360) }}
+                    components={{ bold: <Text span fw={800} /> }}
+                  />
                 </Text>
-              )}
+              </Group>
 
-              <Card withBorder ta="center" p="lg">
-                <IconRuler2 size={28} color="var(--mantine-color-brandCyan-5)" />
-                <Text size="sm" c="dimmed">{t('sensibilidade.cm_360')}</Text>
-                <Group justify="center" gap={6}>
-                  <Text fw={900} size="2rem">{fmt(preview.cm_per_360, 1)}</Text>
-                  <CopyChip value={fmt(preview.cm_per_360, 2)} />
-                </Group>
-              </Card>
-
-              <Box mt="md">
-                <Group justify="space-between" mb={4}>
-                  <Text size="xs" c="dimmed">{t('sensibilidade.baixa_sens')}</Text>
-                  <Text size="xs" c="dimmed">{t('sensibilidade.alta_sens')}</Text>
-                </Group>
-                <MProgress
-                  value={Math.min(100, Math.max(2, (1 - Math.log(preview.cm_per_360 / 5) / Math.log(200)) * 100))}
-                  radius="xl"
-                />
-                <Text size="xs" ta="center" mt={4} c="dimmed">{fmt(preview.cm_per_360, 1)} cm/360°</Text>
-              </Box>
+              <Text size="xs" c="dimmed" ta="center" mt="sm">
+                {t(`sensibilidade.zonas.${zone.id}.referencia`)}
+              </Text>
             </Card>
           ) : (
             <Card ta="center" py="xl">

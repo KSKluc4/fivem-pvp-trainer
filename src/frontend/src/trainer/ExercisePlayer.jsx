@@ -135,7 +135,6 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     const { renderer, scene, camera, resize, dispose } = createArenaScene(canvas)
     const pointerLook = createPointerLook(camera, {
       getDegPerCount: () => effectiveDegPerCount(sensRef.current),
-      getInvertY: () => false,
     })
     const raycaster = new THREE.Raycaster()
 

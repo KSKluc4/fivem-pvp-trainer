@@ -485,7 +485,8 @@
     "voltar_ao_treino": "Voltar ao Treino",
     "configuracao": "Configuração",
     "gta_sens_label": "Sensibilidade GTA V",
-    "gta_sens_desc": "Escala -100 a 100 · aceita negativo para eixo invertido",
+    "gta_sens_desc": "Escala -100 a 100 — quanto maior, mais rápido o giro",
+    "gta_sens_legenda": "-100 = mais lento · +100 = mais rápido",
     "gta_sens_placeholder": "ex: 50 ou -35",
     "config_hint": "Configure em GTA V → <code>Opções → Controles → Sensibilidade do Mouse</code>",
     "dpi_label": "DPI do Mouse",
@@ -496,20 +497,45 @@
     "como_calculamos": "Como calculamos isso?",
     "formula": {
       "gta_yaw": "GTA V yaw",
-      "formula_texto": "cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54",
+      "formula_texto": "cm/360 ≈ (360 ÷ (DPI × sensibilidade efetiva × yaw)) × 2.54",
       "validado_por": "Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer"
     },
     "resultado": "Resultado",
     "salvo": "Salvo",
-    "eixo_invertido": "↕ Eixo invertido detectado — os valores de sensibilidade são corretos, mas o mouse estará com direções Y trocadas.",
     "cm_360": "cm / 360°",
-    "baixa_sens": "Baixa sens. (alto cm)",
-    "alta_sens": "Alta sens. (baixo cm)",
+    "giro_180": "Para girar 180°: ~<bold>{{cm}}</bold> cm de mousepad",
     "resultado_vazio": "Informe a sensibilidade e o DPI para ver o resultado em tempo real",
     "copiado": "Copiado!",
     "copiar": "Copiar",
+    "zonas": {
+      "muito_rapida": {
+        "nome": "Muito rápida",
+        "resumo": "Você vira rápido com pouco movimento de braço — ideal pra reagir a inimigos vindo de qualquer direção. Em troca, ajustes finos e tiros de precisão a distância exigem mais controle.",
+        "referencia": "Mais rápida que a maioria dos jogadores de precisão"
+      },
+      "agil": {
+        "nome": "Ágil",
+        "resumo": "Bom equilíbrio pra girar rápido e acompanhar flicks — em troca, a mira fina em alvos distantes pede um pouco mais de cuidado.",
+        "referencia": "Um pouco mais rápida que a média"
+      },
+      "equilibrada": {
+        "nome": "Equilibrada",
+        "resumo": "Equilíbrio clássico entre velocidade de giro e precisão — a faixa mais comum entre jogadores competitivos.",
+        "referencia": "Na faixa mais comum entre jogadores de precisão"
+      },
+      "controlada": {
+        "nome": "Controlada",
+        "resumo": "Sua mira favorece precisão e estabilidade em duelos — em troca, giros rápidos exigem mais movimento de braço.",
+        "referencia": "Um pouco mais lenta que a média"
+      },
+      "muito_lenta": {
+        "nome": "Muito lenta",
+        "resumo": "Máxima precisão e estabilidade na mira — em troca, virar rápido ou reagir a ataques pelas costas exige bastante espaço de mousepad e movimento de braço.",
+        "referencia": "Mais lenta que a maioria dos jogadores de precisão"
+      }
+    },
     "erros": {
-      "sens_invalida": "Informe uma sensibilidade válida (diferente de zero).",
+      "sens_invalida": "Informe uma sensibilidade válida.",
       "sens_fora_faixa": "Sensibilidade deve estar entre -100 e 100.",
       "dpi_invalido": "Informe um DPI válido (número positivo)."
     }
