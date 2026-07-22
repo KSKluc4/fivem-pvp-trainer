@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { convertSensitivity, getSensitivityHistory } from '../services/api'
 import { toast } from '../services/toast'
+import { ZONES, getZone } from '../utils/sensitivityZones'
 
 // Community-validated yaw values (mirrors backend constants)
 const GTA_YAW    = 0.0009  // GTA V scale 0–100 (in-game slider)
@@ -220,6 +221,12 @@ export default function SensConverter({ onBack }) {
                 <p className="sens-formula-eq">
                   cm/360 = (360 ÷ (DPI × |sens| × yaw)) × 2.54
                 </p>
+                {display && (
+                  <div className="sens-formula-result-cm">
+                    <span className="sens-formula-label">cm / 360° exato</span>
+                    <code className="sens-formula-val">{fmt(display.cm_per_360, 4)} cm</code>
+                  </div>
+                )}
                 <p className="sens-formula-source">
                   Valores validados pela comunidade via mouse-sensitivity.com e r/FPSAimTrainer
                 </p>
@@ -230,7 +237,6 @@ export default function SensConverter({ onBack }) {
 
         {/* ── Result panel ── */}
         <div className="sens-results-col">
-          {/* Live preview result */}
           {display ? (
             <div className={`section-card sens-result-card ${display.inverted ? 'sens-result--inverted' : ''}`}>
               <div className="section-header">
@@ -245,49 +251,7 @@ export default function SensConverter({ onBack }) {
                 </div>
               )}
 
-              <div className="sens-result-grid">
-                <div className="sens-result-item sens-result--cm">
-                  <div className="sens-result-icon">📐</div>
-                  <div className="sens-result-label">cm / 360°</div>
-                  <div className="sens-result-value">{fmt(display.cm_per_360, 1)}<span className="sens-result-unit">cm</span></div>
-                  <CopyBtn value={fmt(display.cm_per_360, 2)} />
-                </div>
-
-                <div className="sens-result-item sens-result--kovaak">
-                  <div className="sens-result-icon">⚡</div>
-                  <div className="sens-result-label">KovaaK's</div>
-                  <div className="sens-result-value">{fmt(display.kovaak_sensitivity, 3)}</div>
-                  <div className="sens-result-sublabel">Sensibilidade</div>
-                  <CopyBtn value={fmt(display.kovaak_sensitivity, 3)} />
-                </div>
-
-                <div className="sens-result-item sens-result--aimlab">
-                  <div className="sens-result-icon">🎯</div>
-                  <div className="sens-result-label">Aim Lab</div>
-                  <div className="sens-result-value">{fmt(display.aimlab_sensitivity, 3)}</div>
-                  <div className="sens-result-sublabel">Sensibilidade</div>
-                  <CopyBtn value={fmt(display.aimlab_sensitivity, 3)} />
-                </div>
-              </div>
-
-              {/* Visual bar showing where cm/360 sits */}
-              <div className="sens-cm-bar-wrap">
-                <div className="sens-cm-bar-labels">
-                  <span>Baixa sens. (alto cm)</span>
-                  <span>Alta sens. (baixo cm)</span>
-                </div>
-                <div className="sens-cm-bar-track">
-                  <div
-                    className="sens-cm-bar-fill"
-                    style={{ width: `${Math.min(100, Math.max(2, (1 - Math.log(display.cm_per_360 / 5) / Math.log(200)) * 100))}%` }}
-                  />
-                  <div
-                    className="sens-cm-bar-marker"
-                    style={{ left: `${Math.min(98, Math.max(2, (1 - Math.log(display.cm_per_360 / 5) / Math.log(200)) * 100))}%` }}
-                  />
-                </div>
-                <div className="sens-cm-bar-value">{fmt(display.cm_per_360, 1)} cm/360°</div>
-              </div>
+              <ZoneDisplay cm={display.cm_per_360} kovaak={display.kovaak_sensitivity} aimlab={display.aimlab_sensitivity} />
             </div>
           ) : (
             <div className="section-card sens-empty-result">
@@ -320,6 +284,71 @@ export default function SensConverter({ onBack }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ZoneDisplay({ cm, kovaak, aimlab }) {
+  const zone = getZone(cm)
+
+  return (
+    <div className="sens-zone-display">
+      {/* Zone name + icon */}
+      <div className="sens-zone-name-wrap">
+        <span className="sens-zone-icon">{zone.icon}</span>
+        <span className="sens-zone-name" style={{ color: zone.color }}>{zone.label}</span>
+      </div>
+
+      {/* 5-zone chip strip */}
+      <div className="sens-zone-chips">
+        {ZONES.map((z) => (
+          <div
+            key={z.id}
+            className={`sens-zone-chip ${z.id === zone.id ? 'active' : ''}`}
+            style={z.id === zone.id
+              ? { background: z.color, borderColor: z.color, color: '#080810' }
+              : { borderColor: z.color + '55', color: z.color + 'aa' }
+            }
+            title={z.label}
+          >
+            <span className="sens-chip-icon">{z.icon}</span>
+            <span className="sens-chip-label">{z.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Zone phrase */}
+      <p className="sens-zone-phrase">{zone.phrase}</p>
+
+      {/* 180° travel card */}
+      <div className="sens-180-card">
+        <span className="sens-180-icon">📐</span>
+        <div className="sens-180-text">
+          <span className="sens-180-label">Para girar 180°</span>
+          <span className="sens-180-value">~{(cm / 2).toFixed(1)} cm de mousepad</span>
+        </div>
+      </div>
+
+      {/* Trainer values */}
+      <div className="sens-trainer-row">
+        <div className="sens-trainer-item">
+          <span className="sens-trainer-label">KovaaK's</span>
+          <span className="sens-trainer-value">{fmt(kovaak, 3)}</span>
+          <CopyBtn value={fmt(kovaak, 3)} />
+        </div>
+        <div className="sens-trainer-divider" />
+        <div className="sens-trainer-item">
+          <span className="sens-trainer-label">Aim Lab</span>
+          <span className="sens-trainer-value">{fmt(aimlab, 3)}</span>
+          <CopyBtn value={fmt(aimlab, 3)} />
+        </div>
+      </div>
+
+      {/* Qualitative reference */}
+      <p className="sens-ref-line">
+        <span className="sens-ref-icon">💡</span>
+        {zone.ref}
+      </p>
     </div>
   )
 }
