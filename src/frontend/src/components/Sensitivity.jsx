@@ -9,7 +9,7 @@ import { calcLocal } from '../services/sensitivityMath'
 import { zoneForCm } from '../services/sensitivityZones'
 import { loadTrainerSensSettings, saveTrainerSensSettings } from '../trainer/sensitivity/trainerSensitivity'
 import { toast } from '../services/toast'
-import SensitivityGauge from './SensitivityGauge'
+import SensitivityZonePanel from './SensitivityZonePanel'
 
 const DPI_PRESETS = [400, 800, 1200, 1600, 3200]
 
@@ -66,7 +66,7 @@ export default function Sensitivity({ onBack }) {
   const preview = (() => {
     const s = typeof gtaSens === 'number' ? gtaSens : parseFloat(gtaSens)
     const d = typeof dpi === 'number' ? dpi : parseInt(dpi, 10)
-    if (!isNaN(s) && !isNaN(d) && d > 0) return { ...calcLocal(s, d), sens: s, dpi: d }
+    if (!isNaN(s) && !isNaN(d) && d > 0) return calcLocal(s, d)
     return null
   })()
 
@@ -200,7 +200,7 @@ export default function Sensitivity({ onBack }) {
                 {saved && <Badge color="green" variant="light">{t('sensibilidade.salvo')}</Badge>}
               </Group>
 
-              <SensitivityGauge sens={preview.sens} dpi={preview.dpi} cm={preview.cm_per_360} />
+              <SensitivityZonePanel cm={preview.cm_per_360} />
 
               <Text size="sm" ta="center" mt="md" lh={1.5}>
                 {t(`sensibilidade.zonas.${zone.id}.resumo`)}

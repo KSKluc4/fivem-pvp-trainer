@@ -28,7 +28,7 @@ export const GTA_YAW = 0.0009 // GTA V, sensitivity scale 0–100 (in-game slide
 //     degenerates to infinity even at the most extreme "slow" setting.
 // Recalibrating: pick new ANCHOR_MAGNITUDE/MIN_MAGNITUDE values and
 // re-derive SENS_SLOPE/SENS_BASE the same way; everything downstream
-// (calcLocal, degPerCountFromGtaSens, the zone gauge) follows automatically.
+// (calcLocal, degPerCountFromGtaSens, the zone panel) follows automatically.
 const ANCHOR_SENS       = 50
 const ANCHOR_MAGNITUDE  = 50  // sens=50 behaves exactly as before (25.4cm @ 800dpi)
 const MIN_SENS          = -100
@@ -47,21 +47,6 @@ export function calcLocal(gtaSens, dpi) {
   return {
     cm_per_360: +cm.toFixed(4),
   }
-}
-
-// Inverse of calcLocal(): the GTA sens value that would produce a given
-// cm/360 at a given DPI. Used by the gauge to place zone-boundary cm/360
-// thresholds onto the sens-scale arc (sensitivityGaugeAxis.js) — NOT used
-// for the main conversion, which always goes sens -> cm.
-//
-// Division by cm=0 or cm=Infinity resolves to +-Infinity in JS (never NaN,
-// since the numerator is always positive and dpi > 0), which is exactly the
-// right answer for the two open-ended zone boundaries ("faster than any
-// finite cm" / "slower than any finite cm") — callers clip the result to
-// the visible -100..100 domain themselves.
-export function sensForCm(cm, dpi) {
-  const magnitude = (360 / (dpi * GTA_YAW * cm)) * 2.54
-  return (magnitude - SENS_BASE) / SENS_SLOPE
 }
 
 // Degrees the trainer's 3D camera should rotate per raw mouse "count"

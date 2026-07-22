@@ -1,7 +1,6 @@
 // Zone classification (cm/360 -> named "feel" zone) — the source of truth
-// for the active-zone label, summary copy, and legend chips on the "Minha
-// Sensibilidade" screen. The gauge ARC's own coordinate system (sens-based,
-// DPI-aware) lives in sensitivityGaugeAxis.js and is tested separately.
+// for the active-zone label, summary copy, and chip strip on the "Minha
+// Sensibilidade" screen.
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
