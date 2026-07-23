@@ -3,9 +3,7 @@ import * as THREE from 'three'
 import { Box, Button, Group, Text, Title, SegmentedControl, Stack, Card } from '@mantine/core'
 import { IconArrowLeft, IconPlayerPlay } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
-import { createArenaScene } from './engine/scene'
-import { createLoop } from './engine/loop'
-import { createPointerLook } from './engine/pointerLook'
+import { useTrainerEngine } from './engine/useTrainerEngine'
 import { SCENARIOS } from './scenarios/index.js'
 import Crosshair, { CROSSHAIR_STYLES } from './hud/Crosshair'
 import Hud from './hud/Hud'
@@ -21,8 +19,9 @@ const CENTER_NDC = new THREE.Vector2(0, 0)
 // for whichever scenario `exerciseId` names in scenarios/index.js. Generic
 // across both "continuous" scenarios (Tracking Suave — hover scoring) and
 // "click" scenarios (Shot Grid / Quick Flick / Micro Adjust — click-to-hit +
-// timeout) — the mode-specific bits are isolated in the mount-once engine
-// effect below, everything else (countdown, results, sens setup) is shared.
+// timeout) — the mode-specific bits live in onFrame/onCanvasClick below,
+// everything else (countdown, pointer-lock lifecycle, resize) is shared with
+// DiscoveryPlayer via useTrainerEngine.
 //
 // `targetRounds` (only set on a routine "Treinar" deep-link — see
 // TrainerView) turns the normal "retry forever until you click back" loop
@@ -33,23 +32,16 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
   const { t } = useTranslation()
   const scenario = SCENARIOS[exerciseId]
 
-  const canvasRef    = useRef(null)
-  const containerRef = useRef(null)
-  const engineRef    = useRef(null)
   const targetRef    = useRef(null)
   const scorerRef    = useRef(null)
   const elapsedRef   = useRef(0)
   const finishedRef  = useRef(false)
-  const phaseRef     = useRef('setup')
-  const resumePhaseRef = useRef('playing')
   const sensRef      = useRef(loadTrainerSensSettings())
 
-  const [phase, setPhase] = useState(() => (sensRef.current.gtaSens == null ? 'sens-setup' : 'setup'))
   const [difficulty, setDifficulty] = useState(
     initialDifficulty && scenario.difficulties[initialDifficulty] ? initialDifficulty : 'medio',
   )
   const [crosshairStyle, setCrosshairStyle] = useState('cross-dot')
-  const [countdownN, setCountdownN] = useState(3)
   const [hud, setHud] = useState({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
   const [result, setResult] = useState(null)
   const [comparison, setComparison] = useState({ lastAttempt: null, personalBest: null })
@@ -60,7 +52,6 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
 
   const difficultyRef = useRef(difficulty)
   useEffect(() => { difficultyRef.current = difficulty }, [difficulty])
-  useEffect(() => { phaseRef.current = phase }, [phase])
 
   const startCountdown = useCallback(() => {
     const engine = engineRef.current
@@ -73,6 +64,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     setHud({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
     setCountdownN(3)
     setPhase('countdown')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty, scenario])
 
   const finishSession = useCallback(() => {
@@ -108,68 +100,89 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
         savedRemotely,
       })
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty, lastAttemptFor, personalBestFor, saveScore, scenario])
 
-  const resumeFromPause = useCallback(() => {
-    if (resumePhaseRef.current === 'countdown') {
-      setCountdownN(3)
-      setPhase('countdown')
-    } else {
-      setPhase('playing')
-    }
-  }, [])
+  // The engine effect (inside useTrainerEngine) closes over whatever these
+  // were on the FIRST render. Refs keep it calling the latest version —
+  // otherwise a difficulty change would never reach startCountdown.
+  const startCountdownRef = useRef(startCountdown)
+  const finishSessionRef  = useRef(finishSession)
+  startCountdownRef.current = startCountdown
+  finishSessionRef.current  = finishSession
 
-  // The mount-once engine effect below (deps=[]) closes over whatever these
-  // callbacks were on the FIRST render. Refs keep it calling the latest
-  // version — otherwise a difficulty change would never reach startCountdown.
-  const startCountdownRef  = useRef(startCountdown)
-  const finishSessionRef   = useRef(finishSession)
-  const resumeFromPauseRef = useRef(resumeFromPause)
-  startCountdownRef.current  = startCountdown
-  finishSessionRef.current   = finishSession
-  resumeFromPauseRef.current = resumeFromPause
-
-  // ── Engine: created once, lives for the whole component lifetime ──────────
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const { renderer, scene, camera, resize, dispose } = createArenaScene(canvas)
-    const pointerLook = createPointerLook(camera, {
-      getDegPerCount: () => effectiveDegPerCount(sensRef.current),
-    })
-    const raycaster = new THREE.Raycaster()
-
-    function handleResize() {
-      const el = containerRef.current
-      if (el) resize(el.clientWidth, el.clientHeight)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    function onPointerLockChange() {
-      const locked = document.pointerLockElement === canvas
-      if (locked) {
-        pointerLook.attach()
-        if (phaseRef.current === 'setup' || phaseRef.current === 'results') startCountdownRef.current()
-        else if (phaseRef.current === 'paused') resumeFromPauseRef.current()
+  const onFrame = useCallback((dt, fps) => {
+    const engine = engineRef.current
+    if (phaseRef.current === 'playing' && !finishedRef.current && targetRef.current && scorerRef.current && engine) {
+      const raycaster = frameRaycasterRef.current
+      if (scenario.mode === 'continuous') {
+        targetRef.current.update(dt)
+        raycaster.setFromCamera(CENTER_NDC, engine.camera)
+        const hit = raycaster.intersectObject(targetRef.current.mesh, false)
+        scorerRef.current.update(dt * 1000, hit.length > 0)
       } else {
-        pointerLook.detach()
-        if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') {
-          resumePhaseRef.current = phaseRef.current
-          setPhase('paused')
+        targetRef.current.update(dt * 1000)
+        const cfg = scenario.difficulties[difficultyRef.current] || {}
+        if (cfg.timeoutMs && targetRef.current.timeAliveMs >= cfg.timeoutMs) {
+          targetRef.current.respawn()
         }
       }
+      elapsedRef.current += dt
+      const timeLeft = Math.max(0, scenario.sessionDurationS - elapsedRef.current)
+      setHud({
+        timeLeft, score: scorerRef.current.score,
+        accuracyPct: scorerRef.current.accuracyPct, fps,
+      })
+      if (timeLeft <= 0) finishSessionRef.current()
+    } else {
+      setHud((h) => (h.fps === fps ? h : { ...h, fps }))
     }
-    document.addEventListener('pointerlockchange', onPointerLockChange)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-    // Click-to-hit — only relevant for 'click' scenarios (Shot Grid / Quick
-    // Flick / Micro Adjust). 'continuous' scenarios (Tracking Suave) score
-    // via the per-frame raycast below instead, clicks are a no-op for them.
+  // A single Raycaster reused by both the per-frame ('continuous' mode) and
+  // click-to-hit ('click' mode) hit-tests — created once, same as before.
+  const frameRaycasterRef = useRef(null)
+  if (!frameRaycasterRef.current) frameRaycasterRef.current = new THREE.Raycaster()
+
+  const onStart = startCountdown
+
+  const onUnmount = useCallback(() => {
+    const engine = engineRef.current
+    if (targetRef.current && engine) targetRef.current.dispose(engine.scene)
+  }, [])
+
+  const initialPhase = sensRef.current.gtaSens == null ? 'sens-setup' : 'setup'
+
+  const {
+    canvasRef, containerRef, engineRef, phase, setPhase, phaseRef, countdownN, setCountdownN,
+  } = useTrainerEngine({
+    initialPhase,
+    startPhases: ['setup', 'results'],
+    onStart,
+    onFrame,
+    onUnmount,
+    getDegPerCount: () => effectiveDegPerCount(sensRef.current),
+  })
+
+  // Click-to-hit — only relevant for 'click' scenarios (Shot Grid / Quick
+  // Flick / Micro Adjust). 'continuous' scenarios (Tracking Suave) score via
+  // the per-frame raycast in onFrame instead, clicks are a no-op for them.
+  // A separate mount-once effect from the shared engine plumbing since
+  // hit-testing on click is specific to this player.
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
     function onCanvasClick() {
       if (scenario.mode !== 'click') return
       if (phaseRef.current !== 'playing' || finishedRef.current) return
       if (document.pointerLockElement !== canvas) return
       if (!targetRef.current || !scorerRef.current) return
-      raycaster.setFromCamera(CENTER_NDC, camera)
+      const engine = engineRef.current
+      if (!engine) return
+      const raycaster = frameRaycasterRef.current
+      raycaster.setFromCamera(CENTER_NDC, engine.camera)
       const hit = raycaster.intersectObject(targetRef.current.mesh, false)
       const isHit = hit.length > 0
       scorerRef.current.registerShot(isHit, targetRef.current.timeAliveMs)
@@ -177,67 +190,8 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
       setHud((h) => ({ ...h, score: scorerRef.current.score, accuracyPct: scorerRef.current.accuracyPct }))
     }
     canvas.addEventListener('click', onCanvasClick)
-
-    const loop = createLoop((dt, fps) => {
-      if (phaseRef.current === 'playing' && !finishedRef.current && targetRef.current && scorerRef.current) {
-        if (scenario.mode === 'continuous') {
-          targetRef.current.update(dt)
-          raycaster.setFromCamera(CENTER_NDC, camera)
-          const hit = raycaster.intersectObject(targetRef.current.mesh, false)
-          scorerRef.current.update(dt * 1000, hit.length > 0)
-        } else {
-          targetRef.current.update(dt * 1000)
-          const cfg = scenario.difficulties[difficultyRef.current] || {}
-          if (cfg.timeoutMs && targetRef.current.timeAliveMs >= cfg.timeoutMs) {
-            targetRef.current.respawn()
-          }
-        }
-        elapsedRef.current += dt
-        const timeLeft = Math.max(0, scenario.sessionDurationS - elapsedRef.current)
-        setHud({
-          timeLeft, score: scorerRef.current.score,
-          accuracyPct: scorerRef.current.accuracyPct, fps,
-        })
-        if (timeLeft <= 0) finishSessionRef.current()
-      } else {
-        setHud((h) => (h.fps === fps ? h : { ...h, fps }))
-      }
-      renderer.render(scene, camera)
-    })
-    loop.start()
-
-    engineRef.current = { renderer, scene, camera, pointerLook }
-
-    return () => {
-      document.removeEventListener('pointerlockchange', onPointerLockChange)
-      window.removeEventListener('resize', handleResize)
-      canvas.removeEventListener('click', onCanvasClick)
-      loop.stop()
-      pointerLook.detach()
-      if (document.pointerLockElement === canvas) document.exitPointerLock()
-      if (targetRef.current) targetRef.current.dispose(scene)
-      dispose()
-      engineRef.current = null
-    }
-    // Intentionally mount once — difficulty/phase changes are read via refs
-    // inside the loop/listeners so the WebGL context is never torn down mid-session.
+    return () => canvas.removeEventListener('click', onCanvasClick)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Countdown ticker
-  useEffect(() => {
-    if (phase !== 'countdown') return
-    if (countdownN <= 0) { setPhase('playing'); return }
-    const t = setTimeout(() => setCountdownN((n) => n - 1), 800)
-    return () => clearTimeout(t)
-  }, [phase, countdownN])
-
-  // The canvas renders continuously (60fps rAF loop) for this component's
-  // whole lifetime, not just the 'playing' phase — hide the decorative
-  // AppBackground behind it so it isn't animating/compositing for nothing.
-  useEffect(() => {
-    document.body.classList.add('trainer-active')
-    return () => document.body.classList.remove('trainer-active')
   }, [])
 
   const handleSensDone = () => {
@@ -247,9 +201,10 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
 
   // Retrying re-requests pointer lock directly from the click (a genuine
   // user gesture) — startCountdown itself runs once the lock is confirmed,
-  // via the pointerlockchange handler below.
+  // via the engine hook's pointerlockchange handling.
   const handleRetry = useCallback(() => {
     canvasRef.current?.requestPointerLock()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const isFinalRound = targetRounds != null && roundsDone >= targetRounds

@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import * as THREE from 'three'
 import { Box, Button, Text, Card } from '@mantine/core'
 import { IconArrowLeft, IconPlayerPlay } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { createArenaScene } from '../engine/scene'
-import { createLoop } from '../engine/loop'
-import { createPointerLook } from '../engine/pointerLook'
+import { useTrainerEngine } from '../engine/useTrainerEngine'
 import { ClickTarget } from '../engine/clickTarget'
 import { pointNearForward } from '../engine/spawn'
 import { DIFFICULTIES as QUICK_FLICK_DIFFICULTIES } from '../scenarios/quickFlick.js'
@@ -28,6 +26,12 @@ const STEPS = [
   { kind: 'tracking' }, { kind: 'tracking' },
 ]
 const FLICK_CFG = QUICK_FLICK_DIFFICULTIES.medio
+const TRACKING_ROUNDS_TOTAL = STEPS.filter((s) => s.kind === 'tracking').length
+// A tracking round only counts toward the aggregate if the player was
+// actually engaged (pointer locked, phase 'playing') for at least half of
+// it — a round mostly spent paused/disengaged is too thin to trust and
+// would otherwise carry the same full weight as a complete one.
+const MIN_TRACKING_COVERAGE_MS = ROUND_DURATION_S * 1000 * 0.5
 
 function forwardVector(camera) {
   return FORWARD.clone().applyQuaternion(camera.quaternion)
@@ -58,13 +62,8 @@ function angularOffsets(camera, targetPos) {
 export default function DiscoveryPlayer({ onComplete, onBack }) {
   const { t } = useTranslation()
 
-  const canvasRef    = useRef(null)
-  const containerRef = useRef(null)
-  const engineRef    = useRef(null)
   const targetRef    = useRef(null)
   const elapsedRef   = useRef(0)
-  const phaseRef     = useRef('ready')
-  const resumePhaseRef = useRef('playing')
   const stepIndexRef = useRef(0)
   const sensRef      = useRef(loadTrainerSensSettings())
 
@@ -73,11 +72,7 @@ export default function DiscoveryPlayer({ onComplete, onBack }) {
   const trackingScorerRef = useRef(null)
   const trackingResultsRef = useRef({ oscillationsHz: [], avgErrorsDeg: [], lagBiasDeg: [] })
 
-  const [phase, setPhase] = useState('ready')
-  const [countdownN, setCountdownN] = useState(3)
   const [hud, setHud] = useState({ timeLeft: ROUND_DURATION_S, round: 1, fps: 0 })
-
-  useEffect(() => { phaseRef.current = phase }, [phase])
 
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
@@ -140,6 +135,7 @@ export default function DiscoveryPlayer({ onComplete, onBack }) {
       trackingOscillationsHz: trackingResultsRef.current.oscillationsHz,
       trackingLagBiasDeg: trackingResultsRef.current.lagBiasDeg,
       trackingAvgErrorsDeg: trackingResultsRef.current.avgErrorsDeg,
+      trackingRoundsAttempted: TRACKING_ROUNDS_TOTAL,
     })
   }, [])
 
@@ -149,7 +145,9 @@ export default function DiscoveryPlayer({ onComplete, onBack }) {
       finalizeFlickAttempt()
     } else {
       const scorer = trackingScorerRef.current
-      if (scorer) {
+      // Discard rounds where the player wasn't actually engaged for most of
+      // it (heavy pausing, disengagement) — see MIN_TRACKING_COVERAGE_MS.
+      if (scorer && scorer.totalMs >= MIN_TRACKING_COVERAGE_MS) {
         if (scorer.crossingsPerSecond != null) trackingResultsRef.current.oscillationsHz.push(scorer.crossingsPerSecond)
         if (scorer.avgErrorDeg != null) trackingResultsRef.current.avgErrorsDeg.push(scorer.avgErrorDeg)
         if (scorer.avgLagBiasDeg != null) trackingResultsRef.current.lagBiasDeg.push(scorer.avgLagBiasDeg)
@@ -166,140 +164,108 @@ export default function DiscoveryPlayer({ onComplete, onBack }) {
     startRoundRef.current(nextIdx)
   }, [finalizeFlickAttempt])
 
-  const resumeFromPause = useCallback(() => {
-    if (resumePhaseRef.current === 'countdown') {
-      setCountdownN(3)
-      setPhase('countdown')
+  // The engine effect (inside useTrainerEngine) closes over whatever these
+  // were on the FIRST render — refs keep it calling the latest version.
+  const startRoundRef   = useRef(startRound)
+  const advanceRoundRef = useRef(advanceRound)
+  const finishAllRef    = useRef(finishAll)
+  const finalizeFlickRef = useRef(finalizeFlickAttempt)
+  const startFlickRef   = useRef(startFlickAttempt)
+  startRoundRef.current    = startRound
+  advanceRoundRef.current  = advanceRound
+  finishAllRef.current     = finishAll
+  finalizeFlickRef.current = finalizeFlickAttempt
+  startFlickRef.current    = startFlickAttempt
+
+  // Samples the camera's actual orientation at native mouse-event resolution
+  // (higher than the render loop's frame rate) for the flick instrumentation
+  // — see pointerLook.js's onSample. Stable (empty deps, refs-only) so the
+  // engine hook's single pointerLook instance never goes stale.
+  const handlePointerSample = useCallback(() => {
+    const camera = engineRef.current?.camera
+    if (!camera) return
+    if (phaseRef.current !== 'playing') return
+    if (STEPS[stepIndexRef.current].kind !== 'flick') return
+    const attempt = flickAttemptRef.current
+    if (!attempt.targetPos) return
+    const angleNow = angleToDeg(camera, attempt.targetPos)
+    attempt.samples.push({ tMs: performance.now() - attempt.spawnMs, dProgressDeg: attempt.prevAngleDeg - angleNow })
+    attempt.prevAngleDeg = angleNow
+  }, [])
+
+  const onFrame = useCallback((dt, fps) => {
+    const engine = engineRef.current
+    if (phaseRef.current === 'playing' && targetRef.current && engine) {
+      const step = STEPS[stepIndexRef.current]
+      const target = targetRef.current
+      if (step.kind === 'tracking') {
+        target.update(dt)
+        const { errorDeg, lateralDeg } = angularOffsets(engine.camera, target.mesh.position)
+        trackingScorerRef.current?.update(dt * 1000, errorDeg, lateralDeg)
+      } else {
+        target.update(dt * 1000)
+        if (FLICK_CFG.timeoutMs && target.timeAliveMs >= FLICK_CFG.timeoutMs) {
+          finalizeFlickRef.current()
+          target.respawn()
+          startFlickRef.current(engine.camera, target.mesh.position)
+        }
+      }
+      elapsedRef.current += dt
+      const timeLeft = Math.max(0, ROUND_DURATION_S - elapsedRef.current)
+      setHud({ timeLeft, round: stepIndexRef.current + 1, fps })
+      if (timeLeft <= 0) advanceRoundRef.current()
     } else {
-      setPhase('playing')
+      setHud((h) => (h.fps === fps ? h : { ...h, fps }))
     }
   }, [])
 
-  // The mount-once engine effect (below) closes over whatever these were on
-  // the FIRST render — refs keep it calling the latest version, same pattern
-  // ExercisePlayer uses.
-  const startRoundRef       = useRef(startRound)
-  const advanceRoundRef     = useRef(advanceRound)
-  const finishAllRef        = useRef(finishAll)
-  const resumeFromPauseRef  = useRef(resumeFromPause)
-  const finalizeFlickRef    = useRef(finalizeFlickAttempt)
-  const startFlickRef       = useRef(startFlickAttempt)
-  startRoundRef.current      = startRound
-  advanceRoundRef.current    = advanceRound
-  finishAllRef.current       = finishAll
-  resumeFromPauseRef.current = resumeFromPause
-  finalizeFlickRef.current   = finalizeFlickAttempt
-  startFlickRef.current      = startFlickAttempt
+  const onStart = useCallback(() => {
+    startRoundRef.current(0)
+  }, [])
 
+  const onUnmount = useCallback(() => {
+    const engine = engineRef.current
+    if (targetRef.current && engine) targetRef.current.dispose(engine.scene)
+  }, [])
+
+  const {
+    canvasRef, containerRef, engineRef, phase, setPhase, phaseRef, countdownN, setCountdownN,
+  } = useTrainerEngine({
+    initialPhase: 'ready',
+    startPhases: ['ready'],
+    onStart,
+    onFrame,
+    onUnmount,
+    getDegPerCount: () => effectiveDegPerCount(sensRef.current),
+    onPointerSample: handlePointerSample,
+  })
+
+  // Click-to-hit for flick rounds — a separate mount-once effect from the
+  // shared engine plumbing (useTrainerEngine), since hit-testing is specific
+  // to this player (DiscoveryPlayer only scores flick rounds via click).
   useEffect(() => {
     const canvas = canvasRef.current
-    const { renderer, scene, camera, resize, dispose } = createArenaScene(canvas)
-
-    function handlePointerSample() {
-      if (phaseRef.current !== 'playing') return
-      if (STEPS[stepIndexRef.current].kind !== 'flick') return
-      const attempt = flickAttemptRef.current
-      if (!attempt.targetPos) return
-      const angleNow = angleToDeg(camera, attempt.targetPos)
-      attempt.samples.push({ tMs: performance.now() - attempt.spawnMs, dProgressDeg: attempt.prevAngleDeg - angleNow })
-      attempt.prevAngleDeg = angleNow
-    }
-
-    const pointerLook = createPointerLook(camera, {
-      getDegPerCount: () => effectiveDegPerCount(sensRef.current),
-      onSample: handlePointerSample,
-    })
+    if (!canvas) return
     const raycaster = new THREE.Raycaster()
 
-    function handleResize() {
-      const el = containerRef.current
-      if (el) resize(el.clientWidth, el.clientHeight)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    function onPointerLockChange() {
-      const locked = document.pointerLockElement === canvas
-      if (locked) {
-        pointerLook.attach()
-        if (phaseRef.current === 'ready') startRoundRef.current(0)
-        else if (phaseRef.current === 'paused') resumeFromPauseRef.current()
-      } else {
-        pointerLook.detach()
-        if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') {
-          resumePhaseRef.current = phaseRef.current
-          setPhase('paused')
-        }
-      }
-    }
-    document.addEventListener('pointerlockchange', onPointerLockChange)
-
     function onCanvasClick() {
+      const engine = engineRef.current
+      if (!engine) return
       if (phaseRef.current !== 'playing') return
       if (STEPS[stepIndexRef.current].kind !== 'flick') return
       if (document.pointerLockElement !== canvas) return
       const target = targetRef.current
       if (!target) return
-      raycaster.setFromCamera(CENTER_NDC, camera)
+      raycaster.setFromCamera(CENTER_NDC, engine.camera)
       const hit = raycaster.intersectObject(target.mesh, false)
       finalizeFlickRef.current()
       if (hit.length > 0) target.respawn()
-      startFlickRef.current(camera, target.mesh.position)
+      startFlickRef.current(engine.camera, target.mesh.position)
     }
     canvas.addEventListener('click', onCanvasClick)
-
-    const loop = createLoop((dt, fps) => {
-      if (phaseRef.current === 'playing' && targetRef.current) {
-        const step = STEPS[stepIndexRef.current]
-        const target = targetRef.current
-        if (step.kind === 'tracking') {
-          target.update(dt)
-          const { errorDeg, lateralDeg } = angularOffsets(camera, target.mesh.position)
-          trackingScorerRef.current?.update(dt * 1000, errorDeg, lateralDeg)
-        } else {
-          target.update(dt * 1000)
-          if (FLICK_CFG.timeoutMs && target.timeAliveMs >= FLICK_CFG.timeoutMs) {
-            finalizeFlickRef.current()
-            target.respawn()
-            startFlickRef.current(camera, target.mesh.position)
-          }
-        }
-        elapsedRef.current += dt
-        const timeLeft = Math.max(0, ROUND_DURATION_S - elapsedRef.current)
-        setHud({ timeLeft, round: stepIndexRef.current + 1, fps })
-        if (timeLeft <= 0) advanceRoundRef.current()
-      } else {
-        setHud((h) => (h.fps === fps ? h : { ...h, fps }))
-      }
-      renderer.render(scene, camera)
-    })
-    loop.start()
-
-    engineRef.current = { renderer, scene, camera }
-
-    return () => {
-      document.removeEventListener('pointerlockchange', onPointerLockChange)
-      window.removeEventListener('resize', handleResize)
-      canvas.removeEventListener('click', onCanvasClick)
-      loop.stop()
-      pointerLook.detach()
-      if (document.pointerLockElement === canvas) document.exitPointerLock()
-      if (targetRef.current) targetRef.current.dispose(scene)
-      dispose()
-      engineRef.current = null
-    }
-    // Intentionally mount once — round/phase progression is driven entirely
-    // through refs (see startRoundRef etc.) so the WebGL context is never
-    // torn down mid-test.
+    return () => canvas.removeEventListener('click', onCanvasClick)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    if (phase !== 'countdown') return
-    if (countdownN <= 0) { setPhase('playing'); return }
-    const timer = setTimeout(() => setCountdownN((n) => n - 1), 800)
-    return () => clearTimeout(timer)
-  }, [phase, countdownN])
 
   // Fires the instant a round actually starts scoring (including resuming
   // after a pause) — see the comment in startRound about why the flick
@@ -312,12 +278,8 @@ export default function DiscoveryPlayer({ onComplete, onBack }) {
     if (STEPS[stepIndexRef.current].kind === 'flick') {
       startFlickRef.current(engine.camera, target.mesh.position)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
-
-  useEffect(() => {
-    document.body.classList.add('trainer-active')
-    return () => document.body.classList.remove('trainer-active')
-  }, [])
 
   const active = phase === 'countdown' || phase === 'playing' || phase === 'paused'
   const roundKindKey = STEPS[Math.min(hud.round - 1, STEPS.length - 1)].kind === 'flick'

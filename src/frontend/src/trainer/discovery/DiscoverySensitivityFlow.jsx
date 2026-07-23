@@ -58,6 +58,7 @@ export default function DiscoverySensitivityFlow({ onBack, onNeedsSensSetup }) {
       correctionTimesMs: aggregate.correctionTimesMs,
       trackingOscillationsHz: aggregate.trackingOscillationsHz,
       trackingLagBiasDeg: aggregate.trackingLagBiasDeg,
+      trackingRoundsAttempted: aggregate.trackingRoundsAttempted,
       currentSens: sens.gtaSens,
       dpi: sens.dpi,
     })
@@ -81,7 +82,9 @@ export default function DiscoverySensitivityFlow({ onBack, onNeedsSensSetup }) {
   async function handleApply() {
     saveTrainerSensSettings({ gtaSens: result.suggestedSens, dpi: sens.dpi })
     await markApplied(result.savedId)
-    toast.success(t('sensibilidade.descoberta.aplicado_sucesso'))
+    // Longer than the default toast (3200ms) — this one repeats the "change
+    // it in GTA V too" reminder, which needs enough time to actually be read.
+    toast.success(t('sensibilidade.descoberta.aplicado_sucesso_lembrete'), 6000)
     reload()
     onBack?.()
   }
@@ -131,7 +134,9 @@ export default function DiscoverySensitivityFlow({ onBack, onNeedsSensSetup }) {
 
           {isInconclusive && (
             <Text size="sm" c="dimmed">
-              {t('sensibilidade.descoberta.inconclusivo_detalhe', { count: result.sampleSize })}
+              {result.inconclusiveReason === 'tracking'
+                ? t('sensibilidade.descoberta.inconclusivo_detalhe_tracking')
+                : t('sensibilidade.descoberta.inconclusivo_detalhe', { count: result.sampleSize })}
             </Text>
           )}
 
@@ -237,7 +242,7 @@ function CalibrationHistory({ history, loading, available }) {
         <Text fw={700} size="sm">{t('sensibilidade.descoberta.historico_titulo')}</Text>
       </Group>
       <Stack gap={8}>
-        {history.slice(0, 10).map((row) => (
+        {history.map((row) => (
           <Group key={row.id} justify="space-between">
             <Text size="xs" c="dimmed">{new Date(row.created_at).toLocaleDateString()}</Text>
             <Badge size="sm" variant="light" color={VERDICT_COLOR[row.verdict] || 'gray'}>

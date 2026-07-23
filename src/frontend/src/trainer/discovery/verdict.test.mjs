@@ -1,7 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { computeVerdict, VERDICT, MIN_VALID_FLICKS, MAX_STEP } from './verdict.js'
+import {
+  computeVerdict, VERDICT, MIN_VALID_FLICKS, MAX_STEP,
+  MIN_VALID_TRACKING_ROUNDS, RATIO_OVERSHOOT, RATIO_UNDERSHOOT,
+} from './verdict.js'
 
 function repeat(value, n) {
   return new Array(n).fill(value)
@@ -127,4 +130,66 @@ test('reports the before/after zone transition alongside the suggestion', () => 
   })
   assert.ok(typeof result.currentZoneId === 'string')
   assert.ok(typeof result.suggestedZoneId === 'string')
+})
+
+// ── DEAD_ZONE is derived from RATIO_OVERSHOOT/RATIO_UNDERSHOOT ──────────────
+
+test('a flick-only ratio just inside RATIO_OVERSHOOT stays in the dead zone (KEEP)', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(RATIO_OVERSHOOT - 0.001, 20),
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.equal(result.verdict, VERDICT.KEEP)
+})
+
+test('a flick-only ratio just past RATIO_OVERSHOOT leaves the dead zone (DECREASE)', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(RATIO_OVERSHOOT + 0.001, 20),
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.equal(result.verdict, VERDICT.DECREASE)
+})
+
+test('a flick-only ratio just past RATIO_UNDERSHOOT (symmetric) leaves the dead zone (INCREASE)', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(RATIO_UNDERSHOOT - 0.001, 20),
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.equal(result.verdict, VERDICT.INCREASE)
+})
+
+// ── Tracking rounds need a minimum surviving count too, like flicks ─────────
+
+test('real gameplay session (trackingRoundsAttempted set) with zero surviving tracking rounds is inconclusive, even with plenty of flicks', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(1.2, 20),
+    trackingOscillationsHz: [],
+    trackingRoundsAttempted: 2,
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.equal(result.verdict, VERDICT.INCONCLUSIVE)
+})
+
+test('real gameplay session with at least MIN_VALID_TRACKING_ROUNDS surviving still reaches a real verdict', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(1.2, 20),
+    trackingOscillationsHz: repeat(2, MIN_VALID_TRACKING_ROUNDS),
+    trackingRoundsAttempted: 2,
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.notEqual(result.verdict, VERDICT.INCONCLUSIVE)
+})
+
+test('omitting trackingRoundsAttempted (unit-test / flick-only caller) skips the tracking gate entirely — unchanged behavior', () => {
+  const result = computeVerdict({
+    flickRatios: repeat(1.2, 20),
+    currentSens: 50,
+    dpi: 800,
+  })
+  assert.notEqual(result.verdict, VERDICT.INCONCLUSIVE)
 })

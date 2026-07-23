@@ -13,6 +13,14 @@ import { zoneForCm } from '../../services/sensitivityZones.js'
 import { calcLocal } from '../../services/sensitivityMath.js'
 
 export const MIN_VALID_FLICKS = 15
+// A round is only used if the player was actually engaged for at least half
+// of it (see the caller's totalMs-vs-duration filter) — below this many
+// SURVIVING tracking rounds, tracking is too thin to trust and the whole
+// verdict goes inconclusive, same as too few valid flicks. Only enforced
+// when the caller tells us how many rounds were attempted (real gameplay);
+// omitting `trackingRoundsAttempted` (e.g. a flick-only unit test) skips
+// this gate entirely and tracking simply degrades to neutral, as before.
+export const MIN_VALID_TRACKING_ROUNDS = 1
 export const RATIO_OVERSHOOT = 1.05
 export const RATIO_UNDERSHOOT = 0.95
 export const MAX_STEP = 15
@@ -24,9 +32,12 @@ const OSCILLATION_NEUTRAL_HZ = 2 // crossings/sec considered "normal" — above 
 const OSCILLATION_SPAN_HZ = 3
 const LAG_SPAN_DEG = 6
 // Generous dead zone around neutral so test-to-test noise never flips the
-// verdict — roughly corresponds to the flick ratio alone sitting within
-// [0.95, 1.05], the same bounds used per-shot for the overshoot/undershoot rate.
-const DEAD_ZONE = 0.12
+// verdict — DERIVED from RATIO_OVERSHOOT/RATIO_UNDERSHOOT (the same bounds
+// used per-shot for the overshoot/undershoot rate) rather than hand-tuned,
+// so the two can never drift apart: this is exactly the combined score a
+// flick-only median ratio of RATIO_OVERSHOOT/RATIO_UNDERSHOOT would produce
+// with tracking neutral.
+const DEAD_ZONE = FLICK_WEIGHT * ((RATIO_OVERSHOOT - 1) + (1 - RATIO_UNDERSHOOT)) / 2 / FLICK_SCORE_SPAN
 
 export const VERDICT = {
   INCREASE: 'aumentar',
@@ -40,12 +51,16 @@ export function computeVerdict({
   correctionTimesMs = [],
   trackingOscillationsHz = [],
   trackingLagBiasDeg = [],
+  trackingRoundsAttempted = 0,
   currentSens,
   dpi,
 }) {
   const sampleSize = flickRatios ? flickRatios.length : 0
   if (sampleSize < MIN_VALID_FLICKS) {
-    return { verdict: VERDICT.INCONCLUSIVE, sampleSize }
+    return { verdict: VERDICT.INCONCLUSIVE, sampleSize, inconclusiveReason: 'flicks' }
+  }
+  if (trackingRoundsAttempted > 0 && trackingOscillationsHz.length < MIN_VALID_TRACKING_ROUNDS) {
+    return { verdict: VERDICT.INCONCLUSIVE, sampleSize, inconclusiveReason: 'tracking' }
   }
 
   const medianRatio = median(flickRatios)

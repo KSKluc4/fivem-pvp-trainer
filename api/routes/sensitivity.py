@@ -1,3 +1,4 @@
+import math
 import traceback
 from flask import Blueprint, request, jsonify, g
 from utils import require_auth
@@ -9,6 +10,62 @@ from database import (
 sensitivity_bp = Blueprint('sensitivity', __name__)
 
 VALID_VERDICTS = {'aumentar', 'diminuir', 'manter', 'inconclusivo'}
+
+
+class _ValidationError(Exception):
+    """Raised by the _parse_* helpers below — caught once at each route's
+    top level and turned into a 400. Keeps update_sensitivity() and
+    submit_sens_calibration() sharing the exact same finiteness/range rules
+    (both accept a GTA sensitivity value) without duplicating the checks."""
+
+
+def _parse_gta_sens(value, field_label='Sensibilidade do GTA V'):
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        raise _ValidationError(f'{field_label} inválida.')
+    if not math.isfinite(v) or abs(v) > 100:
+        raise _ValidationError(f'{field_label} deve estar entre -100 e 100.')
+    return v
+
+
+def _parse_dpi(value, field_label='DPI'):
+    # Finiteness is checked via a float() pre-check (rather than int()
+    # itself) purely to turn `int(float('inf'))`'s OverflowError into the
+    # same clean _ValidationError as every other bad-input case below —
+    # the actual int() conversion afterwards still runs on the ORIGINAL
+    # value, so a non-integer numeric string ("800.5") is still rejected
+    # exactly as before, not silently truncated.
+    try:
+        finite_check = float(value)
+    except (TypeError, ValueError):
+        raise _ValidationError(f'{field_label} inválido.')
+    if not math.isfinite(finite_check):
+        raise _ValidationError(f'{field_label} deve ser um número positivo.')
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        raise _ValidationError(f'{field_label} inválido.')
+    if v <= 0:
+        raise _ValidationError(f'{field_label} deve ser um número positivo.')
+    return v
+
+
+def _optional_finite_float(data, key, field_label):
+    """Same leniency as before for a field that's simply missing/not a
+    number (returns None, doesn't fail the request) — but a value that DOES
+    parse must be finite, closing the same Infinity/NaN-breaks-JSON hole for
+    the optional metrics as for sens_at_test/dpi_at_test."""
+    value = data.get(key)
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(v):
+        raise _ValidationError(f'{field_label} inválido.')
+    return v
 
 # Community-validated yaw value (degrees/count per sensitivity unit).
 # Source: mouse-sensitivity.com — verified against community posts on
@@ -48,18 +105,10 @@ def update_sensitivity():
     data = request.get_json() or {}
 
     try:
-        gta_sens = float(data.get('gta_sensitivity'))
-    except (TypeError, ValueError):
-        return jsonify({'error': 'Sensibilidade do GTA V inválida.'}), 400
-    if abs(gta_sens) > 100:
-        return jsonify({'error': 'Sensibilidade do GTA V deve estar entre -100 e 100.'}), 400
-
-    try:
-        dpi = int(data.get('dpi'))
-    except (TypeError, ValueError):
-        return jsonify({'error': 'DPI inválido.'}), 400
-    if dpi <= 0:
-        return jsonify({'error': 'DPI deve ser um número positivo.'}), 400
+        gta_sens = _parse_gta_sens(data.get('gta_sensitivity'))
+        dpi = _parse_dpi(data.get('dpi'))
+    except _ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
 
     fine_tune = None
     if 'fine_tune_multiplier' in data:
@@ -99,33 +148,24 @@ def submit_sens_calibration():
     data = request.get_json() or {}
 
     try:
-        sens_at_test = float(data.get('sens_at_test'))
-        dpi_at_test = int(data.get('dpi_at_test'))
-    except (TypeError, ValueError):
-        return jsonify({'error': 'sens_at_test e dpi_at_test devem ser numéricos.'}), 400
+        sens_at_test = _parse_gta_sens(data.get('sens_at_test'), 'sens_at_test')
+        dpi_at_test = _parse_dpi(data.get('dpi_at_test'), 'dpi_at_test')
 
-    verdict = str(data.get('verdict', '')).strip()
-    if verdict not in VALID_VERDICTS:
-        return jsonify({'error': 'verdict inválido.'}), 400
+        verdict = str(data.get('verdict', '')).strip()
+        if verdict not in VALID_VERDICTS:
+            raise _ValidationError('verdict inválido.')
 
-    def _optional_float(key):
-        value = data.get(key)
-        if value is None:
-            return None
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return None
-
-    payload = {
-        'sens_at_test':       sens_at_test,
-        'dpi_at_test':        dpi_at_test,
-        'verdict':            verdict,
-        'flick_ratio_median': _optional_float('flick_ratio_median'),
-        'overshoot_rate':     _optional_float('overshoot_rate'),
-        'tracking_error':     _optional_float('tracking_error'),
-        'suggested_sens':     _optional_float('suggested_sens'),
-    }
+        payload = {
+            'sens_at_test':       sens_at_test,
+            'dpi_at_test':        dpi_at_test,
+            'verdict':            verdict,
+            'flick_ratio_median': _optional_finite_float(data, 'flick_ratio_median', 'flick_ratio_median'),
+            'overshoot_rate':     _optional_finite_float(data, 'overshoot_rate', 'overshoot_rate'),
+            'tracking_error':     _optional_finite_float(data, 'tracking_error', 'tracking_error'),
+            'suggested_sens':     _optional_finite_float(data, 'suggested_sens', 'suggested_sens'),
+        }
+    except _ValidationError as exc:
+        return jsonify({'error': str(exc)}), 400
 
     try:
         row = save_sens_calibration(g.user_id, payload)

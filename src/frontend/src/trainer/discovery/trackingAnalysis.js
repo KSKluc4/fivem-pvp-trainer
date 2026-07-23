@@ -16,7 +16,6 @@ const CROSS_NOISE_DEG = 0.3
 export class TrackingDiscoveryScorer {
   constructor() {
     this._errorSumDeg = 0
-    this._errorCount = 0
     this._totalMs = 0
     this._crossings = 0
     this._lastSign = null
@@ -24,10 +23,15 @@ export class TrackingDiscoveryScorer {
   }
 
   update(dtMs, angularErrorDeg, lateralOffsetDeg) {
-    this._errorSumDeg += angularErrorDeg
-    this._errorCount += 1
+    // Weighted by dtMs (the real time this sample represents), not just
+    // counted per-call — under uneven/low FPS, frames aren't evenly spaced,
+    // so an unweighted mean would skew toward whichever moments happened to
+    // render more frames rather than toward the actual time spent there.
+    // crossingsPerSecond already avoided this (it's a rate over _totalMs);
+    // avgErrorDeg/avgLagBiasDeg previously didn't.
+    this._errorSumDeg += angularErrorDeg * dtMs
     this._totalMs += dtMs
-    this._lagSumDeg += lateralOffsetDeg
+    this._lagSumDeg += lateralOffsetDeg * dtMs
 
     if (Math.abs(lateralOffsetDeg) >= CROSS_NOISE_DEG) {
       const sign = Math.sign(lateralOffsetDeg)
@@ -36,8 +40,12 @@ export class TrackingDiscoveryScorer {
     }
   }
 
+  get totalMs() {
+    return this._totalMs
+  }
+
   get avgErrorDeg() {
-    return this._errorCount > 0 ? this._errorSumDeg / this._errorCount : null
+    return this._totalMs > 0 ? this._errorSumDeg / this._totalMs : null
   }
 
   get crossingsPerSecond() {
@@ -48,6 +56,6 @@ export class TrackingDiscoveryScorer {
   // cancels out over the round) means the crosshair spent more time trailing
   // the target on one side than the other, i.e. lagging behind (sens too low).
   get avgLagBiasDeg() {
-    return this._errorCount > 0 ? this._lagSumDeg / this._errorCount : null
+    return this._totalMs > 0 ? this._lagSumDeg / this._totalMs : null
   }
 }

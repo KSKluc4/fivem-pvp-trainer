@@ -119,6 +119,87 @@ VALID_CALIBRATION = {
 }
 
 
+# ── Bug reproduction: non-finite/out-of-range values must never reach the DB ─
+#
+# Python's float()/the JSON parser both happily accept "Infinity"/"NaN" — with
+# no validation, that value gets stored, and the next GET /sensitivity/
+# calibrations for this user re-serializes it as a bare `Infinity`/`NaN`
+# token, which is NOT valid JSON and breaks a strict client-side JSON.parse
+# (e.g. the browser fetch in useSensCalibrations.js) — permanently, until the
+# row is deleted by hand. This must be rejected with 400 at submit time,
+# exactly like update_sensitivity() already rejects out-of-range gta_sens/dpi.
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_non_finite_sens_so_history_can_never_break(mock_save):
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, sens_at_test=float('inf'))
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_nan_dpi(mock_save):
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, dpi_at_test=float('nan'))
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_non_finite_optional_metric(mock_save):
+    # A metric field parses fine as a number but is +-Infinity/NaN — same
+    # JSON-breaking risk as sens_at_test/dpi_at_test, must 400 too.
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, suggested_sens=float('nan'))
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+# ── Item 4: absurd-but-finite sens_at_test/dpi_at_test must 400 too ─────────
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_out_of_range_sens(mock_save):
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, sens_at_test=99999)
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_non_positive_dpi(mock_save):
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, dpi_at_test=0)
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+# ── update_sensitivity() shares the same helpers — NaN must 400 there too ───
+# (previously `abs(float('nan')) > 100` was False, so NaN silently passed)
+
+@patch('routes.sensitivity.update_user_sensitivity')
+def test_update_sensitivity_rejects_nan(mock_update):
+    client = make_client()
+
+    res = client.put('/api/sensitivity', json={'gta_sensitivity': float('nan'), 'dpi': 800}, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_update.assert_not_called()
+
+
 @patch('routes.sensitivity.save_sens_calibration')
 def test_submit_calibration_saves_valid_payload(mock_save):
     mock_save.return_value = {'id': 1, **VALID_CALIBRATION}
