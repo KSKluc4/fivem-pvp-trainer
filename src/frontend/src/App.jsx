@@ -18,6 +18,7 @@ import Profile          from './components/Profile'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
 import TrainerView      from './trainer/TrainerView'
+import DiscoverySensitivityFlow from './trainer/discovery/DiscoverySensitivityFlow'
 import { syncTrainerSensFromServer } from './trainer/sensitivity/trainerSensitivity'
 
 const SIDEBAR_COLLAPSED_KEY = 'pvp_sidebar_collapsed'
@@ -265,6 +266,15 @@ export default function App() {
                 setPendingCompletion(exerciseName)
                 setView('routine')
               }}
+              onDescobrirSensibilidade={() => setView('descobrir_sensibilidade')}
+            />
+          )}
+
+          {view === 'descobrir_sensibilidade' && (
+            <DiscoverySensitivityFlow
+              key="descobrir_sensibilidade"
+              onBack={() => setView('routine')}
+              onNeedsSensSetup={() => setView('sensibilidade')}
             />
           )}
 
@@ -281,6 +291,7 @@ export default function App() {
             <Sensitivity
               key="sensibilidade"
               onBack={() => setView('routine')}
+              onDescobrirSensibilidade={() => setView('descobrir_sensibilidade')}
             />
           )}
 

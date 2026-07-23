@@ -1,8 +1,14 @@
+import traceback
 from flask import Blueprint, request, jsonify, g
 from utils import require_auth
-from database import update_user_sensitivity
+from database import (
+    update_user_sensitivity,
+    save_sens_calibration, get_sens_calibrations, mark_sens_calibration_applied,
+)
 
 sensitivity_bp = Blueprint('sensitivity', __name__)
+
+VALID_VERDICTS = {'aumentar', 'diminuir', 'manter', 'inconclusivo'}
 
 # Community-validated yaw value (degrees/count per sensitivity unit).
 # Source: mouse-sensitivity.com — verified against community posts on
@@ -77,3 +83,78 @@ def update_sensitivity():
         'fine_tune_multiplier': updated.get('fine_tune_multiplier') if updated.get('fine_tune_multiplier') is not None else 1.0,
         'cm_per_360':           round(_cm_per_360(gta_sens, dpi), 4),
     })
+
+
+# ── Sensitivity discovery test — calibration history (migration v11) ────────
+#
+# The sens_calibrations table may not exist yet on a freshly-deployed backend
+# (the SQL is applied manually, after deploy) — every handler below degrades
+# gracefully instead of 500ing: POST/PATCH return 503 with a clear message,
+# GET returns an empty list, exactly like /trainer/scores already does for
+# the same reason.
+
+@sensitivity_bp.route('/sensitivity/calibrations', methods=['POST'])
+@require_auth
+def submit_sens_calibration():
+    data = request.get_json() or {}
+
+    try:
+        sens_at_test = float(data.get('sens_at_test'))
+        dpi_at_test = int(data.get('dpi_at_test'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'sens_at_test e dpi_at_test devem ser numéricos.'}), 400
+
+    verdict = str(data.get('verdict', '')).strip()
+    if verdict not in VALID_VERDICTS:
+        return jsonify({'error': 'verdict inválido.'}), 400
+
+    def _optional_float(key):
+        value = data.get(key)
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    payload = {
+        'sens_at_test':       sens_at_test,
+        'dpi_at_test':        dpi_at_test,
+        'verdict':            verdict,
+        'flick_ratio_median': _optional_float('flick_ratio_median'),
+        'overshoot_rate':     _optional_float('overshoot_rate'),
+        'tracking_error':     _optional_float('tracking_error'),
+        'suggested_sens':     _optional_float('suggested_sens'),
+    }
+
+    try:
+        row = save_sens_calibration(g.user_id, payload)
+    except Exception:
+        traceback.print_exc()
+        return jsonify({'error': 'Não foi possível salvar o resultado agora — o histórico pode ainda não estar disponível.'}), 503
+
+    return jsonify(row), 201
+
+
+@sensitivity_bp.route('/sensitivity/calibrations', methods=['GET'])
+@require_auth
+def list_sens_calibrations():
+    try:
+        rows = get_sens_calibrations(g.user_id)
+        return jsonify(rows), 200
+    except Exception:
+        traceback.print_exc()
+        return jsonify({'error': 'Histórico de calibração indisponível no momento.'}), 503
+
+
+@sensitivity_bp.route('/sensitivity/calibrations/<int:calibration_id>/applied', methods=['PATCH'])
+@require_auth
+def apply_sens_calibration(calibration_id):
+    try:
+        updated = mark_sens_calibration_applied(g.user_id, calibration_id)
+    except Exception:
+        traceback.print_exc()
+        return jsonify({'error': 'Histórico de calibração indisponível no momento.'}), 503
+    if not updated:
+        return jsonify({'error': 'Calibração não encontrada.'}), 404
+    return jsonify(updated), 200

@@ -292,6 +292,49 @@ def get_trainer_scores(user_id: int, exercise: str = None, limit: int = 50):
     return res.data or []
 
 
+# ── Sensitivity discovery calibrations (migration v11) ────────────────────────
+#
+# Callers must catch the exception these raise when migration v11 hasn't run
+# yet on a freshly-deployed backend (the user applies the SQL manually,
+# after deploy) — see routes/sensitivity.py for the graceful degradation.
+
+def save_sens_calibration(user_id: int, data: dict):
+    sb = get_supabase()
+    res = sb.table('sens_calibrations').insert({
+        'user_id':            user_id,
+        'sens_at_test':       data['sens_at_test'],
+        'dpi_at_test':        data['dpi_at_test'],
+        'flick_ratio_median': data.get('flick_ratio_median'),
+        'overshoot_rate':     data.get('overshoot_rate'),
+        'tracking_error':     data.get('tracking_error'),
+        'verdict':            data['verdict'],
+        'suggested_sens':     data.get('suggested_sens'),
+    }).execute()
+    return res.data[0] if res.data else None
+
+
+def get_sens_calibrations(user_id: int, limit: int = 10):
+    sb = get_supabase()
+    res = (sb.table('sens_calibrations')
+             .select('id,sens_at_test,dpi_at_test,flick_ratio_median,overshoot_rate,'
+                     'tracking_error,verdict,suggested_sens,applied,created_at')
+             .eq('user_id', user_id)
+             .order('created_at', desc=True)
+             .limit(limit)
+             .execute())
+    return res.data or []
+
+
+def mark_sens_calibration_applied(user_id: int, calibration_id: int):
+    sb = get_supabase()
+    res = (sb.table('sens_calibrations')
+             .update({'applied': True})
+             .eq('id', calibration_id)
+             .eq('user_id', user_id)
+             .execute())
+    return res.data[0] if res.data else None
+
+
 # ── Adaptive mata-mata level ──────────────────────────────────────────────────
 #
 # The `goals` table itself is no longer written to (the Metas feature was

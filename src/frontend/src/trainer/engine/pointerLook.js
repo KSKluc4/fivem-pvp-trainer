@@ -8,7 +8,15 @@ const PITCH_LIMIT = Math.PI / 2 - 0.01 // just under 90° — avoids gimbal flip
 
 // getDegPerCount is a function (not a fixed number) so a live fine-tune
 // slider can change sensitivity mid-session without re-attaching listeners.
-export function createPointerLook(camera, { getDegPerCount } = {}) {
+//
+// onSample is an optional zero-arg callback fired after camera.rotation is
+// updated on every mousemove event — added so the sensitivity-discovery
+// test can sample the camera's actual orientation at native mouse-event
+// resolution (higher than the render loop's frame rate) for its flick/
+// tracking instrumentation. It never changes what gets written to
+// camera.rotation, so every existing caller that omits it behaves
+// byte-for-byte as before.
+export function createPointerLook(camera, { getDegPerCount, onSample } = {}) {
   let yaw   = 0
   let pitch = 0
 
@@ -21,6 +29,8 @@ export function createPointerLook(camera, { getDegPerCount } = {}) {
 
     camera.rotation.x = pitch
     camera.rotation.y = yaw
+
+    if (onSample) onSample()
   }
 
   function attach() {

@@ -96,6 +96,11 @@ export const saveProgress        = (data)   => api.post('/progress', data)
 // ── Sensitivity — single profile-wide source, shared with the trainer ────────
 export const updateSensitivity = (data) => api.put('/sensitivity', data)
 
+// ── Sensitivity discovery test — calibration history ─────────────────────────
+export const saveSensCalibration  = (data) => api.post('/sensitivity/calibrations', data)
+export const getSensCalibrations  = () => api.get('/sensitivity/calibrations')
+export const applySensCalibration = (id) => api.patch(`/sensitivity/calibrations/${id}/applied`)
+
 // ── Profile ───────────────────────────────────────────────────────────────────
 export const updateBio    = (bio) => api.patch('/profile', { bio })
 export const deleteAvatar = ()    => api.delete('/profile/avatar')

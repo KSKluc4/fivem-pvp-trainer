@@ -4,7 +4,7 @@ import {
   RingProgress, ThemeIcon, Divider,
 } from '@mantine/core'
 import {
-  IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconAdjustments, IconChartLine,
+  IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconAdjustments, IconChartLine, IconCompass,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import ExercisePlayer from './ExercisePlayer'
@@ -41,7 +41,7 @@ function bestScoreFor(scores) {
 // level header, and an optional `initialHint` (exercise + difficulty, plus
 // optionally rounds + exerciseName) that skips straight to ExercisePlayer —
 // used by the daily routine's per-card "Treinar" deep-link.
-export default function TrainerView({ onBack, initialHint = null, onRoutineComplete }) {
+export default function TrainerView({ onBack, initialHint = null, onRoutineComplete, onDescobrirSensibilidade }) {
   const { t } = useTranslation()
   const { scoresByExercise, loading } = useAllTrainerScores()
   const [selection, setSelection] = useState(
@@ -121,6 +121,21 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
           />
         </Group>
       </Card>
+
+      {/* ── Sensitivity discovery — a guided diagnostic test, not a scored drill ── */}
+      {onDescobrirSensibilidade && (
+        <Card p="xl" mb="xl" className="trainer-select-card" onClick={onDescobrirSensibilidade} style={{ cursor: 'pointer' }}>
+          <Group gap="md" wrap="nowrap" align="flex-start">
+            <ThemeIcon size={44} radius="md" variant="light" color="brandCyan">
+              <IconCompass size={24} />
+            </ThemeIcon>
+            <Box style={{ minWidth: 0, flex: 1 }}>
+              <Text fw={600} size="lg">{t('sensibilidade.descoberta.card_titulo')}</Text>
+              <Text size="sm" c="dimmed" lh={1.5}>{t('sensibilidade.descoberta.card_descricao')}</Text>
+            </Box>
+          </Group>
+        </Card>
+      )}
 
       {/* ── Drill selection ── */}
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">

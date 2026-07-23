@@ -108,3 +108,145 @@ def test_requires_auth():
     client = make_client()
     res = client.put('/api/sensitivity', json={'gta_sensitivity': 50, 'dpi': 800})
     assert res.status_code == 401
+
+
+# ── Sensitivity discovery — POST /sensitivity/calibrations ──────────────────
+
+VALID_CALIBRATION = {
+    'sens_at_test': 50, 'dpi_at_test': 800, 'verdict': 'diminuir',
+    'flick_ratio_median': 1.15, 'overshoot_rate': 80.0,
+    'tracking_error': 3.2, 'suggested_sens': 40,
+}
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_saves_valid_payload(mock_save):
+    mock_save.return_value = {'id': 1, **VALID_CALIBRATION}
+    client = make_client()
+
+    res = client.post('/api/sensitivity/calibrations', json=VALID_CALIBRATION, headers=auth_headers())
+
+    assert res.status_code == 201
+    mock_save.assert_called_once()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_accepts_null_optional_metrics(mock_save):
+    # An "inconclusivo" verdict has no suggested_sens/ratio at all.
+    mock_save.return_value = {'id': 2, 'verdict': 'inconclusivo'}
+    client = make_client()
+    payload = {'sens_at_test': 50, 'dpi_at_test': 800, 'verdict': 'inconclusivo'}
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 201
+    mock_save.assert_called_once()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_invalid_verdict(mock_save):
+    client = make_client()
+    payload = dict(VALID_CALIBRATION, verdict='invalido')
+
+    res = client.post('/api/sensitivity/calibrations', json=payload, headers=auth_headers())
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_rejects_non_numeric_sens_or_dpi(mock_save):
+    client = make_client()
+
+    res = client.post(
+        '/api/sensitivity/calibrations',
+        json=dict(VALID_CALIBRATION, sens_at_test='not-a-number'),
+        headers=auth_headers(),
+    )
+
+    assert res.status_code == 400
+    mock_save.assert_not_called()
+
+
+def test_submit_calibration_requires_auth():
+    client = make_client()
+    res = client.post('/api/sensitivity/calibrations', json=VALID_CALIBRATION)
+    assert res.status_code == 401
+
+
+@patch('routes.sensitivity.save_sens_calibration')
+def test_submit_calibration_degrades_gracefully_when_migration_not_applied(mock_save):
+    mock_save.side_effect = Exception('relation "sens_calibrations" does not exist')
+    client = make_client()
+
+    res = client.post('/api/sensitivity/calibrations', json=VALID_CALIBRATION, headers=auth_headers())
+
+    assert res.status_code == 503
+
+
+# ── GET /sensitivity/calibrations ────────────────────────────────────────────
+
+@patch('routes.sensitivity.get_sens_calibrations')
+def test_list_calibrations_returns_history(mock_get):
+    mock_get.return_value = [{'id': 1, **VALID_CALIBRATION, 'applied': False}]
+    client = make_client()
+
+    res = client.get('/api/sensitivity/calibrations', headers=auth_headers())
+
+    assert res.status_code == 200
+    mock_get.assert_called_once_with(7)
+
+
+@patch('routes.sensitivity.get_sens_calibrations')
+def test_list_calibrations_degrades_gracefully_when_migration_not_applied(mock_get):
+    mock_get.side_effect = Exception('relation "sens_calibrations" does not exist')
+    client = make_client()
+
+    res = client.get('/api/sensitivity/calibrations', headers=auth_headers())
+
+    assert res.status_code == 503
+
+
+def test_list_calibrations_requires_auth():
+    client = make_client()
+    res = client.get('/api/sensitivity/calibrations')
+    assert res.status_code == 401
+
+
+# ── PATCH /sensitivity/calibrations/<id>/applied ─────────────────────────────
+
+@patch('routes.sensitivity.mark_sens_calibration_applied')
+def test_apply_calibration_marks_applied(mock_mark):
+    mock_mark.return_value = {'id': 1, 'applied': True}
+    client = make_client()
+
+    res = client.patch('/api/sensitivity/calibrations/1/applied', headers=auth_headers())
+
+    assert res.status_code == 200
+    mock_mark.assert_called_once_with(7, 1)
+
+
+@patch('routes.sensitivity.mark_sens_calibration_applied')
+def test_apply_calibration_404_when_not_found(mock_mark):
+    mock_mark.return_value = None
+    client = make_client()
+
+    res = client.patch('/api/sensitivity/calibrations/999/applied', headers=auth_headers())
+
+    assert res.status_code == 404
+
+
+@patch('routes.sensitivity.mark_sens_calibration_applied')
+def test_apply_calibration_degrades_gracefully_when_migration_not_applied(mock_mark):
+    mock_mark.side_effect = Exception('relation "sens_calibrations" does not exist')
+    client = make_client()
+
+    res = client.patch('/api/sensitivity/calibrations/1/applied', headers=auth_headers())
+
+    assert res.status_code == 503
+
+
+def test_apply_calibration_requires_auth():
+    client = make_client()
+    res = client.patch('/api/sensitivity/calibrations/1/applied')
+    assert res.status_code == 401

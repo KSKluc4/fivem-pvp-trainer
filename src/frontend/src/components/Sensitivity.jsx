@@ -3,7 +3,7 @@ import {
   Box, Grid, Card, Group, Stack, Text, Title, Button, NumberInput, Badge,
   CopyButton, Tooltip, ActionIcon, Collapse, Code,
 } from '@mantine/core'
-import { IconArrowLeft, IconTarget, IconRulerMeasure, IconCopy, IconCheck, IconChevronDown } from '@tabler/icons-react'
+import { IconArrowLeft, IconTarget, IconRulerMeasure, IconCopy, IconCheck, IconChevronDown, IconCompass } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { calcLocal } from '../services/sensitivityMath'
 import { zoneForCm } from '../services/sensitivityZones'
@@ -46,7 +46,7 @@ function CopyChip({ value }) {
 // The -100..+100 slider is a continuous speed dial (negative = slower,
 // positive = faster) — there is no "inverted axis" concept, see
 // services/sensitivityMath.js for the corrected, strictly-monotonic math.
-export default function Sensitivity({ onBack }) {
+export default function Sensitivity({ onBack, onDescobrirSensibilidade }) {
   const { t } = useTranslation()
   const [gtaSens, setGtaSens] = useState(50)
   const [dpi,     setDpi]     = useState(800)
@@ -103,6 +103,23 @@ export default function Sensitivity({ onBack }) {
           {t('sensibilidade.voltar_ao_treino')}
         </Button>
       </Group>
+
+      {onDescobrirSensibilidade && (
+        <Card mb="lg" style={{ background: 'var(--bg-card-hover)' }}>
+          <Group justify="space-between" wrap="wrap" gap="md">
+            <Group gap={10}>
+              <IconCompass size={22} color="var(--mantine-color-brandCyan-5)" />
+              <Box>
+                <Text fw={700} size="sm">{t('sensibilidade.descoberta.card_titulo')}</Text>
+                <Text size="xs" c="dimmed">{t('sensibilidade.descoberta.card_descricao')}</Text>
+              </Box>
+            </Group>
+            <Button size="sm" onClick={onDescobrirSensibilidade}>
+              {t('sensibilidade.descoberta.card_botao')}
+            </Button>
+          </Group>
+        </Card>
+      )}
 
       <Grid>
         {/* ── Input panel ── */}
