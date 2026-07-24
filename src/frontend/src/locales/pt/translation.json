@@ -438,6 +438,12 @@
       "ajuste_fino_desc": "Multiplica a sensibilidade convertida — use se precisar de um pequeno ajuste sem mexer no GTA V.",
       "salvar_continuar": "Salvar e continuar",
       "preview_label": "Prévia ao vivo — mova o mouse aqui"
+    },
+    "imersao": {
+      "titulo": "Imersão do treino",
+      "volume": "Volume dos sons",
+      "sons_treino": "Sons do treino",
+      "mostrar_arma": "Mostrar arma"
     }
   },
   "dashboard": {

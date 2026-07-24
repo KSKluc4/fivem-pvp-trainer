@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createArenaScene } from './scene'
 import { createLoop } from './loop'
 import { createPointerLook } from './pointerLook'
+import { createViewmodelWeapon } from './viewmodelWeapon'
+import { initTrainerAudio } from '../audio/trainerAudio'
+import { loadTrainerAudioSettings } from '../audio/trainerAudioSettings'
 
 // Shared mount-once engine plumbing behind both ExercisePlayer and
 // DiscoveryPlayer: canvas/renderer/scene/camera lifecycle, resize, the
@@ -61,6 +64,13 @@ export function useTrainerEngine({
     const { renderer, scene, camera, resize, dispose } = createArenaScene(canvas)
     const pointerLook = createPointerLook(camera, { getDegPerCount, onSample: onPointerSample })
 
+    // Static viewmodel weapon — a camera child so it inherits rotation for
+    // free, no per-frame code. "Mostrar arma" is read once here (settings
+    // only change from the drill-selection screen, before a session starts).
+    const weapon = createViewmodelWeapon()
+    weapon.setVisible(loadTrainerAudioSettings().showWeapon)
+    camera.add(weapon.group)
+
     function handleResize() {
       const el = containerRef.current
       if (el) resize(el.clientWidth, el.clientHeight)
@@ -72,6 +82,10 @@ export function useTrainerEngine({
       const locked = document.pointerLockElement === canvas
       if (locked) {
         pointerLook.attach()
+        // The click that just acquired pointer lock is a genuine user
+        // gesture — the only reliable place to create/resume the shared
+        // AudioContext (autoplay policies block it otherwise).
+        initTrainerAudio()
         if (startPhases.includes(phaseRef.current)) onStartRef.current()
         else if (phaseRef.current === 'paused') resumeFromPauseRef.current()
       } else {
@@ -102,6 +116,10 @@ export function useTrainerEngine({
       // still safely read engineRef.current.scene (e.g. to dispose its own
       // target mesh) — see ExercisePlayer/DiscoveryPlayer.
       onUnmountRef.current?.()
+      // No separate weapon.dispose() call needed — the camera (and the
+      // weapon parented to it) is now part of the scene graph (see
+      // scene.js), so dispose()'s scene.traverse already frees its
+      // geometries/materials.
       dispose()
       engineRef.current = null
     }

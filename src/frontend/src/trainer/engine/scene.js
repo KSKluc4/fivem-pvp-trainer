@@ -34,6 +34,12 @@ export function createArenaScene(canvas, { antialias = false } = {}) {
   const camera = new THREE.PerspectiveCamera(90, 1, 0.05, 100)
   camera.position.set(0, 1.7, 0)
   camera.rotation.order = 'YXZ'
+  // The camera must be part of the scene graph, not just passed to
+  // renderer.render() — otherwise objects parented to it (e.g. the
+  // viewmodel weapon, so it inherits rotation for free) are never
+  // traversed/rendered. Scene has no transform of its own, so this doesn't
+  // change the camera's effective position/rotation at all.
+  scene.add(camera)
 
   // Floor
   const floor = new THREE.Mesh(

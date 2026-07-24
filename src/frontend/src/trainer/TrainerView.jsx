@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import {
   Container, Box, Group, Stack, Title, Text, Button, Card, SimpleGrid, Badge,
-  RingProgress, ThemeIcon, Divider,
+  RingProgress, ThemeIcon, Divider, Slider, Switch,
 } from '@mantine/core'
 import {
   IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconAdjustments, IconChartLine, IconCompass,
+  IconVolume2,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import ExercisePlayer from './ExercisePlayer'
 import { useAllTrainerScores } from './useAllTrainerScores'
 import { EXERCISE_IDS } from './scenarios/index.js'
 import { exerciseAimLevel, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
+import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
+import { setTrainerAudioVolume } from './audio/trainerAudio.js'
 import './trainer.css'
 
 const EXERCISE_ICONS = {
@@ -47,6 +50,13 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
   const [selection, setSelection] = useState(
     initialHint?.exercise ? { exercise: initialHint.exercise, difficulty: initialHint.difficulty } : null,
   )
+  const [audioSettings, setAudioSettings] = useState(() => loadTrainerAudioSettings())
+
+  const updateAudioSettings = (patch) => {
+    const merged = saveTrainerAudioSettings(patch)
+    setAudioSettings(merged)
+    if (patch.volume != null) setTrainerAudioVolume(merged.volume)
+  }
 
   if (selection) {
     // Only a routine deep-link (initialHint) carries `rounds`/`exerciseName`
@@ -120,6 +130,44 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
             }
           />
         </Group>
+      </Card>
+
+      {/* ── Immersion settings — weapon viewmodel + drill sound effects ── */}
+      <Card p="xl" mb="xl">
+        <Group gap="md" mb="md" wrap="nowrap">
+          <ThemeIcon size={44} radius="md" variant="light" color="brandCyan">
+            <IconVolume2 size={24} />
+          </ThemeIcon>
+          <Box style={{ minWidth: 0, flex: 1 }}>
+            <Text fw={600} size="lg">{t('trainer.imersao.titulo')}</Text>
+          </Box>
+        </Group>
+        <Stack gap="md">
+          <Box>
+            <Group justify="space-between" mb={4}>
+              <Text size="sm">{t('trainer.imersao.volume')}</Text>
+              <Text size="xs" c="dimmed">{audioSettings.volume}%</Text>
+            </Group>
+            <Slider
+              min={0}
+              max={100}
+              step={1}
+              value={audioSettings.volume}
+              onChange={(v) => updateAudioSettings({ volume: v })}
+              label={(v) => `${v}%`}
+            />
+          </Box>
+          <Switch
+            label={t('trainer.imersao.sons_treino')}
+            checked={audioSettings.sfxEnabled}
+            onChange={(e) => updateAudioSettings({ sfxEnabled: e.currentTarget.checked })}
+          />
+          <Switch
+            label={t('trainer.imersao.mostrar_arma')}
+            checked={audioSettings.showWeapon}
+            onChange={(e) => updateAudioSettings({ showWeapon: e.currentTarget.checked })}
+          />
+        </Stack>
       </Card>
 
       {/* ── Sensitivity discovery — a guided diagnostic test, not a scored drill ── */}

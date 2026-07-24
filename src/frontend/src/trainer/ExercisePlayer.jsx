@@ -10,6 +10,7 @@ import Hud from './hud/Hud'
 import ResultsScreen from './hud/ResultsScreen'
 import SensitivitySetup from './sensitivity/SensitivitySetup'
 import { loadTrainerSensSettings, effectiveDegPerCount } from './sensitivity/trainerSensitivity'
+import { playShoot, playHit, playOnTargetTick } from './audio/trainerAudio'
 import { useTrainerScores } from './useTrainerScores'
 import './trainer.css'
 
@@ -61,6 +62,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     scorerRef.current  = scenario.createScorer()
     elapsedRef.current = 0
     finishedRef.current = false
+    wasOnTargetRef.current = false
     setHud({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
     setCountdownN(3)
     setPhase('countdown')
@@ -119,7 +121,13 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
         targetRef.current.update(dt)
         raycaster.setFromCamera(CENTER_NDC, engine.camera)
         const hit = raycaster.intersectObject(targetRef.current.mesh, false)
-        scorerRef.current.update(dt * 1000, hit.length > 0)
+        const isOnTarget = hit.length > 0
+        // Edge-triggered — a subtle cue on entering the target, not a
+        // continuous tone. Off by default (trainerAudioSettings), no UI
+        // toggle yet — playOnTargetTick() itself checks the setting.
+        if (isOnTarget && !wasOnTargetRef.current) playOnTargetTick()
+        wasOnTargetRef.current = isOnTarget
+        scorerRef.current.update(dt * 1000, isOnTarget)
       } else {
         targetRef.current.update(dt * 1000)
         const cfg = scenario.difficulties[difficultyRef.current] || {}
@@ -144,6 +152,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
   // click-to-hit ('click' mode) hit-tests — created once, same as before.
   const frameRaycasterRef = useRef(null)
   if (!frameRaycasterRef.current) frameRaycasterRef.current = new THREE.Raycaster()
+  const wasOnTargetRef = useRef(false)
 
   const onStart = startCountdown
 
@@ -185,6 +194,8 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
       raycaster.setFromCamera(CENTER_NDC, engine.camera)
       const hit = raycaster.intersectObject(targetRef.current.mesh, false)
       const isHit = hit.length > 0
+      playShoot()
+      if (isHit) playHit()
       scorerRef.current.registerShot(isHit, targetRef.current.timeAliveMs)
       if (isHit) targetRef.current.respawn()
       setHud((h) => ({ ...h, score: scorerRef.current.score, accuracyPct: scorerRef.current.accuracyPct }))

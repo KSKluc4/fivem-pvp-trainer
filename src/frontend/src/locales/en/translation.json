@@ -438,6 +438,12 @@
       "ajuste_fino_desc": "Multiplies the converted sensitivity — use this for a small adjustment without touching GTA V.",
       "salvar_continuar": "Save and continue",
       "preview_label": "Live preview — move the mouse here"
+    },
+    "imersao": {
+      "titulo": "Training immersion",
+      "volume": "Sound volume",
+      "sons_treino": "Drill sounds",
+      "mostrar_arma": "Show weapon"
     }
   },
   "dashboard": {
