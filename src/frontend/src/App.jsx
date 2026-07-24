@@ -12,6 +12,7 @@ import ForgotPasswordForm from './components/ForgotPasswordForm'
 import EmailPromptModal from './components/EmailPromptModal'
 import Questionnaire    from './components/Questionnaire'
 import TrainingRoutine  from './components/TrainingRoutine'
+import HistoricoPerfis  from './components/HistoricoPerfis'
 import Progress         from './components/Progress'
 import Sensitivity      from './components/Sensitivity'
 import Profile          from './components/Profile'
@@ -249,10 +250,19 @@ export default function App() {
               username={user?.name || ''}
               onViewProgress={() => setView('progress')}
               onChangeProfile={handleChangeProfile}
+              onHistoricoPerfis={() => setView('historico_perfis')}
               onSensibilidade={() => setView('sensibilidade')}
               onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
               pendingCompletion={pendingCompletion}
               onPendingCompletionConsumed={() => setPendingCompletion(null)}
+            />
+          )}
+
+          {view === 'historico_perfis' && (
+            <HistoricoPerfis
+              key="historico_perfis"
+              onBack={() => setView('routine')}
+              onReactivated={handleQuestionnaireComplete}
             />
           )}
 

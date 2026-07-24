@@ -93,6 +93,16 @@ export const getTraining         = (userId) => api.get(`/training/${userId}`)
 export const getProgress         = (userId) => api.get(`/progress/${userId}`)
 export const saveProgress        = (data)   => api.post('/progress', data)
 
+// ── Training profile history (SPEC-006) ──────────────────────────────────────
+export const getQuestionnaireHistory = (page = 1, pageSize = 10) =>
+  api.get('/questionnaire/history', { params: { page, page_size: pageSize } })
+export const reactivateProfile = (profileId) => api.post(`/questionnaire/history/${profileId}/reactivate`)
+
+// ── Dashboard additions (SPEC-006) ────────────────────────────────────────────
+export const getActionLevel    = (userId)          => api.get(`/progress/${userId}/action-level`)
+export const getActivityHeatmap = (userId, days = 90) =>
+  api.get(`/progress/${userId}/heatmap`, { params: { days } })
+
 // ── Sensitivity — single profile-wide source, shared with the trainer ────────
 export const updateSensitivity = (data) => api.put('/sensitivity', data)
 

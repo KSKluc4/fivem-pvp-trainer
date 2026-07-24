@@ -1,18 +1,26 @@
 import { useState, useEffect } from 'react'
 import {
   Box, Group, Stack, Title, Text, Button, Card, Paper, Badge, Progress as MProgress,
-  SimpleGrid, Skeleton, Grid, SegmentedControl,
+  SimpleGrid, Skeleton, Grid, SegmentedControl, Tooltip,
 } from '@mantine/core'
 import { BarChart, LineChart } from '@mantine/charts'
 import {
   IconArrowLeft, IconCalendar, IconFlame, IconClipboardList, IconCircleCheck,
   IconChartPie, IconTrendingUp, IconMedal, IconArchive, IconTargetArrow,
+  IconTrophy, IconSwords, IconLayoutGrid,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import { getProgress } from '../services/api'
+import { getProgress, getActionLevel, getActivityHeatmap } from '../services/api'
 import { useAllTrainerScores } from '../trainer/useAllTrainerScores'
 import { EXERCISE_IDS } from '../trainer/scenarios/index.js'
 import { exerciseAimLevel, overallAimLevel } from '../trainer/aimLevel.js'
+
+const HEATMAP_DAYS = 90
+const HEATMAP_COLORS = {
+  none:     'var(--mantine-color-dark-4)',
+  partial:  'var(--mantine-color-orange-5)',
+  complete: 'var(--mantine-color-green-6)',
+}
 
 const DAY_KEYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab']
 
@@ -31,12 +39,30 @@ export default function Progress({ userId, username, onBack }) {
   const [loading, setLoading] = useState(true)
   const { scoresByExercise, loading: aimLoading } = useAllTrainerScores()
   const [selectedExercise, setSelectedExercise] = useState(EXERCISE_IDS[0])
+  const [actionLevel, setActionLevel]   = useState(null)
+  const [actionLevelLoading, setActionLevelLoading] = useState(true)
+  const [heatmap, setHeatmap]           = useState([])
+  const [heatmapLoading, setHeatmapLoading] = useState(true)
 
   useEffect(() => {
     getProgress(userId)
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    getActionLevel(userId)
+      .then((res) => setActionLevel(res.data))
+      .catch(() => setActionLevel(null))
+      .finally(() => setActionLevelLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    getActivityHeatmap(userId, HEATMAP_DAYS)
+      .then((res) => setHeatmap(res.data))
+      .catch(() => setHeatmap([]))
+      .finally(() => setHeatmapLoading(false))
   }, [userId])
 
   if (loading) {
@@ -152,6 +178,15 @@ export default function Progress({ userId, username, onBack }) {
         selectedExercise={selectedExercise}
         onSelectExercise={setSelectedExercise}
       />
+
+      {/* ── Recordes ── */}
+      <RecordesSection t={t} scoresByExercise={scoresByExercise} loading={aimLoading} />
+
+      {/* ── Nível de mata-mata ── */}
+      <NivelMataMataSection t={t} actionLevel={actionLevel} loading={actionLevelLoading} />
+
+      {/* ── Mapa de atividade ── */}
+      <ActivityHeatmapSection t={t} entries={heatmap} loading={heatmapLoading} />
 
       {/* ── Completion Rate Bar ── */}
       {total > 0 && (
@@ -333,6 +368,156 @@ function AimProgressSection({ t, scoresByExercise, loading, selectedExercise, on
   )
 }
 
+// ── SPEC-006: Recordes ────────────────────────────────────────────────────────
+// Reuses the same scoresByExercise data (up to 50 most recent scores per
+// drill) the Aim Progress card above already fetches — same best-of-window
+// limitation that card's own "recorde" already has, not a new one.
+function RecordesSection({ t, scoresByExercise, loading }) {
+  return (
+    <Card mb="lg">
+      <Group gap={6} mb="md">
+        <IconTrophy size={18} color="var(--mantine-color-orange-5)" />
+        <Text fw={700} size="sm">{t('dashboard.recordes.titulo')}</Text>
+      </Group>
+      {loading ? (
+        <Skeleton height={80} />
+      ) : (
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+          {EXERCISE_IDS.map((id) => {
+            const scores = scoresByExercise[id] || []
+            const best = scores.reduce((b, s) => (b == null || s.score > b ? s.score : b), null)
+            return (
+              <Paper key={id} p="sm" ta="center" withBorder>
+                <Text size="xs" c="dimmed">{t(`trainer.exercicios.${id}.nome`)}</Text>
+                <Text fw={900} size="1.2rem" c="brandCyan">{best ?? '—'}</Text>
+                {best == null && <Text size="xs" c="dimmed">{t('trainer.card.sem_tentativas')}</Text>}
+              </Paper>
+            )
+          })}
+        </SimpleGrid>
+      )}
+    </Card>
+  )
+}
+
+// ── SPEC-006: Nível de mata-mata ──────────────────────────────────────────────
+function NivelMataMataSection({ t, actionLevel, loading }) {
+  return (
+    <Card mb="lg">
+      <Group gap={6} mb="md">
+        <IconSwords size={18} color="var(--mantine-color-brandPurple-5)" />
+        <Text fw={700} size="sm">{t('dashboard.nivel_matamata.titulo')}</Text>
+      </Group>
+      {loading ? (
+        <Skeleton height={60} />
+      ) : !actionLevel ? (
+        <Text size="sm" c="dimmed" fs="italic">{t('dashboard.nivel_matamata.vazio')}</Text>
+      ) : (
+        <>
+          <Group gap="xl">
+            <Box>
+              <Text c="dimmed" size="xs">{t('dashboard.nivel_matamata.nivel')}</Text>
+              <Text fw={900} size="1.4rem" c="brandPurple">{actionLevel.level}</Text>
+            </Box>
+            <Box>
+              <Text c="dimmed" size="xs">{t('dashboard.nivel_matamata.cota')}</Text>
+              <Text fw={900} size="1.4rem">{actionLevel.quota}</Text>
+            </Box>
+          </Group>
+          {actionLevel.direction && (
+            <Text size="xs" c={actionLevel.direction === 'up' ? 'green' : 'red'} mt={6}>
+              {t(`dashboard.nivel_matamata.${actionLevel.direction}`, { date: formatTimestamp(actionLevel.changed_at) })}
+            </Text>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
+// ── SPEC-006: Mapa de atividade (heatmap) ─────────────────────────────────────
+// GitHub-style: weeks as columns (oldest -> newest, left to right), days of
+// the week as rows. Days without a training_sessions row simply aren't in
+// `entries` — treated the same as 'none' (nothing done that day).
+function ActivityHeatmapSection({ t, entries, loading }) {
+  const weeks = buildHeatmapWeeks(entries, HEATMAP_DAYS)
+
+  return (
+    <Card mb="lg">
+      <Group gap={6} mb="md">
+        <IconLayoutGrid size={18} color="var(--mantine-color-brandCyan-5)" />
+        <Text fw={700} size="sm">{t('dashboard.heatmap.titulo')}</Text>
+      </Group>
+      {loading ? (
+        <Skeleton height={100} />
+      ) : (
+        <Group gap={3} wrap="nowrap" style={{ overflowX: 'auto' }}>
+          {weeks.map((week, wi) => (
+            <Stack key={wi} gap={3}>
+              {week.map((cell, di) => (
+                <Tooltip
+                  key={di}
+                  label={cell ? heatmapTooltip(t, cell) : ''}
+                  disabled={!cell}
+                  withArrow
+                >
+                  <Box
+                    w={12} h={12} style={{
+                      borderRadius: 3,
+                      background: cell ? HEATMAP_COLORS[cell.state] : 'transparent',
+                      visibility: cell ? 'visible' : 'hidden',
+                    }}
+                  />
+                </Tooltip>
+              ))}
+            </Stack>
+          ))}
+        </Group>
+      )}
+    </Card>
+  )
+}
+
+function heatmapTooltip(t, cell) {
+  const dateLabel = formatDate(cell.date)
+  if (cell.state === 'none') return `${dateLabel} — ${t('dashboard.heatmap.nenhum_treino')}`
+  return `${dateLabel} — ${t('dashboard.heatmap.exercicios_feitos', { done: cell.done, total: cell.total })}`
+}
+
+// Builds a grid of weeks (columns) x 7 days (Sun..Sat rows), covering the
+// last `days` days, aligned so every week column starts on a Sunday — the
+// first (partial) and last week may have `null` cells for days outside the
+// actual window (before the start date or after today).
+function buildHeatmapWeeks(entries, days) {
+  const byDate = new Map(entries.map((e) => [e.date, e]))
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const start = new Date(today); start.setDate(today.getDate() - (days - 1))
+  const gridStart = new Date(start); gridStart.setDate(start.getDate() - start.getDay())
+
+  const totalCells = Math.ceil((today - gridStart) / 86400000) + 1
+  const weekCount  = Math.ceil(totalCells / 7)
+
+  const weeks = []
+  for (let w = 0; w < weekCount; w++) {
+    const column = []
+    for (let d = 0; d < 7; d++) {
+      const cellDate = new Date(gridStart)
+      cellDate.setDate(gridStart.getDate() + w * 7 + d)
+      if (cellDate < start || cellDate > today) { column.push(null); continue }
+      const dateStr = cellDate.toISOString().split('T')[0]
+      const entry = byDate.get(dateStr)
+      column.push({
+        date:  dateStr,
+        state: entry?.state || 'none',
+        done:  entry?.exercises_done || 0,
+        total: entry?.exercises_total || 0,
+      })
+    }
+    weeks.push(column)
+  }
+  return weeks
+}
+
 // Average score for entries whose created_at falls within [now - toDays, now - fromDays)
 // — fromDays=0,toDays=7 is "last 7 days", fromDays=7,toDays=14 is "the 7 days before that".
 function avgInWindow(scores, fromDays, toDays) {
@@ -350,6 +535,15 @@ function avgInWindow(scores, fromDays, toDays) {
 function shortDate(isoStr) {
   const d = new Date(isoStr)
   return `${d.getDate()}/${d.getMonth() + 1}`
+}
+
+// Unlike formatDate (below) — which assumes a plain 'YYYY-MM-DD' date column
+// and would mis-split a full timestamp on its 'T' — this parses a real
+// TIMESTAMPTZ value (goal_levels.updated_at) via Date, DD/MM/YYYY.
+function formatTimestamp(isoStr) {
+  if (!isoStr) return '—'
+  const d = new Date(isoStr)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 }
 
 function StatCard({ number, label, icon: Icon, color }) {

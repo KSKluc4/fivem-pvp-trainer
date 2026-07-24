@@ -104,8 +104,10 @@ def resolve_action_level(user_id: int, profile: dict):
         current_level = existing['current_level'] if existing else default_level
         history       = get_recent_ingame_completion(user_id, limit=2)
         new_level, change = adjust_level(current_level, history)
-        if existing is None or new_level != current_level:
-            upsert_goal_level(user_id, CATEGORY, new_level)
+        if existing is None:
+            upsert_goal_level(user_id, CATEGORY, new_level)  # 1st-ever resolution — no prior level to record
+        elif new_level != current_level:
+            upsert_goal_level(user_id, CATEGORY, new_level, previous_level=current_level)
         return new_level, level_note_for(change)
     except Exception as e:
         print(f'[level_service] goal_levels unavailable, falling back to level 1: {e}')

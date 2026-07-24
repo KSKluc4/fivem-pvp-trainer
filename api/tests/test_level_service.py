@@ -1,11 +1,12 @@
 import os
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from services.level_service import (
     adjust_level, level_note_for, initial_level_for_experience, kill_quota_for_level,
-    KILLS_PER_MATCH_BY_LEVEL, MIN_LEVEL, MAX_LEVEL,
+    resolve_action_level, KILLS_PER_MATCH_BY_LEVEL, MIN_LEVEL, MAX_LEVEL,
 )
 
 
@@ -97,3 +98,49 @@ def test_level_note_for_matches_change():
     assert level_note_for('up') == 'up'
     assert level_note_for('down') == 'down'
     assert level_note_for(None) == ''
+
+
+# ── resolve_action_level — previous_level wiring (SPEC-006) ──────────────────
+# goal_levels.previous_level (migration v13) only gets a value on a REAL
+# transition — never on the very first-ever resolution, since there's no
+# prior level to record there.
+
+def test_resolve_action_level_first_ever_resolution_omits_previous_level():
+    with patch('database.get_goal_level', return_value=None), \
+         patch('database.get_recent_ingame_completion', return_value=[]), \
+         patch('database.upsert_goal_level') as mock_upsert:
+        level, note = resolve_action_level(7, {'experience_level': 'intermediario'})
+
+    assert level == 2
+    assert note == ''
+    mock_upsert.assert_called_once_with(7, 'action', 2)  # no previous_level kwarg at all
+
+
+def test_resolve_action_level_real_transition_passes_previous_level():
+    with patch('database.get_goal_level', return_value={'id': 1, 'current_level': 2}), \
+         patch('database.get_recent_ingame_completion', return_value=[True, True]), \
+         patch('database.upsert_goal_level') as mock_upsert:
+        level, note = resolve_action_level(7, {'experience_level': 'intermediario'})
+
+    assert level == 3
+    assert note == 'up'
+    mock_upsert.assert_called_once_with(7, 'action', 3, previous_level=2)
+
+
+def test_resolve_action_level_no_change_does_not_upsert_at_all():
+    with patch('database.get_goal_level', return_value={'id': 1, 'current_level': 2}), \
+         patch('database.get_recent_ingame_completion', return_value=[True, False]), \
+         patch('database.upsert_goal_level') as mock_upsert:
+        level, note = resolve_action_level(7, {'experience_level': 'intermediario'})
+
+    assert level == 2
+    assert note == ''
+    mock_upsert.assert_not_called()
+
+
+def test_resolve_action_level_falls_back_to_level_1_when_goal_levels_unavailable():
+    with patch('database.get_goal_level', side_effect=Exception('relation "goal_levels" does not exist')):
+        level, note = resolve_action_level(7, {'experience_level': 'avancado'})
+
+    assert level == 1
+    assert note == ''

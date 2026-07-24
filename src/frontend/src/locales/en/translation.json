@@ -219,6 +219,8 @@
     "sensibilidade_tooltip": "Set up your GTA V sensitivity — also used by the in-app trainer",
     "alterar_perfil": "Change profile",
     "alterar_perfil_tooltip": "Retake the profile questionnaire",
+    "historico_perfis": "Profile history",
+    "historico_perfis_tooltip": "View and reactivate past training profiles",
     "treinar": "Train",
     "rodadas_one": "{{count}} round",
     "rodadas_other": "{{count}} rounds",
@@ -336,6 +338,17 @@
       "goat_desc": "great for deathmatch training",
       "plf_desc": "great for improving your drops"
     }
+  },
+  "historico_perfis": {
+    "titulo": "Profile history",
+    "vazio": "No training profiles yet.",
+    "perfil_atual": "Current profile",
+    "reativar": "Reactivate this profile",
+    "reativar_confirmar_titulo": "Reactivate this profile?",
+    "reativar_confirmar_corpo": "This will replace today's routine with a new one generated from this profile. Continue?",
+    "reativar_sucesso": "Profile reactivated — today's routine updated!",
+    "minutos_dia": "{{minutes}} min/day",
+    "preview_texto": "Warmup: {{warmup}} · Main: {{principal}} · {{matches}} match(es) · ~{{duration}} min"
   },
   "trainer": {
     "titulo": "Train Now",
@@ -455,6 +468,22 @@
       "recorde": "Best",
       "media_7d": "Avg (7 days)",
       "serie_score": "Score"
+    },
+    "recordes": {
+      "titulo": "Records"
+    },
+    "nivel_matamata": {
+      "titulo": "Deathmatch level",
+      "nivel": "Level",
+      "cota": "Quota per match",
+      "vazio": "No deathmatch matches recorded yet.",
+      "up": "Leveled up on {{date}}",
+      "down": "Leveled down on {{date}}"
+    },
+    "heatmap": {
+      "titulo": "Activity map",
+      "nenhum_treino": "no training",
+      "exercicios_feitos": "{{done}}/{{total}} exercises"
     },
     "taxa_conclusao": {
       "titulo": "Completion Rate",

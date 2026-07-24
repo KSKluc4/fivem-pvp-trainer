@@ -177,3 +177,136 @@ def test_get_latest_questionnaire_returns_none_when_no_row():
         MagicMock(data=[])
     with patch('database.get_supabase', return_value=mock_sb):
         assert database.get_latest_questionnaire(7) is None
+
+
+# ── database.list_questionnaire_history / get_questionnaire_by_id (SPEC-006) ──
+
+def test_list_questionnaire_history_returns_rows_and_total_normalized():
+    mock_sb = MagicMock()
+    mock_sb.table.return_value.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value = \
+        MagicMock(data=[
+            {'id': 2, 'user_id': 7, 'focus_area': 'aim', 'focus_area_multi': json.dumps(['aim', 'reflex']),
+             'aim_difficulty': 'tracking', 'specific_weakness': ''},
+            {'id': 1, 'user_id': 7, 'focus_area': 'movement', 'aim_difficulty': '', 'specific_weakness': ''},
+        ], count=2)
+
+    with patch('database.get_supabase', return_value=mock_sb):
+        rows, total = database.list_questionnaire_history(7, limit=10, offset=0)
+
+    assert total == 2
+    assert rows[0]['focus_area'] == ['aim', 'reflex']  # new-format row uses the full array
+    assert rows[1]['focus_area'] == ['movement']       # legacy row falls back to a 1-item list
+
+
+def test_get_questionnaire_by_id_scopes_by_user_id_in_the_query():
+    mock_sb = MagicMock()
+    mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = \
+        MagicMock(data=[{'id': 5, 'user_id': 7, 'focus_area': 'aim', 'aim_difficulty': 'tracking', 'specific_weakness': ''}])
+
+    with patch('database.get_supabase', return_value=mock_sb):
+        profile = database.get_questionnaire_by_id(7, 5)
+
+    assert profile['focus_area'] == ['aim']
+    # both .eq() calls happened — id AND user_id are both query filters
+    assert mock_sb.table.return_value.select.return_value.eq.call_args_list[0].args == ('id', 5)
+    assert mock_sb.table.return_value.select.return_value.eq.return_value.eq.call_args_list[0].args == ('user_id', 7)
+
+
+def test_get_questionnaire_by_id_returns_none_when_no_matching_row():
+    mock_sb = MagicMock()
+    mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = \
+        MagicMock(data=[])
+    with patch('database.get_supabase', return_value=mock_sb):
+        assert database.get_questionnaire_by_id(7, 999) is None
+
+
+# ── GET /questionnaire/history — route ───────────────────────────────────────
+
+HISTORY_ROW = {
+    'id': 3, 'created_at': '2026-07-01T00:00:00', 'focus_area': ['aim'],
+    'aim_difficulty': ['tracking'], 'specific_weakness': [], 'experience_level': 'intermediario',
+    'daily_time': 45,
+}
+PREVIEW_ROUTINE = {
+    'total_duration': 60,
+    'sections': [
+        {'name': 'aquecimento', 'exercises': [{'exercise': 'tracking_suave'}]},
+        {'name': 'treino_principal', 'exercises': [{'exercise': 'tracking_suave'}, {'exercise': 'quick_flick'}]},
+        {'name': 'aplicacao_jogo', 'exercises': [{'exercise': 'match_1'}]},
+    ],
+}
+
+
+def test_get_history_paginates_and_attaches_a_preview():
+    with patch('routes.questionnaire.list_questionnaire_history', return_value=([HISTORY_ROW], 1)) as mock_list, \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE):
+        client = make_client()
+        res = client.get('/api/questionnaire/history?page=1&page_size=10', headers=auth_headers())
+
+        assert res.status_code == 200
+        body = res.get_json()
+        assert body['total'] == 1
+        assert body['page'] == 1
+        assert body['page_size'] == 10
+        assert body['items'][0]['preview'] == {
+            'warmup_drill': 'tracking_suave',
+            'main_drills': ['tracking_suave', 'quick_flick'],
+            'match_count': 1,
+            'total_duration': 60,
+        }
+        mock_list.assert_called_once_with(7, limit=10, offset=0)
+
+
+def test_get_history_computes_offset_from_page():
+    with patch('routes.questionnaire.list_questionnaire_history', return_value=([], 0)) as mock_list, \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE):
+        client = make_client()
+        client.get('/api/questionnaire/history?page=3&page_size=10', headers=auth_headers())
+        mock_list.assert_called_once_with(7, limit=10, offset=20)
+
+
+def test_get_history_requires_auth():
+    client = make_client()
+    res = client.get('/api/questionnaire/history')
+    assert res.status_code == 401
+
+
+# ── POST /questionnaire/history/<id>/reactivate — route ──────────────────────
+
+def test_reactivate_returns_404_for_a_profile_belonging_to_someone_else_or_missing():
+    with patch('routes.questionnaire.get_questionnaire_by_id', return_value=None) as mock_get, \
+         patch('routes.questionnaire.save_questionnaire') as mock_save:
+        client = make_client()
+        res = client.post('/api/questionnaire/history/999/reactivate', headers=auth_headers())
+
+        assert res.status_code == 404
+        mock_get.assert_called_once_with(7, 999)
+        mock_save.assert_not_called()
+
+
+def test_reactivate_snapshots_the_chosen_profile_and_regenerates_the_routine():
+    old_profile = dict(HISTORY_ROW, id=3)
+    with patch('routes.questionnaire.get_questionnaire_by_id', return_value=old_profile), \
+         patch('routes.questionnaire.save_questionnaire') as mock_save, \
+         patch('routes.questionnaire.resolve_action_level', return_value=(2, '')), \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE) as mock_generate, \
+         patch('routes.questionnaire.create_training_session', return_value=123) as mock_create, \
+         patch('routes.questionnaire.get_user_by_id', return_value={'id': 7, 'name': 'Jogador'}):
+        client = make_client()
+        res = client.post('/api/questionnaire/history/3/reactivate', headers=auth_headers())
+
+        assert res.status_code == 201
+        body = res.get_json()
+        assert body['session_id'] == 123
+        assert body['routine'] == PREVIEW_ROUTINE
+        # save_questionnaire writes a NEW row from the OLD profile's answers —
+        # never mutates/references the old row's id.
+        mock_save.assert_called_once_with(7, old_profile)
+        mock_generate.assert_called_once()
+        mock_create.assert_called_once()
+
+
+def test_reactivate_requires_auth():
+    client = make_client()
+    res = client.post('/api/questionnaire/history/3/reactivate')
+    assert res.status_code == 401

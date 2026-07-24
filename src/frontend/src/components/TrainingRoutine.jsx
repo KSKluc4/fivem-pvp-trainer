@@ -5,6 +5,7 @@ import {
 import {
   IconChartBar, IconAdjustmentsHorizontal, IconSettings, IconFlame, IconBolt,
   IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords, IconTargetArrow,
+  IconHistory,
 } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { saveProgress } from '../services/api'
@@ -113,8 +114,8 @@ const FIVEM_SERVERS = [
 ]
 
 export default function TrainingRoutine({
-  userId, sessionId, routine, username, onViewProgress, onChangeProfile, onSensibilidade, onTrainer,
-  pendingCompletion, onPendingCompletionConsumed,
+  userId, sessionId, routine, username, onViewProgress, onChangeProfile, onHistoricoPerfis,
+  onSensibilidade, onTrainer, pendingCompletion, onPendingCompletionConsumed,
 }) {
   const { t } = useTranslation()
   const [completed, setCompleted]     = useState({})
@@ -200,6 +201,14 @@ export default function TrainingRoutine({
             title={t('rotina.alterar_perfil_tooltip')}
           >
             {t('rotina.alterar_perfil')}
+          </Button>
+          <Button
+            variant="subtle" color="gray"
+            leftSection={<IconHistory size={16} />}
+            onClick={onHistoricoPerfis}
+            title={t('rotina.historico_perfis_tooltip')}
+          >
+            {t('rotina.historico_perfis')}
           </Button>
         </Group>
       </Group>

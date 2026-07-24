@@ -228,6 +228,17 @@ def _multi_or_legacy(row: dict, multi_key: str, legacy_key: str) -> list:
     return [legacy] if legacy else []
 
 
+def _normalize_multi_fields(row: dict) -> dict:
+    """Perfil antigo (colunas *_multi ausentes/NULL, migration v12 não aplicada
+    ou linha anterior a ela) vira array de 1 item a partir da coluna legada;
+    perfil novo usa o array completo já salvo. generate_routine (e qualquer
+    outro consumidor) só vê listas para estes 3 campos a partir daqui."""
+    row['focus_area']        = _multi_or_legacy(row, 'focus_area_multi', 'focus_area')
+    row['aim_difficulty']    = _multi_or_legacy(row, 'aim_difficulty_multi', 'aim_difficulty')
+    row['specific_weakness'] = _multi_or_legacy(row, 'specific_weakness_multi', 'specific_weakness')
+    return row
+
+
 def get_latest_questionnaire(user_id: int):
     sb = get_supabase()
     res = (sb.table('questionnaire_results')
@@ -237,16 +248,36 @@ def get_latest_questionnaire(user_id: int):
              .limit(1)
              .execute())
     row = res.data[0] if res.data else None
-    if row is None:
-        return None
-    # Perfil antigo (colunas *_multi ausentes/NULL, migration v12 não aplicada
-    # ou linha anterior a ela) vira array de 1 item a partir da coluna legada;
-    # perfil novo usa o array completo já salvo. generate_routine (e qualquer
-    # outro consumidor) só vê listas para estes 3 campos a partir daqui.
-    row['focus_area']        = _multi_or_legacy(row, 'focus_area_multi', 'focus_area')
-    row['aim_difficulty']    = _multi_or_legacy(row, 'aim_difficulty_multi', 'aim_difficulty')
-    row['specific_weakness'] = _multi_or_legacy(row, 'specific_weakness_multi', 'specific_weakness')
-    return row
+    return _normalize_multi_fields(row) if row else None
+
+
+def list_questionnaire_history(user_id: int, limit: int = 10, offset: int = 0):
+    """SPEC-006 — every past questionnaire_results row for this user, newest
+    first, paginated. Returns (rows, total_count)."""
+    sb = get_supabase()
+    res = (sb.table('questionnaire_results')
+             .select('*', count='exact')
+             .eq('user_id', user_id)
+             .order('created_at', desc=True)
+             .range(offset, offset + limit - 1)
+             .execute())
+    rows = [_normalize_multi_fields(r) for r in (res.data or [])]
+    return rows, (res.count or 0)
+
+
+def get_questionnaire_by_id(user_id: int, profile_id: int):
+    """SPEC-006 — a single past profile, scoped to its owner (the .eq('user_id', ...)
+    is the ownership check: a row belonging to someone else simply won't match,
+    same as 'not found' — the caller can't tell the two apart, on purpose)."""
+    sb = get_supabase()
+    res = (sb.table('questionnaire_results')
+             .select('*')
+             .eq('id', profile_id)
+             .eq('user_id', user_id)
+             .limit(1)
+             .execute())
+    row = res.data[0] if res.data else None
+    return _normalize_multi_fields(row) if row else None
 
 
 # ── Training sessions ─────────────────────────────────────────────────────────
@@ -330,6 +361,53 @@ def get_progress_history(user_id: int, limit: int = 30):
         }
         for s in sessions_res.data
     ]
+
+
+def get_activity_heatmap(user_id: int, days: int = 90):
+    """SPEC-006 — one entry per calendar day with a training_sessions row in
+    the last `days` days, classified 'none'/'partial'/'complete' by how many
+    of that day's CHECKABLE exercises (routine['sections'][].checkable) got a
+    progress row, vs how many there were. Days without any session simply
+    don't appear — the frontend fills those in as 'none'."""
+    from collections import Counter
+    from datetime import date, timedelta
+    sb = get_supabase()
+
+    since = (date.today() - timedelta(days=days - 1)).isoformat()
+    sessions_res = (sb.table('training_sessions')
+                      .select('id,date,routine,created_at')
+                      .eq('user_id', user_id)
+                      .gte('date', since)
+                      .order('created_at', desc=True)
+                      .execute())
+
+    # A profile reactivation (SPEC-006 Parte 1) can create a 2nd session for
+    # today — keep only the newest row per date, same rule get_today_session
+    # already applies for a single day.
+    latest_by_date = {}
+    for s in (sessions_res.data or []):
+        latest_by_date.setdefault(s['date'], s)
+
+    session_ids = [s['id'] for s in latest_by_date.values()]
+    progress_res = (sb.table('progress').select('session_id')
+                       .in_('session_id', session_ids)
+                       .neq('exercise_name', '__session__')
+                       .execute()) if session_ids else None
+    done_counts = Counter(p['session_id'] for p in (progress_res.data or [])) if progress_res else Counter()
+
+    result = []
+    for day, s in latest_by_date.items():
+        sections = (s.get('routine') or {}).get('sections', [])
+        total    = sum(len(sec.get('exercises', [])) for sec in sections if sec.get('checkable'))
+        done     = done_counts.get(s['id'], 0)
+        if total <= 0 or done <= 0:
+            state = 'none'
+        elif done >= total:
+            state = 'complete'
+        else:
+            state = 'partial'
+        result.append({'date': day, 'exercises_done': done, 'exercises_total': total, 'state': state})
+    return result
 
 
 # ── Aim trainer scores ────────────────────────────────────────────────────────
@@ -419,15 +497,53 @@ def get_goal_level(user_id: int, category: str):
     return res.data[0] if res.data else None
 
 
-def upsert_goal_level(user_id: int, category: str, level: int):
+def upsert_goal_level(user_id: int, category: str, level: int, previous_level: int = None):
     from datetime import datetime, timezone
     sb = get_supabase()
-    sb.table('goal_levels').upsert({
+    payload = {
         'user_id':       user_id,
         'category':      category,
         'current_level': level,
         'updated_at':    datetime.now(timezone.utc).isoformat(),
-    }, on_conflict='user_id,category').execute()
+    }
+    # previous_level (migration v13, SPEC-006) is what lets the dashboard's
+    # "Nível de mata-mata" card show which direction the level last moved —
+    # omitted entirely (not just None) on the very first-ever resolution,
+    # since there's no prior level to record.
+    if previous_level is not None:
+        payload['previous_level'] = previous_level
+    try:
+        sb.table('goal_levels').upsert(payload, on_conflict='user_id,category').execute()
+    except Exception:
+        # migration v13 not applied yet — degrade to the legacy-only upsert.
+        traceback.print_exc()
+        payload.pop('previous_level', None)
+        sb.table('goal_levels').upsert(payload, on_conflict='user_id,category').execute()
+
+
+def get_action_level_summary(user_id: int):
+    """SPEC-006 — current mata-mata level + kill quota + last up/down
+    transition (if migration v13's previous_level column has ever been set
+    for this user). Returns None if the user has no goal_levels row yet."""
+    from services.level_service import CATEGORY, KILLS_PER_MATCH_BY_LEVEL
+    sb = get_supabase()
+    res = (sb.table('goal_levels').select('*')
+             .eq('user_id', user_id).eq('category', CATEGORY).limit(1).execute())
+    row = res.data[0] if res.data else None
+    if row is None:
+        return None
+    level          = row['current_level']
+    previous_level = row.get('previous_level')
+    direction = None
+    if previous_level is not None:
+        direction = 'up' if level > previous_level else 'down' if level < previous_level else None
+    return {
+        'level':          level,
+        'quota':          KILLS_PER_MATCH_BY_LEVEL[level],
+        'previous_level': previous_level,
+        'changed_at':     row.get('updated_at') if previous_level is not None else None,
+        'direction':      direction,
+    }
 
 
 def get_recent_ingame_completion(user_id: int, limit: int = 2) -> list:

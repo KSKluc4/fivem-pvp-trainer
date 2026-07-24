@@ -219,6 +219,8 @@
     "sensibilidade_tooltip": "Configure sua sensibilidade GTA V — usada também pelo treinador interno",
     "alterar_perfil": "Alterar perfil",
     "alterar_perfil_tooltip": "Refazer questionário de perfil",
+    "historico_perfis": "Histórico de perfis",
+    "historico_perfis_tooltip": "Ver e reativar perfis de treino anteriores",
     "treinar": "Treinar",
     "rodadas_one": "{{count}} rodada",
     "rodadas_other": "{{count}} rodadas",
@@ -336,6 +338,17 @@
       "goat_desc": "ideal para treinar mata-mata",
       "plf_desc": "ideal para melhorar seus drops"
     }
+  },
+  "historico_perfis": {
+    "titulo": "Histórico de perfis",
+    "vazio": "Nenhum perfil de treino ainda.",
+    "perfil_atual": "Perfil atual",
+    "reativar": "Reativar este perfil",
+    "reativar_confirmar_titulo": "Reativar este perfil?",
+    "reativar_confirmar_corpo": "Isso vai substituir a rotina de hoje por uma nova, gerada a partir deste perfil. Continuar?",
+    "reativar_sucesso": "Perfil reativado — rotina de hoje atualizada!",
+    "minutos_dia": "{{minutes}} min/dia",
+    "preview_texto": "Aquecimento: {{warmup}} · Principal: {{principal}} · {{matches}} partida(s) · ~{{duration}} min"
   },
   "trainer": {
     "titulo": "Treinar agora",
@@ -455,6 +468,22 @@
       "recorde": "Recorde",
       "media_7d": "Média (7 dias)",
       "serie_score": "Score"
+    },
+    "recordes": {
+      "titulo": "Recordes"
+    },
+    "nivel_matamata": {
+      "titulo": "Nível de mata-mata",
+      "nivel": "Nível",
+      "cota": "Cota por partida",
+      "vazio": "Ainda sem partidas de mata-mata registradas.",
+      "up": "Subiu de nível em {{date}}",
+      "down": "Desceu de nível em {{date}}"
+    },
+    "heatmap": {
+      "titulo": "Mapa de atividade",
+      "nenhum_treino": "nenhum treino",
+      "exercicios_feitos": "{{done}}/{{total}} exercícios"
     },
     "taxa_conclusao": {
       "titulo": "Taxa de Conclusão",
