@@ -344,7 +344,7 @@ body.trainer-active .app-background { display: none; }
 }
 
 /* ─── Page layout wrappers — each view centers itself at its own max-width ── */
-.routine, .progress-view, .sens-view, .questionnaire, .profile-view {
+.routine, .progress-view, .sens-view, .questionnaire, .profile-view, .historico-perfis-view {
   max-width: 820px;
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
@@ -353,6 +353,7 @@ body.trainer-active .app-background { display: none; }
 }
 .questionnaire { max-width: 680px; padding-top: 1.75rem; }
 .sens-view { max-width: 960px; }
+.historico-perfis-view { max-width: 1100px; }
 
 /* ─── Profile screen — banner + overlapping avatar ─────────────────────────── */
 .profile-card { overflow: visible; }

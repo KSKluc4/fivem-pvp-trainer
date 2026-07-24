@@ -341,14 +341,17 @@
   },
   "historico_perfis": {
     "titulo": "Histórico de perfis",
+    "contagem_one": "{{count}} perfil",
+    "contagem_other": "{{count}} perfis",
     "vazio": "Nenhum perfil de treino ainda.",
     "perfil_atual": "Perfil atual",
-    "reativar": "Reativar este perfil",
+    "reativar": "Reativar",
     "reativar_confirmar_titulo": "Reativar este perfil?",
     "reativar_confirmar_corpo": "Isso vai substituir a rotina de hoje por uma nova, gerada a partir deste perfil. Continuar?",
     "reativar_sucesso": "Perfil reativado — rotina de hoje atualizada!",
     "minutos_dia": "{{minutes}} min/dia",
-    "preview_texto": "Aquecimento: {{warmup}} · Principal: {{principal}} · {{matches}} partida(s) · ~{{duration}} min"
+    "preview_texto": "Aquecimento: {{warmup}} · Principal: {{principal}} · {{matches}} partida(s) · ~{{duration}} min",
+    "respondido_multiplas": "Respondido {{count}}x · última em {{date}}"
   },
   "trainer": {
     "titulo": "Treinar agora",

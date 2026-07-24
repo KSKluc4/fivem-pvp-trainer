@@ -341,14 +341,17 @@
   },
   "historico_perfis": {
     "titulo": "Profile history",
+    "contagem_one": "{{count}} profile",
+    "contagem_other": "{{count}} profiles",
     "vazio": "No training profiles yet.",
     "perfil_atual": "Current profile",
-    "reativar": "Reactivate this profile",
+    "reativar": "Reactivate",
     "reativar_confirmar_titulo": "Reactivate this profile?",
     "reativar_confirmar_corpo": "This will replace today's routine with a new one generated from this profile. Continue?",
     "reativar_sucesso": "Profile reactivated — today's routine updated!",
     "minutos_dia": "{{minutes}} min/day",
-    "preview_texto": "Warmup: {{warmup}} · Main: {{principal}} · {{matches}} match(es) · ~{{duration}} min"
+    "preview_texto": "Warmup: {{warmup}} · Main: {{principal}} · {{matches}} match(es) · ~{{duration}} min",
+    "respondido_multiplas": "Answered {{count}}x · last on {{date}}"
   },
   "trainer": {
     "titulo": "Train Now",
