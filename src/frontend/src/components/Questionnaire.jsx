@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
-  Box, Stepper, Progress, Radio, SimpleGrid, Text, Title, Button,
+  Box, Stepper, Progress, Radio, Checkbox, SimpleGrid, Text, Title, Button,
   Group, Stack, Center, Alert, Transition, ThemeIcon,
 } from '@mantine/core'
 import {
@@ -24,6 +24,7 @@ import { submitQuestionnaire } from '../services/api'
 const QUESTIONS = [
   {
     id: 'specific_weakness',
+    multiSelect: true,
     options: [
       { value: 'moving_target', icon: IconRun,              color: 'brandCyan' },
       { value: 'headshot',      icon: IconTarget,            color: 'brandPurple' },
@@ -33,6 +34,7 @@ const QUESTIONS = [
   },
   {
     id: 'focus_area',
+    multiSelect: true,
     options: [
       { value: 'aim',      icon: IconCrosshair,  color: 'brandCyan' },
       { value: 'reflex',   icon: IconBolt,        color: 'brandPurple' },
@@ -49,6 +51,7 @@ const QUESTIONS = [
   },
   {
     id: 'aim_difficulty',
+    multiSelect: true,
     options: [
       { value: 'tracking', icon: IconFocusCentered, color: 'brandCyan' },
       { value: 'flick',    icon: IconSparkles,       color: 'brandPurple' },
@@ -87,17 +90,22 @@ export default function Questionnaire({ username, onComplete }) {
   const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
+  // Multi-select (up to 2) feedback: the option value that just bounced off
+  // the 2-selection cap — drives both the shake animation on that card and
+  // the "máximo 2" hint, and self-clears after the animation finishes.
+  const [shakeOption, setShakeOption] = useState(null)
 
   const current  = QUESTIONS[step]
   const progress = (step / QUESTIONS.length) * 100
   const qBase    = `questionario.perguntas.${current.id}`
 
-  const handleSelect = async (value) => {
-    // Radio values arrive as strings — coerce back to number for daily_time
-    const coerced   = current.id === 'daily_time' ? Number(value) : value
-    const newAnswers = { ...answers, [current.id]: coerced }
-    setAnswers(newAnswers)
+  useEffect(() => {
+    if (!shakeOption) return
+    const timer = setTimeout(() => setShakeOption(null), 400)
+    return () => clearTimeout(timer)
+  }, [shakeOption])
 
+  const advance = async (newAnswers) => {
     if (step < QUESTIONS.length - 1) {
       setStep(step + 1)
       return
@@ -114,6 +122,30 @@ export default function Questionnaire({ username, onComplete }) {
       setLoading(false)
     }
   }
+
+  // Single-select questions (unchanged): picking an option advances right away.
+  const handleSelect = (value) => {
+    // Radio values arrive as strings — coerce back to number for daily_time
+    const coerced   = current.id === 'daily_time' ? Number(value) : value
+    const newAnswers = { ...answers, [current.id]: coerced }
+    setAnswers(newAnswers)
+    advance(newAnswers)
+  }
+
+  // Multi-select questions: Checkbox.Group already computes the full next
+  // value array for us — a 3rd pick would arrive as a 3-item array, which we
+  // reject (shake + hint) instead of writing to state.
+  const handleMultiToggle = (nextValues) => {
+    if (nextValues.length > 2) {
+      const prevValues = answers[current.id] || []
+      const rejected = nextValues.find((v) => !prevValues.includes(v))
+      setShakeOption(rejected)
+      return
+    }
+    setAnswers({ ...answers, [current.id]: nextValues })
+  }
+
+  const handleAdvance = () => advance(answers)
 
   const handleBack = () => setStep(step - 1)
 
@@ -158,29 +190,75 @@ export default function Questionnaire({ username, onComplete }) {
               <Title order={2} mb={4}>{t(`${qBase}.question`)}</Title>
               <Text c="dimmed" mb="lg">{t(`${qBase}.subtitle`)}</Text>
 
-              <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
-                <SimpleGrid cols={1} spacing="sm">
-                  {current.options.map((opt) => (
-                    <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
-                      <Group wrap="nowrap" align="center" gap="sm">
-                        <Radio.Indicator />
-                        <ThemeIcon size={40} radius="md" variant="light" color={opt.color}>
-                          <opt.icon size={22} />
-                        </ThemeIcon>
-                        <Box style={{ flex: 1 }}>
-                          <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
-                          <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
-                        </Box>
-                      </Group>
-                    </Radio.Card>
-                  ))}
-                </SimpleGrid>
-              </Radio.Group>
+              {current.multiSelect ? (
+                <>
+                  <Text size="xs" c="dimmed" mb={6}>
+                    {t('questionario.multiselect_contador', { count: (answers[current.id] || []).length })}
+                  </Text>
+                  <Checkbox.Group value={answers[current.id] || []} onChange={handleMultiToggle}>
+                    <SimpleGrid cols={1} spacing="sm">
+                      {current.options.map((opt) => (
+                        <Checkbox.Card
+                          value={String(opt.value)}
+                          key={opt.value}
+                          radius="md"
+                          p="md"
+                          className={`q-option-card${shakeOption === String(opt.value) ? ' q-option-card--shake' : ''}`}
+                        >
+                          <Group wrap="nowrap" align="center" gap="sm">
+                            <Checkbox.Indicator />
+                            <ThemeIcon size={40} radius="md" variant="light" color={opt.color}>
+                              <opt.icon size={22} />
+                            </ThemeIcon>
+                            <Box style={{ flex: 1 }}>
+                              <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
+                              <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
+                            </Box>
+                          </Group>
+                        </Checkbox.Card>
+                      ))}
+                    </SimpleGrid>
+                  </Checkbox.Group>
+                  {shakeOption && (
+                    <Text size="xs" c="orange" mt={6}>{t('questionario.multiselect_maximo')}</Text>
+                  )}
+                </>
+              ) : (
+                <Radio.Group value={String(answers[current.id] ?? '')} onChange={handleSelect}>
+                  <SimpleGrid cols={1} spacing="sm">
+                    {current.options.map((opt) => (
+                      <Radio.Card value={String(opt.value)} key={opt.value} radius="md" p="md" className="q-option-card">
+                        <Group wrap="nowrap" align="center" gap="sm">
+                          <Radio.Indicator />
+                          <ThemeIcon size={40} radius="md" variant="light" color={opt.color}>
+                            <opt.icon size={22} />
+                          </ThemeIcon>
+                          <Box style={{ flex: 1 }}>
+                            <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
+                            <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
+                          </Box>
+                        </Group>
+                      </Radio.Card>
+                    ))}
+                  </SimpleGrid>
+                </Radio.Group>
+              )}
 
               {error && (
                 <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />} mt="md">
                   {error}
                 </Alert>
+              )}
+
+              {current.multiSelect && (
+                <Button
+                  fullWidth
+                  mt="lg"
+                  disabled={(answers[current.id] || []).length === 0}
+                  onClick={handleAdvance}
+                >
+                  {t('questionario.avancar')}
+                </Button>
               )}
 
               {step > 0 && (

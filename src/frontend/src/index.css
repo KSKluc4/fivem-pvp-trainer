@@ -455,6 +455,16 @@ body.trainer-active .app-background { display: none; }
 .q-option-card { transition: border-color 0.15s, transform 0.1s; }
 .q-option-card:hover { border-color: var(--color-primary); }
 
+/* Subtle "can't select a 3rd option" feedback on a multi-select question card */
+.q-option-card--shake { animation: q-option-shake 0.4s ease; }
+@keyframes q-option-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+
 /* ─── User menu popover action rows ────────────────────────────────────────── */
 .ud-action-btn {
   width: 100%;

@@ -141,6 +141,9 @@
     "analisando_perfil": "Analyzing {{username}}'s profile",
     "erro_enviar": "Failed to submit questionnaire: {{detail}}",
     "erro_desconhecido": "Unknown error",
+    "multiselect_contador": "{{count}}/2 selected",
+    "multiselect_maximo": "Maximum 2 selections",
+    "avancar": "Next",
     "perguntas": {
       "specific_weakness": {
         "question": "What's your biggest specific weakness?",

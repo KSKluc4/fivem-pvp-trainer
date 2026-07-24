@@ -141,6 +141,9 @@
     "analisando_perfil": "Analisando perfil de {{username}}",
     "erro_enviar": "Erro ao enviar questionário: {{detail}}",
     "erro_desconhecido": "Erro desconhecido",
+    "multiselect_contador": "{{count}}/2 selecionados",
+    "multiselect_maximo": "Máximo 2 seleções",
+    "avancar": "Avançar",
     "perguntas": {
       "specific_weakness": {
         "question": "Qual é sua maior dificuldade específica?",

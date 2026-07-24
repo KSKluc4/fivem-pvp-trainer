@@ -1,5 +1,6 @@
 import os
 import json
+import traceback
 from supabase import create_client, Client
 
 
@@ -153,22 +154,78 @@ def delete_session(token: str):
 
 
 # ── Questionnaire ─────────────────────────────────────────────────────────────
+#
+# specific_weakness/focus_area/aim_difficulty support up to 2 selections
+# (SPEC-004) — the legacy TEXT columns keep receiving the first choice only
+# (every existing consumer, including admin stats, stays untouched), while
+# the *_multi columns (migration v12) hold the full JSON array. `data` here
+# may hold either a list or a bare scalar for these 3 keys (a list once it's
+# gone through routes.questionnaire's normalization; a scalar from any older
+# caller) — `_scalar`/`_list_json` accept both.
+
+def _scalar(value, default):
+    """First item if `value` is a list, the value itself if scalar, `default`
+    if empty/missing — the legacy TEXT columns only ever hold one value."""
+    if isinstance(value, list):
+        return value[0] if value else default
+    return value if value else default
+
+
+def _list_json(value, default):
+    """JSON-encodes `value` as an array, wrapping a bare scalar into a
+    1-item array — the *_multi columns always hold a JSON array."""
+    if isinstance(value, list):
+        items = [v for v in value if v]
+    elif value:
+        items = [value]
+    else:
+        items = []
+    return json.dumps(items or ([default] if default else []))
+
 
 def save_questionnaire(user_id: int, data: dict):
     sb = get_supabase()
-    sb.table('questionnaire_results').insert({
-        'user_id':          user_id,
-        'focus_area':       data.get('focus_area', 'aim'),
-        'experience_level': data.get('experience_level', 'iniciante'),
-        'aim_difficulty':   data.get('aim_difficulty', ''),
-        'reflex_level':     data.get('reflex_level', ''),
-        'movement_quality': data.get('movement_quality', ''),
-        'daily_time':       int(data.get('daily_time', 30)),
-        'preferred_tool':   data.get('preferred_tool', 'aimlab'),
-        'server_type':      data.get('server_type', ''),
-        'main_weapon':      data.get('main_weapon', ''),
-        'specific_weakness': data.get('specific_weakness', ''),
-    }).execute()
+    row = {
+        'user_id':           user_id,
+        'focus_area':        _scalar(data.get('focus_area'), 'aim'),
+        'experience_level':  data.get('experience_level', 'iniciante'),
+        'aim_difficulty':    _scalar(data.get('aim_difficulty'), ''),
+        'reflex_level':      data.get('reflex_level', ''),
+        'movement_quality':  data.get('movement_quality', ''),
+        'daily_time':        int(data.get('daily_time', 30)),
+        'preferred_tool':    data.get('preferred_tool', 'aimlab'),
+        'server_type':       data.get('server_type', ''),
+        'main_weapon':       data.get('main_weapon', ''),
+        'specific_weakness': _scalar(data.get('specific_weakness'), ''),
+    }
+    multi_row = {
+        **row,
+        'focus_area_multi':        _list_json(data.get('focus_area'), 'aim'),
+        'aim_difficulty_multi':    _list_json(data.get('aim_difficulty'), ''),
+        'specific_weakness_multi': _list_json(data.get('specific_weakness'), ''),
+    }
+    try:
+        sb.table('questionnaire_results').insert(multi_row).execute()
+    except Exception:
+        # The *_multi columns (migration v12) may not exist yet on a
+        # freshly-deployed backend — degrade to the legacy-only insert
+        # instead of failing the whole questionnaire submission, same
+        # pattern as sens_calibrations (routes/sensitivity.py).
+        traceback.print_exc()
+        sb.table('questionnaire_results').insert(row).execute()
+
+
+def _multi_or_legacy(row: dict, multi_key: str, legacy_key: str) -> list:
+    raw = row.get(multi_key)
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list) and parsed:
+                return parsed
+        except (TypeError, ValueError):
+            pass
+    legacy = row.get(legacy_key)
+    return [legacy] if legacy else []
 
 
 def get_latest_questionnaire(user_id: int):
@@ -179,7 +236,17 @@ def get_latest_questionnaire(user_id: int):
              .order('created_at', desc=True)
              .limit(1)
              .execute())
-    return res.data[0] if res.data else None
+    row = res.data[0] if res.data else None
+    if row is None:
+        return None
+    # Perfil antigo (colunas *_multi ausentes/NULL, migration v12 não aplicada
+    # ou linha anterior a ela) vira array de 1 item a partir da coluna legada;
+    # perfil novo usa o array completo já salvo. generate_routine (e qualquer
+    # outro consumidor) só vê listas para estes 3 campos a partir daqui.
+    row['focus_area']        = _multi_or_legacy(row, 'focus_area_multi', 'focus_area')
+    row['aim_difficulty']    = _multi_or_legacy(row, 'aim_difficulty_multi', 'aim_difficulty')
+    row['specific_weakness'] = _multi_or_legacy(row, 'specific_weakness_multi', 'specific_weakness')
+    return row
 
 
 # ── Training sessions ─────────────────────────────────────────────────────────
