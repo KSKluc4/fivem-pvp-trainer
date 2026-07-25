@@ -201,36 +201,36 @@ def test_main_section_only_ever_contains_the_four_internal_drills():
         assert ex['exercise'] in INTERNAL_EXERCISE_IDS
 
 
-def test_tracking_difficulty_emphasizes_tracking_suave():
+def test_tracking_difficulty_emphasizes_tracking_2d():
     profile = dict(PROFILE, aim_difficulty='tracking', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main = routine['sections'][1]['exercises']
-    assert main[0]['exercise'] == 'tracking_suave'
+    assert main[0]['exercise'] == 'tracking_2d'
     # The warmup drill mirrors the day's top priority, one difficulty step down.
-    assert routine['sections'][0]['exercises'][0]['exercise'] == 'tracking_suave'
+    assert routine['sections'][0]['exercises'][0]['exercise'] == 'tracking_2d'
 
 
-def test_flick_difficulty_emphasizes_quick_flick_and_shot_grid():
+def test_flick_difficulty_emphasizes_flick_2d_and_grid_2d():
     profile = dict(PROFILE, aim_difficulty='flick', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'quick_flick'
-    assert 'shot_grid' in main_ids
+    assert main_ids[0] == 'flick_2d'
+    assert 'grid_2d' in main_ids
 
 
-def test_close_range_emphasizes_micro_adjust_and_shot_grid():
+def test_close_range_emphasizes_micro_2d_and_grid_2d():
     profile = dict(PROFILE, aim_difficulty='close', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'micro_adjust'
-    assert 'shot_grid' in main_ids
+    assert main_ids[0] == 'micro_2d'
+    assert 'grid_2d' in main_ids
 
 
-def test_slow_reflex_emphasizes_quick_flick():
+def test_slow_reflex_emphasizes_flick_2d():
     profile = dict(PROFILE, aim_difficulty='', reflex_level='lento')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'quick_flick'
+    assert main_ids[0] == 'flick_2d'
 
 
 def test_short_daily_time_yields_fewer_main_drills_than_long_daily_time():
@@ -241,17 +241,17 @@ def test_short_daily_time_yields_fewer_main_drills_than_long_daily_time():
 
 
 def test_warmup_is_one_round_one_step_below_main_difficulty():
-    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_suave': 5})
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_2d': 5})
     warmup_ex = routine['sections'][0]['exercises'][0]
-    main_ex   = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_suave')
+    main_ex   = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_2d')
     assert warmup_ex['rounds'] == 1
     assert main_ex['difficulty'] == 'dificil'
     assert warmup_ex['difficulty'] == 'medio'  # one step down from 'dificil'
 
 
 def test_main_drills_use_recommended_difficulty_from_aim_levels():
-    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_suave': 1})
-    main_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_suave')
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_2d': 1})
+    main_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_2d')
     assert main_ex['difficulty'] == 'facil'
 
 
@@ -275,15 +275,15 @@ def test_each_aim_exercise_has_a_deep_link_ready_shape():
     # Every warmup/main exercise must carry exactly what App.jsx needs to
     # deep-link straight into the trainer: exercise id, difficulty, and how
     # many rounds constitute "done".
-    routine = generate_routine(dict(PROFILE, daily_time=65), today=date(2026, 7, 6), aim_levels={'shot_grid': 4})
+    routine = generate_routine(dict(PROFILE, daily_time=65), today=date(2026, 7, 6), aim_levels={'grid_2d': 4})
     for ex in routine['sections'][0]['exercises'] + routine['sections'][1]['exercises']:
         assert ex['exercise'] in INTERNAL_EXERCISE_IDS
         assert ex['difficulty'] in ('facil', 'medio', 'dificil')
         assert ex['rounds'] >= 1
         assert ex['name']
 
-    shot_grid_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'shot_grid')
-    assert shot_grid_ex['difficulty'] == 'dificil'
+    grid_2d_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'grid_2d')
+    assert grid_2d_ex['difficulty'] == 'dificil'
 
 
 def test_main_rounds_stay_within_sane_bounds():

@@ -359,7 +359,7 @@
     "voltar": "Back",
     "dificuldade": "Difficulty",
     "estilo_mira": "Crosshair style",
-    "instrucoes": "60 seconds · the mouse is locked to the window (Pointer Lock) — press <bold>ESC</bold> to release it anytime.",
+    "instrucoes": "60 seconds · the cursor roams free inside the training area — press <bold>ESC</bold> to pause anytime.",
     "iniciar": "Start",
     "vai": "Go!",
     "pausado": "Paused",
@@ -377,19 +377,19 @@
       "cross-dot": "Cross + Dot"
     },
     "exercicios": {
-      "tracking_suave": {
+      "tracking_2d": {
         "nome": "Smooth Tracking",
         "descricao": "Keep your crosshair on a target drifting in fluid, unpredictable directions"
       },
-      "shot_grid": {
+      "grid_2d": {
         "nome": "Shot Grid",
         "descricao": "Hit static targets that spawn one at a time at random positions"
       },
-      "quick_flick": {
+      "flick_2d": {
         "nome": "Quick Flick",
         "descricao": "Flick fast onto targets at varying distances before time runs out"
       },
-      "micro_adjust": {
+      "micro_2d": {
         "nome": "Micro Adjust",
         "descricao": "Small corrections on targets near your crosshair, short window"
       }
@@ -428,22 +428,13 @@
       "proxima_rodada": "Next round",
       "concluir_rotina": "Finish and return to routine"
     },
-    "sensitivity_setup": {
-      "titulo": "Set up sensitivity",
-      "descricao": "Training uses your real GTA V sensitivity — the exact same mouse response, count for count.",
-      "gta_sens_label": "GTA V Sensitivity",
-      "gta_sens_desc": "0–100 scale · the same one you use in-game",
-      "dpi_label": "Mouse DPI",
-      "ajuste_fino": "Fine-tune",
-      "ajuste_fino_desc": "Multiplies the converted sensitivity — use this for a small adjustment without touching GTA V.",
-      "salvar_continuar": "Save and continue",
-      "preview_label": "Live preview — move the mouse here"
-    },
     "imersao": {
       "titulo": "Training immersion",
       "volume": "Sound volume",
-      "sons_treino": "Drill sounds",
-      "mostrar_arma": "Show weapon"
+      "sons_treino": "Drill sounds"
+    },
+    "hud": {
+      "sequencia": "streak"
     }
   },
   "dashboard": {

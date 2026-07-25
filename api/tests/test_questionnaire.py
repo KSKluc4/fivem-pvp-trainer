@@ -230,8 +230,8 @@ HISTORY_ROW = {
 PREVIEW_ROUTINE = {
     'total_duration': 60,
     'sections': [
-        {'name': 'aquecimento', 'exercises': [{'exercise': 'tracking_suave'}]},
-        {'name': 'treino_principal', 'exercises': [{'exercise': 'tracking_suave'}, {'exercise': 'quick_flick'}]},
+        {'name': 'aquecimento', 'exercises': [{'exercise': 'tracking_2d'}]},
+        {'name': 'treino_principal', 'exercises': [{'exercise': 'tracking_2d'}, {'exercise': 'flick_2d'}]},
         {'name': 'aplicacao_jogo', 'exercises': [{'exercise': 'match_1'}]},
     ],
 }
@@ -249,8 +249,8 @@ def test_get_history_paginates_and_attaches_a_preview():
         assert body['page'] == 1
         assert body['page_size'] == 10
         assert body['items'][0]['preview'] == {
-            'warmup_drill': 'tracking_suave',
-            'main_drills': ['tracking_suave', 'quick_flick'],
+            'warmup_drill': 'tracking_2d',
+            'main_drills': ['tracking_2d', 'flick_2d'],
             'match_count': 1,
             'total_duration': 60,
         }

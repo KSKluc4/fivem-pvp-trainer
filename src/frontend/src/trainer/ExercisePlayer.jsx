@@ -1,28 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import * as THREE from 'three'
 import { Box, Button, Group, Text, Title, SegmentedControl, Stack, Card } from '@mantine/core'
 import { IconArrowLeft, IconPlayerPlay } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
-import { useTrainerEngine } from './engine/useTrainerEngine'
-import { SCENARIOS } from './scenarios/index.js'
-import Crosshair, { CROSSHAIR_STYLES } from './hud/Crosshair'
+import { createArena2D } from './engine2d/arena2d.js'
+import { createCursorTracker } from './engine2d/cursor2d.js'
+import { createLoop } from './engine/loop.js'
+import { SCENARIOS } from './scenarios2d/index.js'
+import { CROSSHAIR_STYLES } from './hud/Crosshair'
 import Hud from './hud/Hud'
 import ResultsScreen from './hud/ResultsScreen'
-import SensitivitySetup from './sensitivity/SensitivitySetup'
-import { loadTrainerSensSettings, effectiveDegPerCount } from './sensitivity/trainerSensitivity'
 import { playShoot, playHit, playOnTargetTick } from './audio/trainerAudio'
+import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
 import { useTrainerScores } from './useTrainerScores'
 import './trainer.css'
 
-const CENTER_NDC = new THREE.Vector2(0, 0)
-
 // Plays a single exercise session (setup -> countdown -> playing -> results),
-// for whichever scenario `exerciseId` names in scenarios/index.js. Generic
+// for whichever scenario `exerciseId` names in scenarios2d/index.js. Generic
 // across both "continuous" scenarios (Tracking Suave — hover scoring) and
-// "click" scenarios (Shot Grid / Quick Flick / Micro Adjust — click-to-hit +
-// timeout) — the mode-specific bits live in onFrame/onCanvasClick below,
-// everything else (countdown, pointer-lock lifecycle, resize) is shared with
-// DiscoveryPlayer via useTrainerEngine.
+// "click" scenarios (Grade de Tiro / Flick Rápido / Micro Ajuste — click-to-
+// hit + timeout) — the mode-specific bits live in onFrame/onCanvasClick
+// below. Owns its own Canvas2D mount-once lifecycle (arena/cursor/rAF loop)
+// — unlike the old 3D drills, this no longer shares useTrainerEngine with
+// DiscoveryPlayer, which stays on the pointer-lock 3D engine on purpose.
 //
 // `targetRounds` (only set on a routine "Treinar" deep-link — see
 // TrainerView) turns the normal "retry forever until you click back" loop
@@ -33,40 +32,52 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
   const { t } = useTranslation()
   const scenario = SCENARIOS[exerciseId]
 
+  const canvasRef    = useRef(null)
+  const containerRef = useRef(null)
+  const arenaRef     = useRef(null)
+  const cursorRef    = useRef(null)
   const targetRef    = useRef(null)
   const scorerRef    = useRef(null)
   const elapsedRef   = useRef(0)
   const finishedRef  = useRef(false)
-  const sensRef      = useRef(loadTrainerSensSettings())
+  const wasOnTargetRef = useRef(false)
+  const roundsCompletedRef = useRef(0)
+  const resumePhaseRef = useRef('playing')
 
   const [difficulty, setDifficulty] = useState(
     initialDifficulty && scenario.difficulties[initialDifficulty] ? initialDifficulty : 'medio',
   )
   const [crosshairStyle, setCrosshairStyle] = useState('cross-dot')
-  const [hud, setHud] = useState({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
+  const [phase, setPhase] = useState('setup')
+  const [countdownN, setCountdownN] = useState(3)
+  const [hud, setHud] = useState({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, streak: 0 })
   const [result, setResult] = useState(null)
   const [comparison, setComparison] = useState({ lastAttempt: null, personalBest: null })
-  const roundsCompletedRef = useRef(0)
   const [roundsDone, setRoundsDone] = useState(0)
+  const [sfxOn, setSfxOn] = useState(() => loadTrainerAudioSettings().sfxEnabled)
 
   const { lastAttemptFor, personalBestFor, saveScore } = useTrainerScores(scenario.id)
 
+  const phaseRef = useRef(phase)
+  useEffect(() => { phaseRef.current = phase }, [phase])
   const difficultyRef = useRef(difficulty)
   useEffect(() => { difficultyRef.current = difficulty }, [difficulty])
+  const crosshairStyleRef = useRef(crosshairStyle)
+  useEffect(() => { crosshairStyleRef.current = crosshairStyle }, [crosshairStyle])
 
   const startCountdown = useCallback(() => {
-    const engine = engineRef.current
-    if (!engine) return
-    if (targetRef.current) targetRef.current.dispose(engine.scene)
-    targetRef.current  = scenario.createTarget(engine.scene, difficulty, engine.camera)
+    const arena = arenaRef.current
+    const cursor = cursorRef.current
+    if (!arena || !cursor) return
+    const { width, height } = arena.getSize()
+    targetRef.current  = scenario.createTarget(width, height, difficulty, () => cursor.getPosition())
     scorerRef.current  = scenario.createScorer()
     elapsedRef.current = 0
     finishedRef.current = false
     wasOnTargetRef.current = false
-    setHud({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, fps: 0 })
+    setHud({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, streak: 0 })
     setCountdownN(3)
     setPhase('countdown')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty, scenario])
 
   const finishSession = useCallback(() => {
@@ -78,7 +89,6 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     const snapshotBest = personalBestFor(difficulty)
     setComparison({ lastAttempt: snapshotLast, personalBest: snapshotBest })
     setPhase('results')
-    if (document.pointerLockElement) document.exitPointerLock()
 
     roundsCompletedRef.current += 1
     setRoundsDone(roundsCompletedRef.current)
@@ -94,34 +104,33 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
       setResult({
         score:           scorer.score,
         accuracyPct:     scorer.accuracyPct,
-        bestStreakMs:    scorer.bestStreakMs,
-        avgReactionMs:   scorer.avgReactionMs,
+        bestStreakMs:    scenario.mode === 'continuous' ? scorer.bestStreakMs : 0,
+        avgReactionMs:   scenario.mode === 'click' ? scorer.avgReactionMs : 0,
         mode:            scenario.mode,
         exercise:        scenario.id,
         difficulty,
         savedRemotely,
       })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty, lastAttemptFor, personalBestFor, saveScore, scenario])
 
-  // The engine effect (inside useTrainerEngine) closes over whatever these
-  // were on the FIRST render. Refs keep it calling the latest version —
-  // otherwise a difficulty change would never reach startCountdown.
+  // Refs so the mount-once effect below always calls the latest version.
   const startCountdownRef = useRef(startCountdown)
   const finishSessionRef  = useRef(finishSession)
   startCountdownRef.current = startCountdown
   finishSessionRef.current  = finishSession
 
   const onFrame = useCallback((dt, fps) => {
-    const engine = engineRef.current
-    if (phaseRef.current === 'playing' && !finishedRef.current && targetRef.current && scorerRef.current && engine) {
-      const raycaster = frameRaycasterRef.current
+    const arena  = arenaRef.current
+    const cursor = cursorRef.current
+    if (!arena || !cursor) return
+    arena.clearAndDrawBackground()
+
+    if (phaseRef.current === 'playing' && !finishedRef.current && targetRef.current && scorerRef.current) {
       if (scenario.mode === 'continuous') {
         targetRef.current.update(dt)
-        raycaster.setFromCamera(CENTER_NDC, engine.camera)
-        const hit = raycaster.intersectObject(targetRef.current.mesh, false)
-        const isOnTarget = hit.length > 0
+        const cur = cursor.getPosition()
+        const isOnTarget = targetRef.current.containsPoint(cur.x, cur.y)
         // Edge-triggered — a subtle cue on entering the target, not a
         // continuous tone. Off by default (trainerAudioSettings), no UI
         // toggle yet — playOnTargetTick() itself checks the setting.
@@ -139,83 +148,124 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
       const timeLeft = Math.max(0, scenario.sessionDurationS - elapsedRef.current)
       setHud({
         timeLeft, score: scorerRef.current.score,
-        accuracyPct: scorerRef.current.accuracyPct, fps,
+        accuracyPct: scorerRef.current.accuracyPct,
+        streak: scenario.mode === 'continuous' ? scorerRef.current.currentStreakMs : scorerRef.current.currentStreak,
       })
       if (timeLeft <= 0) finishSessionRef.current()
-    } else {
-      setHud((h) => (h.fps === fps ? h : { ...h, fps }))
     }
+
+    if (targetRef.current) targetRef.current.draw(arena.ctx)
+    cursor.draw(arena.ctx, crosshairStyleRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const onFrameRef = useRef(onFrame)
+  onFrameRef.current = onFrame
+
+  // Mount-once: canvas/arena/cursor/rAF-loop lifecycle, auto-pause on
+  // blur/tab-hide, Escape to pause. No pointer lock anywhere — the cursor
+  // roams free inside the bounded canvas the whole time.
+  useEffect(() => {
+    const canvas    = canvasRef.current
+    const container = containerRef.current
+    const arena  = createArena2D(canvas, container)
+    const cursor = createCursorTracker(canvas)
+    cursor.attach()
+    arenaRef.current  = arena
+    cursorRef.current = cursor
+
+    const loop = createLoop((dt, fps) => onFrameRef.current(dt, fps))
+    loop.start()
+
+    function pauseIfActive() {
+      if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') {
+        resumePhaseRef.current = phaseRef.current
+        setPhase('paused')
+      }
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') pauseIfActive()
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') pauseIfActive()
+    }
+    window.addEventListener('blur', pauseIfActive)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('keydown', onKeyDown)
+    document.body.classList.add('trainer-active')
+
+    return () => {
+      window.removeEventListener('blur', pauseIfActive)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('keydown', onKeyDown)
+      document.body.classList.remove('trainer-active')
+      loop.stop()
+      cursor.detach()
+      arena.dispose()
+      arenaRef.current = null
+      cursorRef.current = null
+    }
+    // Intentionally mount once — phase/target progression is driven entirely
+    // through refs, so the canvas is never torn down mid-session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // A single Raycaster reused by both the per-frame ('continuous' mode) and
-  // click-to-hit ('click' mode) hit-tests — created once, same as before.
-  const frameRaycasterRef = useRef(null)
-  if (!frameRaycasterRef.current) frameRaycasterRef.current = new THREE.Raycaster()
-  const wasOnTargetRef = useRef(false)
-
-  const onStart = startCountdown
-
-  const onUnmount = useCallback(() => {
-    const engine = engineRef.current
-    if (targetRef.current && engine) targetRef.current.dispose(engine.scene)
-  }, [])
-
-  const initialPhase = sensRef.current.gtaSens == null ? 'sens-setup' : 'setup'
-
-  const {
-    canvasRef, containerRef, engineRef, phase, setPhase, phaseRef, countdownN, setCountdownN,
-  } = useTrainerEngine({
-    initialPhase,
-    startPhases: ['setup', 'results'],
-    onStart,
-    onFrame,
-    onUnmount,
-    getDegPerCount: () => effectiveDegPerCount(sensRef.current),
-  })
-
-  // Click-to-hit — only relevant for 'click' scenarios (Shot Grid / Quick
-  // Flick / Micro Adjust). 'continuous' scenarios (Tracking Suave) score via
-  // the per-frame raycast in onFrame instead, clicks are a no-op for them.
-  // A separate mount-once effect from the shared engine plumbing since
-  // hit-testing on click is specific to this player.
+  // Click-to-hit — only relevant for 'click' scenarios (Grade de Tiro /
+  // Flick Rápido / Micro Ajuste). 'continuous' scenarios (Tracking Suave)
+  // score via the per-frame overlap check in onFrame instead, clicks are a
+  // no-op for them.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    function onCanvasClick() {
+    function onPointerDown() {
       if (scenario.mode !== 'click') return
       if (phaseRef.current !== 'playing' || finishedRef.current) return
-      if (document.pointerLockElement !== canvas) return
       if (!targetRef.current || !scorerRef.current) return
-      const engine = engineRef.current
-      if (!engine) return
-      const raycaster = frameRaycasterRef.current
-      raycaster.setFromCamera(CENTER_NDC, engine.camera)
-      const hit = raycaster.intersectObject(targetRef.current.mesh, false)
-      const isHit = hit.length > 0
+      const cursor = cursorRef.current
+      if (!cursor) return
+      const pos = cursor.getPosition()
+      const isHit = targetRef.current.containsPoint(pos.x, pos.y)
       playShoot()
       if (isHit) playHit()
       scorerRef.current.registerShot(isHit, targetRef.current.timeAliveMs)
-      if (isHit) targetRef.current.respawn()
-      setHud((h) => ({ ...h, score: scorerRef.current.score, accuracyPct: scorerRef.current.accuracyPct }))
+      if (isHit) { targetRef.current.flashHit(); targetRef.current.respawn() }
+      setHud((h) => ({
+        ...h, score: scorerRef.current.score, accuracyPct: scorerRef.current.accuracyPct,
+        streak: scorerRef.current.currentStreak,
+      }))
     }
-    canvas.addEventListener('click', onCanvasClick)
-    return () => canvas.removeEventListener('click', onCanvasClick)
+    canvas.addEventListener('pointerdown', onPointerDown)
+    return () => canvas.removeEventListener('pointerdown', onPointerDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSensDone = () => {
-    sensRef.current = loadTrainerSensSettings()
-    setPhase('setup')
-  }
+  // 3-2-1 countdown ticker.
+  useEffect(() => {
+    if (phase !== 'countdown') return
+    if (countdownN <= 0) { setPhase('playing'); return }
+    const timer = setTimeout(() => setCountdownN((n) => n - 1), 800)
+    return () => clearTimeout(timer)
+  }, [phase, countdownN])
 
-  // Retrying re-requests pointer lock directly from the click (a genuine
-  // user gesture) — startCountdown itself runs once the lock is confirmed,
-  // via the engine hook's pointerlockchange handling.
+  const handleResume = useCallback(() => {
+    if (resumePhaseRef.current === 'countdown') {
+      setCountdownN(3)
+      setPhase('countdown')
+    } else {
+      setPhase('playing')
+    }
+  }, [])
+
   const handleRetry = useCallback(() => {
-    canvasRef.current?.requestPointerLock()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    startCountdownRef.current()
+  }, [])
+
+  const handleToggleMute = useCallback(() => {
+    setSfxOn((prev) => {
+      const next = !prev
+      saveTrainerAudioSettings({ sfxEnabled: next })
+      return next
+    })
   }, [])
 
   const isFinalRound = targetRounds != null && roundsDone >= targetRounds
@@ -236,27 +286,22 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
         </Button>
       </Group>
 
-      {/* The canvas/engine mount once and stay in the DOM for the component's
-          whole lifetime — sens-setup/results are shown as overlays on top of
-          it instead of unmounting it, otherwise the WebGL context created on
-          mount would be orphaned the moment phase changes. */}
-      <div ref={containerRef} className="trainer-canvas-wrap">
+      {/* The canvas/arena/cursor mount once and stay in the DOM for the
+          component's whole lifetime — setup/results are shown as overlays on
+          top of it instead of unmounting it. */}
+      <div ref={containerRef} className={`trainer-canvas-wrap${active ? ' trainer-canvas-wrap--active' : ''}`}>
         <canvas ref={canvasRef} className="trainer-canvas" />
 
-        {active && <Crosshair style={crosshairStyle} />}
         {active && (
           <Hud
             {...hud}
+            exerciseName={exerciseName}
+            sessionDurationS={scenario.sessionDurationS}
+            mode={scenario.mode}
             accuracyLabelKey={scenario.mode === 'continuous' ? 'trainer.na_mira' : 'trainer.precisao'}
+            sfxOn={sfxOn}
+            onToggleMute={handleToggleMute}
           />
-        )}
-
-        {phase === 'sens-setup' && (
-          <div className="trainer-overlay">
-            <Card className="trainer-setup-card" style={{ maxWidth: 640 }}>
-              <SensitivitySetup onDone={handleSensDone} />
-            </Card>
-          </div>
         )}
 
         {phase === 'results' && result && (
@@ -306,7 +351,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
                 <Button
                   size="md"
                   leftSection={<IconPlayerPlay size={18} />}
-                  onClick={() => canvasRef.current?.requestPointerLock()}
+                  onClick={startCountdown}
                 >
                   {t('trainer.iniciar')}
                 </Button>
@@ -322,10 +367,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
         )}
 
         {phase === 'paused' && (
-          <div
-            className="trainer-overlay trainer-overlay--clickable"
-            onClick={() => canvasRef.current?.requestPointerLock()}
-          >
+          <div className="trainer-overlay trainer-overlay--clickable" onClick={handleResume}>
             <Text fw={700} size="lg">{t('trainer.pausado')}</Text>
             <Text size="sm" c="dimmed">{t('trainer.clique_continuar')}</Text>
           </div>

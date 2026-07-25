@@ -25,7 +25,6 @@ test('loadTrainerAudioSettings returns defaults when nothing stored', () => {
   const settings = loadTrainerAudioSettings()
   assert.equal(settings.volume, 50)
   assert.equal(settings.sfxEnabled, true)
-  assert.equal(settings.showWeapon, true)
   assert.equal(settings.onTargetTickEnabled, false)
 })
 
@@ -36,7 +35,6 @@ test('saveTrainerAudioSettings persists and merges with existing values', () => 
   const settings = loadTrainerAudioSettings()
   assert.equal(settings.volume, 80)
   assert.equal(settings.sfxEnabled, false)
-  assert.equal(settings.showWeapon, true) // untouched field stays default
 })
 
 test('volume is clamped to 0-100 on save', () => {
@@ -58,7 +56,7 @@ test('corrupt JSON in storage falls back to defaults instead of throwing', () =>
   storage.setItem('trainer_audio_settings_v1', '{not valid json')
   assert.doesNotThrow(() => loadTrainerAudioSettings())
   assert.deepEqual(loadTrainerAudioSettings(), {
-    volume: 50, sfxEnabled: true, showWeapon: true, onTargetTickEnabled: false,
+    volume: 50, sfxEnabled: true, onTargetTickEnabled: false,
   })
 })
 

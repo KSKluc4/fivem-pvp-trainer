@@ -11,22 +11,22 @@
 // data yet") — exclude it from averages, don't treat it as the worst level.
 
 export const THRESHOLDS_BY_EXERCISE = {
-  tracking_suave: {
+  tracking_2d: {
     facil:   { 2: 15000, 3: 25000, 4: 35000, 5: 45000 },
     medio:   { 2: 10000, 3: 18000, 4: 27000, 5: 38000 },
     dificil: { 2: 6000,  3: 12000, 4: 20000, 5: 30000 },
   },
-  shot_grid: {
+  grid_2d: {
     facil:   { 2: 25, 3: 35, 4: 45, 5: 55 },
     medio:   { 2: 20, 3: 30, 4: 40, 5: 50 },
     dificil: { 2: 15, 3: 24, 4: 33, 5: 42 },
   },
-  quick_flick: {
+  flick_2d: {
     facil:   { 2: 18, 3: 26, 4: 34, 5: 42 },
     medio:   { 2: 14, 3: 21, 4: 28, 5: 36 },
     dificil: { 2: 10, 3: 16, 4: 22, 5: 28 },
   },
-  micro_adjust: {
+  micro_2d: {
     facil:   { 2: 30, 3: 42, 4: 54, 5: 66 },
     medio:   { 2: 24, 3: 34, 4: 44, 5: 54 },
     dificil: { 2: 18, 3: 26, 4: 34, 5: 42 },

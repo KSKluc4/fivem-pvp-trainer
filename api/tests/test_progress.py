@@ -90,8 +90,8 @@ def test_get_heatmap_requires_auth():
 
 ROUTINE_2_CHECKABLE = {
     'sections': [
-        {'name': 'aquecimento', 'checkable': False, 'exercises': [{'exercise': 'tracking_suave'}]},
-        {'name': 'treino_principal', 'checkable': True, 'exercises': [{'exercise': 'tracking_suave'}, {'exercise': 'quick_flick'}]},
+        {'name': 'aquecimento', 'checkable': False, 'exercises': [{'exercise': 'tracking_2d'}]},
+        {'name': 'treino_principal', 'checkable': True, 'exercises': [{'exercise': 'tracking_2d'}, {'exercise': 'flick_2d'}]},
     ],
 }
 

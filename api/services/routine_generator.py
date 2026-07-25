@@ -25,7 +25,7 @@ def _first_of(value, default):
 # ── Aim block: internal trainer drills only ──────────────────────────────────
 #
 # KovaaK's/Aim Lab are gone — every day's aim training happens with our own
-# 4 drills (see src/frontend/src/trainer/scenarios). Which drills make the
+# 4 drills (see src/frontend/src/trainer/scenarios2d). Which drills make the
 # cut, and in what order, comes from the questionnaire's aim_difficulty/
 # reflex_level answers; each drill's difficulty comes from the user's own
 # per-exercise aim level (services.aim_level), the same system the in-app
@@ -34,12 +34,12 @@ def _first_of(value, default):
 # Emphasis bonus per questionnaire answer — higher score sorts first and is
 # more likely to make the cut when only 2-3 drills fit the time budget.
 AIM_DIFFICULTY_EMPHASIS = {
-    'tracking': {'tracking_suave': 2},
-    'flick':    {'quick_flick': 2, 'shot_grid': 1},
-    'close':    {'micro_adjust': 2, 'shot_grid': 1},
+    'tracking': {'tracking_2d': 2},
+    'flick':    {'flick_2d': 2, 'grid_2d': 1},
+    'close':    {'micro_2d': 2, 'grid_2d': 1},
 }
 REFLEX_EMPHASIS = {
-    'lento': {'quick_flick': 1},
+    'lento': {'flick_2d': 1},
 }
 
 # One difficulty step down from the day's recommended one — used for the

@@ -359,7 +359,7 @@
     "voltar": "Voltar",
     "dificuldade": "Dificuldade",
     "estilo_mira": "Estilo de mira",
-    "instrucoes": "60 segundos · o mouse fica preso na janela (Pointer Lock) — pressione <bold>ESC</bold> para soltar a qualquer momento.",
+    "instrucoes": "60 segundos · o cursor fica livre dentro da área de treino — pressione <bold>ESC</bold> para pausar a qualquer momento.",
     "iniciar": "Iniciar",
     "vai": "Vai!",
     "pausado": "Pausado",
@@ -377,19 +377,19 @@
       "cross-dot": "Cruz + Ponto"
     },
     "exercicios": {
-      "tracking_suave": {
+      "tracking_2d": {
         "nome": "Tracking Suave",
         "descricao": "Mantenha a mira em um alvo que se move de forma fluida e imprevisível"
       },
-      "shot_grid": {
+      "grid_2d": {
         "nome": "Grade de Tiro",
         "descricao": "Acerte alvos estáticos que nascem um por vez em posições aleatórias"
       },
-      "quick_flick": {
+      "flick_2d": {
         "nome": "Flick Rápido",
         "descricao": "Flicka rápido para alvos a distâncias variadas antes do tempo acabar"
       },
-      "micro_adjust": {
+      "micro_2d": {
         "nome": "Micro Ajuste",
         "descricao": "Pequenas correções em alvos próximos à mira, janela curta"
       }
@@ -428,22 +428,13 @@
       "proxima_rodada": "Próxima rodada",
       "concluir_rotina": "Concluir e voltar à rotina"
     },
-    "sensitivity_setup": {
-      "titulo": "Configurar sensibilidade",
-      "descricao": "O treino usa a sua sensibilidade real do GTA V — mesma resposta de mouse, contagem por contagem.",
-      "gta_sens_label": "Sensibilidade GTA V",
-      "gta_sens_desc": "Escala 0–100 · a mesma que você usa no jogo",
-      "dpi_label": "DPI do Mouse",
-      "ajuste_fino": "Ajuste fino",
-      "ajuste_fino_desc": "Multiplica a sensibilidade convertida — use se precisar de um pequeno ajuste sem mexer no GTA V.",
-      "salvar_continuar": "Salvar e continuar",
-      "preview_label": "Prévia ao vivo — mova o mouse aqui"
-    },
     "imersao": {
       "titulo": "Imersão do treino",
       "volume": "Volume dos sons",
-      "sons_treino": "Sons do treino",
-      "mostrar_arma": "Mostrar arma"
+      "sons_treino": "Sons do treino"
+    },
+    "hud": {
+      "sequencia": "sequência"
     }
   },
   "dashboard": {

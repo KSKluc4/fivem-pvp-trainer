@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTrainerScores } from '../services/api'
-import { EXERCISE_IDS } from './scenarios/index.js'
+import { EXERCISE_IDS } from './scenarios2d/index.js'
 
 // Loads every exercise's scores in parallel — one request per exercise
 // (rather than the unfiltered GET, which caps at 50 rows TOTAL across all

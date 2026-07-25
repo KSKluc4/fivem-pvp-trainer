@@ -10,28 +10,30 @@ import {
 import { useTranslation } from 'react-i18next'
 import ExercisePlayer from './ExercisePlayer'
 import { useAllTrainerScores } from './useAllTrainerScores'
-import { EXERCISE_IDS } from './scenarios/index.js'
+import { EXERCISE_IDS } from './scenarios2d/index.js'
 import { exerciseAimLevel, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
 import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
 import { setTrainerAudioVolume } from './audio/trainerAudio.js'
 import './trainer.css'
 
 const EXERCISE_ICONS = {
-  tracking_suave: IconFocus2,
-  shot_grid:      IconGrid3x3,
-  quick_flick:    IconBolt,
-  micro_adjust:   IconAdjustments,
+  tracking_2d: IconFocus2,
+  grid_2d:     IconGrid3x3,
+  flick_2d:    IconBolt,
+  micro_2d:    IconAdjustments,
 }
 
 // One accent color per drill (theme tokens only — brandCyan/brandPurple are
 // custom theme colors, orange/green are standard Mantine ones already used
 // elsewhere in the app, e.g. Progress.jsx's StatCard) — just enough visual
-// variety to tell the 4 cards apart at a glance.
+// variety to tell the 4 cards apart at a glance. Same 4 values engine2d/
+// theme2d.js sources its in-canvas target glow from, so the card icon color
+// and the drill's glow agree.
 const EXERCISE_COLORS = {
-  tracking_suave: 'brandCyan',
-  shot_grid:      'orange',
-  quick_flick:    'brandPurple',
-  micro_adjust:   'green',
+  tracking_2d: 'brandCyan',
+  grid_2d:     'orange',
+  flick_2d:    'brandPurple',
+  micro_2d:    'green',
 }
 
 function bestScoreFor(scores) {
@@ -161,11 +163,6 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
             label={t('trainer.imersao.sons_treino')}
             checked={audioSettings.sfxEnabled}
             onChange={(e) => updateAudioSettings({ sfxEnabled: e.currentTarget.checked })}
-          />
-          <Switch
-            label={t('trainer.imersao.mostrar_arma')}
-            checked={audioSettings.showWeapon}
-            onChange={(e) => updateAudioSettings({ showWeapon: e.currentTarget.checked })}
           />
         </Stack>
       </Card>

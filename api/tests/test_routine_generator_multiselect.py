@@ -49,8 +49,8 @@ def test_two_aim_difficulty_values_both_covered_in_main_on_a_short_day():
     profile = dict(PROFILE, aim_difficulty=['tracking', 'flick'], daily_time=25)  # drill_count == 2
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert 'tracking_suave' in main_ids
-    assert 'quick_flick' in main_ids
+    assert 'tracking_2d' in main_ids
+    assert 'flick_2d' in main_ids
     assert len(main_ids) == len(set(main_ids))  # never duplicated
 
 
@@ -58,8 +58,8 @@ def test_two_aim_difficulty_values_both_covered_on_a_long_day_too():
     profile = dict(PROFILE, aim_difficulty=['close', 'flick'], daily_time=70)  # drill_count == 3
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert 'micro_adjust' in main_ids
-    assert 'quick_flick' in main_ids
+    assert 'micro_2d' in main_ids
+    assert 'flick_2d' in main_ids
 
 
 def test_primary_aim_difficulty_alternates_by_day_parity():
@@ -73,7 +73,7 @@ def test_primary_aim_difficulty_alternates_by_day_parity():
     warmup_a = routine_a['sections'][0]['exercises'][0]['exercise']
     warmup_b = routine_b['sections'][0]['exercises'][0]['exercise']
 
-    assert {warmup_a, warmup_b} == {'tracking_suave', 'quick_flick'}
+    assert {warmup_a, warmup_b} == {'tracking_2d', 'flick_2d'}
     assert warmup_a != warmup_b
 
 

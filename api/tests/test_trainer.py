@@ -22,7 +22,7 @@ def auth_headers(user_id=7):
 
 
 VALID_PAYLOAD = {
-    'exercise': 'tracking_suave', 'difficulty': 'medio',
+    'exercise': 'tracking_2d', 'difficulty': 'medio',
     'score': 42000, 'accuracy': 70.0, 'duration_s': 60,
 }
 
@@ -37,7 +37,7 @@ def test_submit_score_saves_valid_payload(mock_save):
     res = client.post('/api/trainer/scores', json=VALID_PAYLOAD, headers=auth_headers())
 
     assert res.status_code == 201
-    mock_save.assert_called_once_with(7, 'tracking_suave', 'medio', 42000, 70.0, 60)
+    mock_save.assert_called_once_with(7, 'tracking_2d', 'medio', 42000, 70.0, 60)
 
 
 @patch('routes.trainer.save_trainer_score')
@@ -119,10 +119,10 @@ def test_list_scores_filters_by_exercise_query_param(mock_get):
     mock_get.return_value = []
     client = make_client()
 
-    res = client.get('/api/trainer/scores?exercise=tracking_suave', headers=auth_headers())
+    res = client.get('/api/trainer/scores?exercise=tracking_2d', headers=auth_headers())
 
     assert res.status_code == 200
-    mock_get.assert_called_once_with(7, 'tracking_suave')
+    mock_get.assert_called_once_with(7, 'tracking_2d')
 
 
 @patch('routes.trainer.get_trainer_scores')

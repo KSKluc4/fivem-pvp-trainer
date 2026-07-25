@@ -12,7 +12,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { getProgress, getActionLevel, getActivityHeatmap } from '../services/api'
 import { useAllTrainerScores } from '../trainer/useAllTrainerScores'
-import { EXERCISE_IDS } from '../trainer/scenarios/index.js'
+import { EXERCISE_IDS } from '../trainer/scenarios2d/index.js'
 import { exerciseAimLevel, overallAimLevel } from '../trainer/aimLevel.js'
 
 const HEATMAP_DAYS = 90

@@ -14,7 +14,7 @@ import {
 import { toast } from '../services/toast'
 import { initials, avatarHue } from '../services/avatar'
 import { useAllTrainerScores } from '../trainer/useAllTrainerScores'
-import { EXERCISE_IDS } from '../trainer/scenarios/index.js'
+import { EXERCISE_IDS } from '../trainer/scenarios2d/index.js'
 import { exerciseAimLevel, overallAimLevel } from '../trainer/aimLevel.js'
 
 const ACCEPT = 'image/jpeg,image/png,image/webp'

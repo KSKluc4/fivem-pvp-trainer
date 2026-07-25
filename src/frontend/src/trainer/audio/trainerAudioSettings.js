@@ -1,14 +1,13 @@
-// Persisted "minimal immersion" settings — weapon viewmodel + drill sound
-// effects. Deliberately localStorage-only (no backend sync), same as the
-// crosshair style choice, just persisted across sessions: purely cosmetic,
-// doesn't need to follow the user across devices. Mirrors the load/save
-// shape of ../sensitivity/trainerSensitivity.js.
+// Persisted "minimal immersion" settings — drill sound effects. Deliberately
+// localStorage-only (no backend sync), same as the crosshair style choice,
+// just persisted across sessions: purely cosmetic, doesn't need to follow
+// the user across devices. Mirrors the load/save shape of
+// ../sensitivity/trainerSensitivity.js.
 const STORAGE_KEY = 'trainer_audio_settings_v1'
 
 const DEFAULTS = {
   volume:              50,    // 0-100
   sfxEnabled:           true,  // "Sons do treino"
-  showWeapon:           true,  // "Mostrar arma"
   // Tracking Suave's subtle on-target tick — off by default per spec, no UI
   // toggle exposed yet; kept as a settings field so it's one flip away.
   onTargetTickEnabled:  false,
