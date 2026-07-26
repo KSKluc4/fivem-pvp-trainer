@@ -122,7 +122,7 @@ def test_list_scores_filters_by_exercise_query_param(mock_get):
     res = client.get('/api/trainer/scores?exercise=tracking_2d', headers=auth_headers())
 
     assert res.status_code == 200
-    mock_get.assert_called_once_with(7, 'tracking_2d')
+    mock_get.assert_called_once_with(7, 'tracking_2d', limit=50)
 
 
 @patch('routes.trainer.get_trainer_scores')

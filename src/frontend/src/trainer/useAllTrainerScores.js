@@ -1,40 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTrainerScores } from '../services/api'
-import { EXERCISE_IDS } from './scenarios2d/index.js'
+import { DRILL_IDS } from './catalog.js'
 
-// Loads every exercise's scores in parallel — one request per exercise
-// (rather than the unfiltered GET, which caps at 50 rows TOTAL across all
-// exercises and would starve whichever ones the player favors less
-// recently). Used by the trainer selection screen (per-exercise personal
-// bests + overall aim level) and the dashboard's Aim Progress section.
+// Loads every drill's recent scores in ONE unfiltered request (the API
+// returns newest-first across all drills; `limit` covers 25 drills' recent
+// windows comfortably) and groups them per exercise id. One call instead of
+// one-per-drill — with the 3.1.0 catalog that would be 25 parallel requests
+// per screen mount. Used by the trainer selection screen (per-drill personal
+// bests + category/overall aim levels) and the dashboard's Aim Progress
+// section.
 const LOCAL_KEY = 'trainer_scores_fallback_v1'
+const FETCH_LIMIT = 500
 
-function loadLocal(exercise) {
+function loadLocalAll() {
   try {
-    const all = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]')
-    return all.filter((s) => s.exercise === exercise)
+    return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]')
   } catch {
     return []
   }
 }
 
+function groupByExercise(rows) {
+  const grouped = Object.fromEntries(DRILL_IDS.map((id) => [id, []]))
+  for (const row of rows) {
+    if (grouped[row.exercise]) grouped[row.exercise].push(row)
+  }
+  return grouped
+}
+
 export function useAllTrainerScores() {
   const [scoresByExercise, setScoresByExercise] = useState(() =>
-    Object.fromEntries(EXERCISE_IDS.map((id) => [id, []])))
+    Object.fromEntries(DRILL_IDS.map((id) => [id, []])))
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.allSettled(EXERCISE_IDS.map((id) => getTrainerScores(id)))
-      .then((results) => {
-        const next = {}
-        EXERCISE_IDS.forEach((id, i) => {
-          const r = results[i]
-          next[id] = r.status === 'fulfilled' ? r.value.data : loadLocal(id)
-        })
-        setScoresByExercise(next)
-        setLoading(false)
-      })
+    getTrainerScores(undefined, FETCH_LIMIT)
+      .then((res) => setScoresByExercise(groupByExercise(res.data)))
+      .catch(() => setScoresByExercise(groupByExercise(loadLocalAll())))
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => { load() }, [load])

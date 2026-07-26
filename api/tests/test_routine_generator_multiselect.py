@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from services.routine_generator import (
     generate_routine, _daily_focus_order, _daily_focus_order_legacy,
 )
+from services.aim_level import CATEGORY_DRILLS
 
 # SPEC-004 — multi-select (up to 2) on focus_area/aim_difficulty/specific_weakness.
 # The existing api/tests/test_routine_generator.py is untouched on purpose: every
@@ -48,18 +49,20 @@ def test_daily_focus_order_with_all_single_values_matches_legacy_exactly():
 def test_two_aim_difficulty_values_both_covered_in_main_on_a_short_day():
     profile = dict(PROFILE, aim_difficulty=['tracking', 'flick'], daily_time=25)  # drill_count == 2
     routine = generate_routine(profile, today=date(2026, 7, 6))
-    main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert 'tracking_2d' in main_ids
-    assert 'flick_2d' in main_ids
+    main = routine['sections'][1]['exercises']
+    categories = [ex['category'] for ex in main]
+    assert 'tracking' in categories
+    assert 'flicking' in categories
+    main_ids = [ex['exercise'] for ex in main]
     assert len(main_ids) == len(set(main_ids))  # never duplicated
 
 
 def test_two_aim_difficulty_values_both_covered_on_a_long_day_too():
     profile = dict(PROFILE, aim_difficulty=['close', 'flick'], daily_time=70)  # drill_count == 3
     routine = generate_routine(profile, today=date(2026, 7, 6))
-    main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert 'micro_2d' in main_ids
-    assert 'flick_2d' in main_ids
+    categories = [ex['category'] for ex in routine['sections'][1]['exercises']]
+    assert 'precision' in categories
+    assert 'flicking' in categories
 
 
 def test_primary_aim_difficulty_alternates_by_day_parity():
@@ -70,11 +73,13 @@ def test_primary_aim_difficulty_alternates_by_day_parity():
 
     routine_a = generate_routine(profile, today=day_a)
     routine_b = generate_routine(profile, today=day_b)
-    warmup_a = routine_a['sections'][0]['exercises'][0]['exercise']
-    warmup_b = routine_b['sections'][0]['exercises'][0]['exercise']
+    warmup_a = routine_a['sections'][0]['exercises'][0]
+    warmup_b = routine_b['sections'][0]['exercises'][0]
 
-    assert {warmup_a, warmup_b} == {'tracking_2d', 'flick_2d'}
-    assert warmup_a != warmup_b
+    assert {warmup_a['category'], warmup_b['category']} == {'tracking', 'flicking'}
+    assert warmup_a['category'] != warmup_b['category']
+    assert warmup_a['exercise'] in CATEGORY_DRILLS[warmup_a['category']]
+    assert warmup_b['exercise'] in CATEGORY_DRILLS[warmup_b['category']]
 
 
 def test_routine_json_keeps_focus_area_and_specific_weakness_scalar():

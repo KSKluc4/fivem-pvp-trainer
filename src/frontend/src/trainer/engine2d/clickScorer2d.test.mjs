@@ -2,6 +2,27 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ClickScorer2D } from './clickScorer2d.js'
 
+test('score honors the points argument — a bullseye hit can be worth more than 1', () => {
+  const scorer = new ClickScorer2D()
+  scorer.registerShot(true, 100, 2)
+  scorer.registerShot(true, 100, 1)
+  assert.equal(scorer.score, 3)
+  assert.equal(scorer.hits, 2)
+})
+
+test('points defaults to 1 when omitted, so score === hits for ordinary drills', () => {
+  const scorer = new ClickScorer2D()
+  scorer.registerShot(true, 100)
+  scorer.registerShot(true, 100)
+  assert.equal(scorer.score, scorer.hits)
+})
+
+test('a miss never contributes points regardless of the points argument', () => {
+  const scorer = new ClickScorer2D()
+  scorer.registerShot(false, 0, 2)
+  assert.equal(scorer.score, 0)
+})
+
 test('score is the hit count, accuracy is hits/shotsFired', () => {
   const scorer = new ClickScorer2D()
   scorer.registerShot(true, 100)

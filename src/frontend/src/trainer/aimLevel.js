@@ -1,71 +1,113 @@
-// Per-exercise "aim level" (1-5), mirrored from api/services/aim_level.py —
+// Per-CATEGORY "aim level" (1-5), mirrored from api/services/aim_level.py —
 // the header/dashboard need this in the browser, where the Python module
-// can't run. Keep the thresholds below identical to the Python copy;
-// recalibrate both together.
+// can't run. Keep CALIBRATION and the formula below identical to the Python
+// copy; recalibrate both together.
 //
-// Level for a SINGLE score is looked up from that score's own difficulty
-// thresholds. A per-exercise level is the rounded average of the per-score
-// levels across the last RECENT_WINDOW scores (any difficulty mixed in is
-// fine — each score is judged against its own difficulty first). Below
-// MIN_ATTEMPTS scores for that exercise, the level is null ("not enough
-// data yet") — exclude it from averages, don't treat it as the worst level.
+// ── The whole formula, in one place ─────────────────────────────────────────
+//
+// 1. Normalize a single score by its own drill AND difficulty:
+//        normalized = clamp(score / CALIBRATION[drill][difficulty], 0, 1)
+//    CALIBRATION holds ONE number per drill per difficulty: the score that
+//    represents top-tier (level 5) performance in a 60s session. This is the
+//    only table to touch when recalibrating.
+//
+// 2. Map it to continuous level points:  points = 1 + 4 * normalized  (1..5)
+//
+// 3. Category level = round(mean(points)) over the newest RECENT_WINDOW
+//    scores POOLED across all of that category's drills (any drill and any
+//    difficulty mix — each score was already normalized by its own pair).
+//    Below MIN_ATTEMPTS pooled scores the category level is null ("not
+//    enough data yet") — exclude it from averages, don't treat it as 1.
+//
+// 4. Overall aim level = plain mean of the non-null category levels.
+//
+// Since 3.1.0 the minimum-attempts rule counts per CATEGORY, not per drill —
+// 5 sessions spread over any drills of a category unlock its level.
 
-export const THRESHOLDS_BY_EXERCISE = {
-  tracking_2d: {
-    facil:   { 2: 15000, 3: 25000, 4: 35000, 5: 45000 },
-    medio:   { 2: 10000, 3: 18000, 4: 27000, 5: 38000 },
-    dificil: { 2: 6000,  3: 12000, 4: 20000, 5: 30000 },
-  },
-  grid_2d: {
-    facil:   { 2: 25, 3: 35, 4: 45, 5: 55 },
-    medio:   { 2: 20, 3: 30, 4: 40, 5: 50 },
-    dificil: { 2: 15, 3: 24, 4: 33, 5: 42 },
-  },
-  flick_2d: {
-    facil:   { 2: 18, 3: 26, 4: 34, 5: 42 },
-    medio:   { 2: 14, 3: 21, 4: 28, 5: 36 },
-    dificil: { 2: 10, 3: 16, 4: 22, 5: 28 },
-  },
-  micro_2d: {
-    facil:   { 2: 30, 3: 42, 4: 54, 5: 66 },
-    medio:   { 2: 24, 3: 34, 4: 44, 5: 54 },
-    dificil: { 2: 18, 3: 26, 4: 34, 5: 42 },
-  },
+import { CATEGORIES, DRILLS_BY_ID, drillsInCategory } from './catalog.js'
+
+export { CATEGORIES }
+
+// Score worth level 5, per drill per difficulty. The 4 pre-3.1.0 drills use
+// their old level-5 thresholds, so an established player lands on a familiar
+// level; the new drills start from session-length estimates.
+export const CALIBRATION = {
+  // tracking — score = ms on target in 60s
+  tracking_2d:           { facil: 45000, medio: 38000, dificil: 30000 },
+  tracking_zigzag_2d:    { facil: 40000, medio: 32000, dificil: 24000 },
+  tracking_paciente_2d:  { facil: 46000, medio: 40000, dificil: 33000 },
+  tracking_velocista_2d: { facil: 42000, medio: 34000, dificil: 26000 },
+  tracking_pare_siga_2d: { facil: 44000, medio: 36000, dificil: 28000 },
+  // clicking — score = hits in 60s
+  grid_2d:               { facil: 55, medio: 50, dificil: 42 },
+  clicking_trio_2d:      { facil: 60, medio: 55, dificil: 48 },
+  clicking_tabuleiro_2d: { facil: 58, medio: 52, dificil: 45 },
+  clicking_fugaz_2d:     { facil: 45, medio: 38, dificil: 30 },
+  clicking_alfinete_2d:  { facil: 40, medio: 34, dificil: 27 },
+  // flicking — score = hits in 60s
+  flick_2d:              { facil: 42, medio: 36, dificil: 28 },
+  flick_longo_2d:        { facil: 36, medio: 30, dificil: 24 },
+  flick_pendulo_2d:      { facil: 40, medio: 34, dificil: 27 },
+  flick_isca_2d:         { facil: 34, medio: 28, dificil: 22 },
+  flick_corrente_2d:     { facil: 44, medio: 38, dificil: 30 },
+  // precision — score = hits (mosca: points, inner ring counts double)
+  micro_2d:              { facil: 66, medio: 54, dificil: 42 },
+  precisao_minguante_2d: { facil: 40, medio: 34, dificil: 26 },
+  precisao_mosca_2d:     { facil: 70, medio: 58, dificil: 46 },
+  precisao_salto_2d:     { facil: 42, medio: 35, dificil: 28 },
+  precisao_fresta_2d:    { facil: 38, medio: 32, dificil: 25 },
+  // reaction — score = hits in 60s (spawn delays eat into the clock)
+  reacao_gatilho_2d:     { facil: 30, medio: 26, dificil: 20 },
+  reacao_dupla_2d:       { facil: 40, medio: 34, dificil: 27 },
+  reacao_espera_2d:      { facil: 30, medio: 26, dificil: 20 },
+  reacao_rajada_2d:      { facil: 46, medio: 40, dificil: 32 },
+  reacao_semaforo_2d:    { facil: 26, medio: 22, dificil: 17 },
 }
 
-export const EXERCISE_IDS = Object.keys(THRESHOLDS_BY_EXERCISE)
-
-export const MIN_ATTEMPTS  = 5
-export const RECENT_WINDOW = 10
+export const MIN_ATTEMPTS  = 5   // per CATEGORY (pooled across its drills)
+export const RECENT_WINDOW = 15  // per CATEGORY (pooled, newest-first)
 export const MIN_LEVEL = 1
 export const MAX_LEVEL = 5
 
 export const LEVEL_TO_DIFFICULTY = { 1: 'facil', 2: 'facil', 3: 'medio', 4: 'dificil', 5: 'dificil' }
 
-export function levelForSingleScore(exercise, difficulty, score) {
-  const thresholds = THRESHOLDS_BY_EXERCISE[exercise]?.[difficulty]
-  if (!thresholds || typeof score !== 'number' || Number.isNaN(score)) return MIN_LEVEL
-  let level = MIN_LEVEL
-  for (const lvl of [2, 3, 4, 5]) {
-    if (score >= thresholds[lvl]) level = lvl
-  }
-  return level
+// Steps 1+2 of the formula: one score → continuous level points (1..5).
+export function levelPointsForScore(exercise, difficulty, score) {
+  const ref = CALIBRATION[exercise]?.[difficulty]
+  if (!ref || typeof score !== 'number' || Number.isNaN(score)) return MIN_LEVEL
+  const normalized = Math.min(1, Math.max(0, score / ref))
+  return 1 + 4 * normalized
 }
 
-// scores: array of {exercise, difficulty, score}, newest-first (matches the
-// API's ordering). Only the first RECENT_WINDOW entries are considered.
-// Returns 1-5, or null if there are fewer than MIN_ATTEMPTS scores.
-export function exerciseAimLevel(scores) {
+// Step 3: scores = array of {exercise, difficulty, score, created_at?} for
+// ONE category (already pooled), newest-first. Returns 1-5, or null below
+// MIN_ATTEMPTS.
+export function categoryAimLevel(scores) {
   const window = scores.slice(0, RECENT_WINDOW)
   if (window.length < MIN_ATTEMPTS) return null
-  const levels = window.map((s) => levelForSingleScore(s.exercise, s.difficulty, s.score))
-  return Math.round(levels.reduce((a, b) => a + b, 0) / levels.length)
+  const points = window.map((s) => levelPointsForScore(s.exercise, s.difficulty, s.score))
+  const mean = points.reduce((a, b) => a + b, 0) / points.length
+  return Math.min(MAX_LEVEL, Math.max(MIN_LEVEL, Math.round(mean)))
 }
 
-// perExerciseLevels: {exercise: level|null}. Returns the average of the
-// non-null levels, or null if none are available yet.
-export function overallAimLevel(perExerciseLevels) {
-  const values = Object.values(perExerciseLevels).filter((v) => v != null)
+// Merges per-exercise score lists (each newest-first) into one newest-first
+// pooled list for the category — created_at decides the interleave; rows
+// without one (very old local-fallback entries) sort as oldest.
+export function poolCategoryScores(scoresByExercise, category) {
+  const merged = drillsInCategory(category).flatMap((d) => scoresByExercise[d.id] || [])
+  return merged.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+}
+
+// {category: level|null} for all 5 categories.
+export function perCategoryLevels(scoresByExercise) {
+  return Object.fromEntries(
+    CATEGORIES.map((cat) => [cat, categoryAimLevel(poolCategoryScores(scoresByExercise, cat))]),
+  )
+}
+
+// Step 4: average of the non-null category levels, or null if none yet.
+export function overallAimLevel(levelsByCategory) {
+  const values = Object.values(levelsByCategory).filter((v) => v != null)
   if (values.length === 0) return null
   return values.reduce((a, b) => a + b, 0) / values.length
 }
@@ -73,4 +115,8 @@ export function overallAimLevel(perExerciseLevels) {
 export function recommendedDifficulty(aimLevel) {
   if (aimLevel == null) return 'medio'
   return LEVEL_TO_DIFFICULTY[Math.round(aimLevel)] || 'medio'
+}
+
+export function categoryOfExercise(exerciseId) {
+  return DRILLS_BY_ID[exerciseId]?.category || null
 }

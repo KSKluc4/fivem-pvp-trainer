@@ -136,6 +136,6 @@ export const getAdminUsers = () => api.get('/admin/users')
 
 // ── Aim trainer scores ────────────────────────────────────────────────────────
 export const postTrainerScore = (data) => api.post('/trainer/scores', data)
-export const getTrainerScores = (exercise) => api.get('/trainer/scores', { params: { exercise } })
+export const getTrainerScores = (exercise, limit) => api.get('/trainer/scores', { params: { exercise, limit } })
 
 export default api

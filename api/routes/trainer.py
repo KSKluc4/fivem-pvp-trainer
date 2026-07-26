@@ -43,12 +43,22 @@ def submit_trainer_score():
     return jsonify(row), 201
 
 
+MAX_LIST_LIMIT = 500
+
+
 @trainer_bp.route('/trainer/scores', methods=['GET'])
 @require_auth
 def list_trainer_scores():
     exercise = request.args.get('exercise')
+    # Optional `limit` (default 50, capped) — the frontend fetches ALL drills
+    # in one request since 3.1.0 (25 drills would otherwise mean 25 calls)
+    # and needs more than the old 50-row default to cover them.
     try:
-        rows = get_trainer_scores(g.user_id, exercise)
+        limit = min(MAX_LIST_LIMIT, max(1, int(request.args.get('limit', 50))))
+    except (TypeError, ValueError):
+        limit = 50
+    try:
+        rows = get_trainer_scores(g.user_id, exercise, limit=limit)
         return jsonify(rows), 200
     except Exception:
         traceback.print_exc()

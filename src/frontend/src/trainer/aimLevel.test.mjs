@@ -1,80 +1,136 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import {
-  levelForSingleScore, exerciseAimLevel, overallAimLevel, recommendedDifficulty,
-  THRESHOLDS_BY_EXERCISE, EXERCISE_IDS, MIN_ATTEMPTS, RECENT_WINDOW,
+  levelPointsForScore, categoryAimLevel, overallAimLevel, recommendedDifficulty,
+  poolCategoryScores, categoryOfExercise,
+  CALIBRATION, CATEGORIES, MIN_ATTEMPTS, RECENT_WINDOW, MIN_LEVEL, MAX_LEVEL,
 } from './aimLevel.js'
+import { DRILL_IDS, drillsInCategory } from './catalog.js'
 
 function scoreRows(exercise, difficulty, scores) {
   return scores.map((score) => ({ exercise, difficulty, score }))
 }
 
-test('all four exercises have increasing thresholds for all three difficulties', () => {
-  assert.deepEqual([...EXERCISE_IDS].sort(), ['flick_2d', 'grid_2d', 'micro_2d', 'tracking_2d'])
-  for (const exercise of EXERCISE_IDS) {
-    assert.deepEqual(Object.keys(THRESHOLDS_BY_EXERCISE[exercise]).sort(), ['dificil', 'facil', 'medio'])
-    for (const difficulty of Object.keys(THRESHOLDS_BY_EXERCISE[exercise])) {
-      const t = THRESHOLDS_BY_EXERCISE[exercise][difficulty]
-      const values = [2, 3, 4, 5].map((l) => t[l])
-      assert.deepEqual(values, [...values].sort((a, b) => a - b))
-    }
+// ── Catalog/calibration shape ────────────────────────────────────────────
+
+test('CALIBRATION has an entry for every catalog drill, and only those', () => {
+  assert.deepEqual([...Object.keys(CALIBRATION)].sort(), [...DRILL_IDS].sort())
+})
+
+test('every drill has increasing calibration facil > medio > dificil', () => {
+  for (const drill of DRILL_IDS) {
+    const t = CALIBRATION[drill]
+    assert.deepEqual(Object.keys(t).sort(), ['dificil', 'facil', 'medio'])
+    assert.ok(t.facil > t.medio && t.medio > t.dificil, `${drill} calibration must decrease facil > medio > dificil`)
   }
 })
 
-test('levelForSingleScore baseline below the level-2 threshold', () => {
-  assert.equal(levelForSingleScore('grid_2d', 'medio', 0), 1)
-  assert.equal(levelForSingleScore('grid_2d', 'medio', 19), 1)
-})
+// aimLevel.js and api/services/aim_level.py hand-mirror the same CALIBRATION
+// table (the frontend can't import Python) — nothing else catches the two
+// drifting apart, so parse the Python source and diff the numbers directly.
+test('CALIBRATION mirrors the Python copy in api/services/aim_level.py', () => {
+  const dir = path.dirname(fileURLToPath(import.meta.url))
+  const pyPath = path.join(dir, '..', '..', '..', '..', 'api', 'services', 'aim_level.py')
+  const pySource = readFileSync(pyPath, 'utf8')
 
-test('levelForSingleScore hits each threshold exactly', () => {
-  const t = THRESHOLDS_BY_EXERCISE.grid_2d.medio
-  for (const level of [2, 3, 4, 5]) {
-    assert.equal(levelForSingleScore('grid_2d', 'medio', t[level]), level)
+  const pyCalibration = {}
+  const entryRe = /'(\w+)':\s*\{'facil':\s*(\d+),\s*'medio':\s*(\d+),\s*'dificil':\s*(\d+)\}/g
+  let match
+  while ((match = entryRe.exec(pySource)) !== null) {
+    const [, drill, facil, medio, dificil] = match
+    pyCalibration[drill] = { facil: Number(facil), medio: Number(medio), dificil: Number(dificil) }
   }
+
+  assert.ok(Object.keys(pyCalibration).length > 0, 'failed to parse any CALIBRATION entries from aim_level.py — regex drifted from the source format')
+  assert.deepEqual(pyCalibration, CALIBRATION)
 })
 
-test('levelForSingleScore caps at 5 above the top threshold', () => {
-  const t = THRESHOLDS_BY_EXERCISE.grid_2d.medio
-  assert.equal(levelForSingleScore('grid_2d', 'medio', t[5] + 1000), 5)
+// ── levelPointsForScore ──────────────────────────────────────────────────
+
+test('levelPointsForScore at zero score is baseline', () => {
+  assert.equal(levelPointsForScore('grid_2d', 'medio', 0), MIN_LEVEL)
 })
 
-test('levelForSingleScore defaults to baseline for unknown exercise/difficulty', () => {
-  assert.equal(levelForSingleScore('not_real', 'medio', 999999), 1)
-  assert.equal(levelForSingleScore('grid_2d', 'not_real', 999999), 1)
+test('levelPointsForScore at the calibration threshold is five', () => {
+  const ref = CALIBRATION.grid_2d.medio
+  assert.equal(levelPointsForScore('grid_2d', 'medio', ref), MAX_LEVEL)
 })
 
-test('exerciseAimLevel is null below MIN_ATTEMPTS', () => {
+test('levelPointsForScore caps at five above the threshold', () => {
+  const ref = CALIBRATION.grid_2d.medio
+  assert.equal(levelPointsForScore('grid_2d', 'medio', ref * 10), MAX_LEVEL)
+})
+
+test('levelPointsForScore halfway to the threshold is three', () => {
+  const ref = CALIBRATION.grid_2d.medio
+  assert.equal(levelPointsForScore('grid_2d', 'medio', ref / 2), 3)
+})
+
+test('levelPointsForScore defaults to baseline for unknown exercise/difficulty', () => {
+  assert.equal(levelPointsForScore('not_real', 'medio', 999999), MIN_LEVEL)
+  assert.equal(levelPointsForScore('grid_2d', 'not_real', 999999), MIN_LEVEL)
+})
+
+test('levelPointsForScore defaults to baseline for a non-numeric score', () => {
+  assert.equal(levelPointsForScore('grid_2d', 'medio', undefined), MIN_LEVEL)
+  assert.equal(levelPointsForScore('grid_2d', 'medio', NaN), MIN_LEVEL)
+})
+
+// ── categoryAimLevel ──────────────────────────────────────────────────────
+
+test('categoryAimLevel is null below MIN_ATTEMPTS', () => {
   const scores = scoreRows('grid_2d', 'medio', Array(MIN_ATTEMPTS - 1).fill(50))
-  assert.equal(exerciseAimLevel(scores), null)
+  assert.equal(categoryAimLevel(scores), null)
 })
 
-test('exerciseAimLevel computes at MIN_ATTEMPTS', () => {
-  const scores = scoreRows('grid_2d', 'medio', Array(MIN_ATTEMPTS).fill(50))
-  assert.equal(exerciseAimLevel(scores), 5)
+test('categoryAimLevel computes at MIN_ATTEMPTS', () => {
+  const ref = CALIBRATION.grid_2d.medio
+  const scores = scoreRows('grid_2d', 'medio', Array(MIN_ATTEMPTS).fill(ref))
+  assert.equal(categoryAimLevel(scores), 5)
 })
 
-test('exerciseAimLevel only considers the recent window', () => {
-  const recent = scoreRows('grid_2d', 'medio', Array(RECENT_WINDOW).fill(5))
-  const older  = scoreRows('grid_2d', 'medio', Array(5).fill(999))
-  assert.equal(exerciseAimLevel([...recent, ...older]), 1)
+test('categoryAimLevel only considers the recent window', () => {
+  const recent = scoreRows('grid_2d', 'medio', Array(RECENT_WINDOW).fill(0))
+  const older  = scoreRows('grid_2d', 'medio', Array(5).fill(999999))
+  assert.equal(categoryAimLevel([...recent, ...older]), 1)
 })
 
-test('exerciseAimLevel averages mixed difficulties, each judged on its own thresholds', () => {
+test('categoryAimLevel pools drills sharing a category, each judged on its own calibration', () => {
+  const refGrid = CALIBRATION.grid_2d.medio
   const scores = [
-    ...scoreRows('grid_2d', 'medio', [50, 50, 50]),
-    ...scoreRows('grid_2d', 'facil', [10, 10]),
+    ...scoreRows('grid_2d', 'medio', [refGrid, refGrid, refGrid]),
+    ...scoreRows('clicking_trio_2d', 'medio', [0, 0]),
   ]
   // levels: [5,5,5,1,1] -> mean 3.4 -> round -> 3
-  assert.equal(exerciseAimLevel(scores), 3)
+  assert.equal(categoryAimLevel(scores), 3)
 })
+
+// ── poolCategoryScores ────────────────────────────────────────────────────
+
+test('poolCategoryScores merges only the category\'s own drills, newest-first', () => {
+  const scoresByExercise = {
+    grid_2d: [{ exercise: 'grid_2d', score: 1, created_at: '2026-01-02' }],
+    clicking_trio_2d: [{ exercise: 'clicking_trio_2d', score: 2, created_at: '2026-01-03' }],
+    tracking_2d: [{ exercise: 'tracking_2d', score: 3, created_at: '2026-01-04' }],
+  }
+  const pooled = poolCategoryScores(scoresByExercise, 'clicking')
+  assert.deepEqual(pooled.map((s) => s.exercise), ['clicking_trio_2d', 'grid_2d'])
+})
+
+// ── overallAimLevel ───────────────────────────────────────────────────────
 
 test('overallAimLevel is null when nothing is computed yet', () => {
-  assert.equal(overallAimLevel({ grid_2d: null, flick_2d: null }), null)
+  assert.equal(overallAimLevel({ tracking: null, flicking: null }), null)
 })
 
-test('overallAimLevel averages only the non-null exercises', () => {
-  assert.equal(overallAimLevel({ grid_2d: 4, flick_2d: null, micro_2d: 2 }), 3)
+test('overallAimLevel averages only the non-null categories', () => {
+  assert.equal(overallAimLevel({ tracking: 4, flicking: null, precision: 2 }), 3)
 })
+
+// ── recommendedDifficulty ─────────────────────────────────────────────────
 
 test('recommendedDifficulty defaults to medio without data', () => {
   assert.equal(recommendedDifficulty(null), 'medio')
@@ -86,4 +142,18 @@ test('recommendedDifficulty maps levels to tiers', () => {
   assert.equal(recommendedDifficulty(3), 'medio')
   assert.equal(recommendedDifficulty(4), 'dificil')
   assert.equal(recommendedDifficulty(5), 'dificil')
+})
+
+// ── categoryOfExercise ────────────────────────────────────────────────────
+
+test('categoryOfExercise mirrors the catalog for every drill', () => {
+  for (const category of CATEGORIES) {
+    for (const drill of drillsInCategory(category)) {
+      assert.equal(categoryOfExercise(drill.id), category)
+    }
+  }
+})
+
+test('categoryOfExercise returns null for an unknown exercise', () => {
+  assert.equal(categoryOfExercise('not_real'), null)
 })

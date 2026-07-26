@@ -371,6 +371,19 @@
       "medio": "Medium",
       "dificil": "Hard"
     },
+    "categorias": {
+      "todos": "All",
+      "tracking": "Tracking",
+      "clicking": "Clicking",
+      "flicking": "Flicking",
+      "precision": "Precision",
+      "reaction": "Reaction",
+      "sem_nivel": "No level yet"
+    },
+    "config": {
+      "abrir": "Settings",
+      "titulo": "Settings"
+    },
     "crosshair_estilos": {
       "cross": "Cross",
       "dot": "Dot",
@@ -381,22 +394,106 @@
         "nome": "Smooth Tracking",
         "descricao": "Keep your crosshair on a target drifting in fluid, unpredictable directions"
       },
+      "tracking_zigzag_2d": {
+        "nome": "Zigzag Tracking",
+        "descricao": "The target snaps direction abruptly instead of blending, on a short clock"
+      },
+      "tracking_paciente_2d": {
+        "nome": "Patient Tracking",
+        "descricao": "Slow, small target — tests patience and steadiness, not speed"
+      },
+      "tracking_velocista_2d": {
+        "nome": "Sprinter Tracking",
+        "descricao": "Fast, big target — favors raw arm speed over fine precision"
+      },
+      "tracking_pare_siga_2d": {
+        "nome": "Stop-and-Go Tracking",
+        "descricao": "Smooth drift interrupted by sudden, full stops"
+      },
       "grid_2d": {
         "nome": "Shot Grid",
         "descricao": "Hit static targets that spawn one at a time at random positions"
+      },
+      "clicking_trio_2d": {
+        "nome": "Clicking Trio",
+        "descricao": "Three targets alive at once — pick your own order to clear them"
+      },
+      "clicking_tabuleiro_2d": {
+        "nome": "Grid Board",
+        "descricao": "Targets spawn in fixed grid cells — muscle memory over searching"
+      },
+      "clicking_fugaz_2d": {
+        "nome": "Fleeting Target",
+        "descricao": "Targets vanish on their own after a while — hesitation costs the point"
+      },
+      "clicking_alfinete_2d": {
+        "nome": "Pinpoint",
+        "descricao": "Tiny static targets — only clean clicks count"
       },
       "flick_2d": {
         "nome": "Quick Flick",
         "descricao": "Flick fast onto targets at varying distances before time runs out"
       },
+      "flick_longo_2d": {
+        "nome": "Long Flick",
+        "descricao": "Long-range flicks — the target always spawns far from your crosshair"
+      },
+      "flick_pendulo_2d": {
+        "nome": "Pendulum Flick",
+        "descricao": "Targets alternate strictly left and right of your cursor"
+      },
+      "flick_isca_2d": {
+        "nome": "Decoy Flick",
+        "descricao": "Every real target comes with a blue decoy — flick past the bait"
+      },
+      "flick_corrente_2d": {
+        "nome": "Chain Flick",
+        "descricao": "Each target spawns relative to the previous one, not your cursor"
+      },
       "micro_2d": {
         "nome": "Micro Adjust",
         "descricao": "Small corrections on targets near your crosshair, short window"
+      },
+      "precisao_minguante_2d": {
+        "nome": "Shrinking Precision",
+        "descricao": "The target shrinks from full size toward nothing — hit it early"
+      },
+      "precisao_mosca_2d": {
+        "nome": "Bullseye Precision",
+        "descricao": "Target with an inner ring worth double — placement over volume"
+      },
+      "precisao_salto_2d": {
+        "nome": "Jump Precision",
+        "descricao": "The target hops once shortly after appearing — land the correction"
+      },
+      "precisao_fresta_2d": {
+        "nome": "Slit Precision",
+        "descricao": "Narrow, vertical sliver of a target — horizontal precision is everything"
+      },
+      "reacao_gatilho_2d": {
+        "nome": "Trigger Reaction",
+        "descricao": "Blank screen, then a target pops up somewhere random — pure reaction"
+      },
+      "reacao_dupla_2d": {
+        "nome": "Dual Reaction",
+        "descricao": "Two fixed posts — the live one switches; snap to whichever lights up"
+      },
+      "reacao_espera_2d": {
+        "nome": "Waiting Reaction",
+        "descricao": "One fixed center spot with an unpredictable delay — pure reaction time"
+      },
+      "reacao_rajada_2d": {
+        "nome": "Burst Reaction",
+        "descricao": "Rapid-fire sequence with barely any gap, short windows — keep up"
+      },
+      "reacao_semaforo_2d": {
+        "nome": "Traffic Light Reaction",
+        "descricao": "Go/no-go: shoot the red targets, leave the blue ones alone"
       }
     },
     "nivel_aim": {
       "titulo": "Overall Aim Level",
-      "sem_dados": "Play each drill at least 5 times to calculate your aim level",
+      "sem_dados_curto": "Not enough data yet",
       "nivel": "Level {{level}}",
       "proximo": "toward level {{level}}",
       "nivel_maximo": "Max level!"

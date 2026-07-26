@@ -59,3 +59,42 @@ test('respawn moves to a new spawnPosition() and resets timeAliveMs', () => {
   assert.equal(target.y, 60)
   assert.equal(target.timeAliveMs, 0)
 })
+
+test('containsPoint shrinks the hitbox as scale shrinks (precisao_minguante_2d)', () => {
+  const target = new Target2D({ spawnPosition: fixedSpawn(100, 100), radius: 10 })
+  target.scale = 0.5
+  assert.ok(!target.containsPoint(107, 100))  // inside the full radius, outside the shrunk one
+  assert.ok(target.containsPoint(104, 100))   // inside the shrunk radius
+})
+
+test('a scale of 0 has no hitbox at all', () => {
+  const target = new Target2D({ spawnPosition: fixedSpawn(100, 100), radius: 10 })
+  target.scale = 0
+  assert.ok(!target.containsPoint(100, 100))
+})
+
+test('respawn resets scale back to 1', () => {
+  const target = new Target2D({ spawnPosition: fixedSpawn(0, 0), radius: 10 })
+  target.scale = 0.3
+  target.respawn()
+  assert.equal(target.scale, 1)
+})
+
+test('containsPoint stretches the hitbox by aspectX/aspectY (precisao_fresta_2d)', () => {
+  const target = new Target2D({ spawnPosition: fixedSpawn(100, 100), radius: 10, aspectX: 0.3, aspectY: 1.35 })
+  // Narrow on X: a point inside a circular radius-10 target falls outside
+  // the ellipse once it's squeezed horizontally.
+  assert.ok(!target.containsPoint(107, 100))
+  assert.ok(target.containsPoint(102, 100))
+  // Tall on Y: further vertically than the base radius but still inside the
+  // stretched ellipse.
+  assert.ok(target.containsPoint(100, 113))
+})
+
+test('normalizedDistance is 0 at center, 1 at the (scaled) edge — used for ring scoring', () => {
+  const target = new Target2D({ spawnPosition: fixedSpawn(100, 100), radius: 10 })
+  assert.equal(target.normalizedDistance(100, 100), 0)
+  assert.ok(Math.abs(target.normalizedDistance(110, 100) - 1) < 1e-9)
+  target.scale = 0.5
+  assert.ok(Math.abs(target.normalizedDistance(105, 100) - 1) < 1e-9)
+})

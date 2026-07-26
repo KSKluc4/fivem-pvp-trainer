@@ -1,39 +1,40 @@
 import { useState } from 'react'
 import {
   Container, Box, Group, Stack, Title, Text, Button, Card, SimpleGrid, Badge,
-  RingProgress, ThemeIcon, Divider, Slider, Switch,
+  RingProgress, ThemeIcon, ActionIcon, Popover, Slider, Switch, SegmentedControl,
 } from '@mantine/core'
 import {
-  IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconAdjustments, IconChartLine, IconCompass,
-  IconVolume2,
+  IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconTargetArrow, IconStopwatch,
+  IconCompass, IconSettings,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import ExercisePlayer from './ExercisePlayer'
 import { useAllTrainerScores } from './useAllTrainerScores'
-import { EXERCISE_IDS } from './scenarios2d/index.js'
-import { exerciseAimLevel, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
+import { CATEGORIES, DRILLS, drillsInCategory } from './catalog.js'
+import { perCategoryLevels, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
 import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
 import { setTrainerAudioVolume } from './audio/trainerAudio.js'
 import './trainer.css'
 
-const EXERCISE_ICONS = {
-  tracking_2d: IconFocus2,
-  grid_2d:     IconGrid3x3,
-  flick_2d:    IconBolt,
-  micro_2d:    IconAdjustments,
+// One icon + accent color per CATEGORY (theme tokens only — brandCyan/
+// brandPurple are custom theme colors, the rest are standard Mantine ones
+// already used elsewhere). Same 5 hues engine2d/theme2d.js sources the
+// in-canvas target glow from, so a card's icon color and its drill's glow
+// agree.
+const CATEGORY_ICONS = {
+  tracking:  IconFocus2,
+  clicking:  IconGrid3x3,
+  flicking:  IconBolt,
+  precision: IconTargetArrow,
+  reaction:  IconStopwatch,
 }
 
-// One accent color per drill (theme tokens only — brandCyan/brandPurple are
-// custom theme colors, orange/green are standard Mantine ones already used
-// elsewhere in the app, e.g. Progress.jsx's StatCard) — just enough visual
-// variety to tell the 4 cards apart at a glance. Same 4 values engine2d/
-// theme2d.js sources its in-canvas target glow from, so the card icon color
-// and the drill's glow agree.
-const EXERCISE_COLORS = {
-  tracking_2d: 'brandCyan',
-  grid_2d:     'orange',
-  flick_2d:    'brandPurple',
-  micro_2d:    'green',
+export const CATEGORY_COLORS = {
+  tracking:  'brandCyan',
+  clicking:  'orange',
+  flicking:  'brandPurple',
+  precision: 'green',
+  reaction:  'yellow',
 }
 
 function bestScoreFor(scores) {
@@ -41,17 +42,19 @@ function bestScoreFor(scores) {
   return scores.reduce((best, s) => (best == null || s.score > best ? s.score : best), null)
 }
 
-// Trainer entry point — a selection screen with one card per exercise
-// (Tracking Suave from Phase 1 + the 3 Phase 2 drills), an overall aim
-// level header, and an optional `initialHint` (exercise + difficulty, plus
-// optionally rounds + exerciseName) that skips straight to ExercisePlayer —
-// used by the daily routine's per-card "Treinar" deep-link.
+// Trainer entry point — category-filtered drill grid over the full catalog
+// (trainer/catalog.js), with a compact overall-aim-level header, a gear
+// popover holding the sound settings (the old "Imersão do treino" card),
+// and an optional `initialHint` (exercise + difficulty, plus optionally
+// rounds + exerciseName) that skips straight to ExercisePlayer — used by
+// the daily routine's per-card "Treinar" deep-link.
 export default function TrainerView({ onBack, initialHint = null, onRoutineComplete, onDescobrirSensibilidade }) {
   const { t } = useTranslation()
   const { scoresByExercise, loading } = useAllTrainerScores()
   const [selection, setSelection] = useState(
     initialHint?.exercise ? { exercise: initialHint.exercise, difficulty: initialHint.difficulty } : null,
   )
+  const [categoryFilter, setCategoryFilter] = useState('todos')
   const [audioSettings, setAudioSettings] = useState(() => loadTrainerAudioSettings())
 
   const updateAudioSettings = (patch) => {
@@ -79,142 +82,151 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
     )
   }
 
-  const perExerciseLevels = Object.fromEntries(
-    EXERCISE_IDS.map((id) => [id, exerciseAimLevel(scoresByExercise[id] || [])]),
-  )
-  const overall = overallAimLevel(perExerciseLevels)
+  const levelsByCategory = perCategoryLevels(scoresByExercise)
+  const overall = overallAimLevel(levelsByCategory)
   const flooredLevel = overall != null ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(overall))) : null
   const progressPct  = overall != null ? Math.min(100, (overall - flooredLevel) * 100) : 0
   const atMaxLevel    = flooredLevel === MAX_LEVEL
 
-  const levelCaption = loading
-    ? '…'
-    : overall == null
-      ? t('trainer.nivel_aim.sem_dados')
-      : atMaxLevel
-        ? t('trainer.nivel_aim.nivel_maximo')
-        : t('trainer.nivel_aim.proximo', { level: flooredLevel + 1 })
+  const selectedCategoryLevel = categoryFilter !== 'todos' ? levelsByCategory[categoryFilter] : null
+  const visibleDrills = categoryFilter === 'todos' ? DRILLS : drillsInCategory(categoryFilter)
 
   return (
-    <Container size={1100} px="xl" py="xl">
-      {/* ── Header ── */}
-      <Group justify="space-between" align="center" mb="xl" wrap="wrap" gap="md">
+    <Container size={1240} px="xl" py="xl">
+      {/* ── Header: title + compact overall level + sound gear ── */}
+      <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="md">
         <Stack gap={2}>
           <Title order={1}>{t('trainer.titulo')}</Title>
           <Text c="dimmed" size="md">{t('trainer.selecionar_subtitulo')}</Text>
         </Stack>
-        <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
-          {t('trainer.voltar')}
-        </Button>
-      </Group>
-
-      {/* ── Overall aim level ── */}
-      <Card p="xl" mb="xl">
-        <Group justify="space-between" wrap="nowrap" gap="xl">
-          <Group gap="md" wrap="nowrap" style={{ minWidth: 0 }}>
-            <ThemeIcon size={56} radius="xl" variant="light" color="brandCyan">
-              <IconChartLine size={30} />
-            </ThemeIcon>
-            <Box style={{ minWidth: 0 }}>
-              <Text fw={700} size="lg">{t('trainer.nivel_aim.titulo')}</Text>
-              <Text size="sm" c="dimmed">{levelCaption}</Text>
+        <Group gap="sm" wrap="nowrap">
+          <Group gap={8} wrap="nowrap">
+            <RingProgress
+              size={48}
+              thickness={5}
+              roundCaps
+              sections={overall != null ? [{ value: atMaxLevel ? 100 : progressPct, color: 'brandCyan' }] : []}
+              label={
+                <Text ta="center" fw={900} size="sm" c={overall != null ? undefined : 'dimmed'}>
+                  {overall != null ? flooredLevel : '?'}
+                </Text>
+              }
+            />
+            <Box>
+              <Text size="xs" fw={700} lh={1.2}>{t('trainer.nivel_aim.titulo')}</Text>
+              <Text size="xs" c="dimmed" lh={1.2}>
+                {loading
+                  ? '…'
+                  : overall == null
+                    ? t('trainer.nivel_aim.sem_dados_curto')
+                    : atMaxLevel
+                      ? t('trainer.nivel_aim.nivel_maximo')
+                      : t('trainer.nivel_aim.proximo', { level: flooredLevel + 1 })}
+              </Text>
             </Box>
           </Group>
-          <RingProgress
-            size={100}
-            thickness={10}
-            roundCaps
-            sections={overall != null ? [{ value: atMaxLevel ? 100 : progressPct, color: 'brandCyan' }] : []}
-            label={
-              <Text ta="center" fw={900} size="1.4rem" c={overall != null ? undefined : 'dimmed'}>
-                {overall != null ? flooredLevel : '?'}
-              </Text>
-            }
-          />
+          <Popover width={260} position="bottom-end" shadow="md" withArrow>
+            <Popover.Target>
+              <ActionIcon variant="light" color="gray" size="lg" radius="md" aria-label={t('trainer.config.abrir')}>
+                <IconSettings size={18} />
+              </ActionIcon>
+            </Popover.Target>
+            <Popover.Dropdown>
+              <Text fw={600} size="sm" mb="sm">{t('trainer.config.titulo')}</Text>
+              <Group justify="space-between" mb={4}>
+                <Text size="xs">{t('trainer.imersao.volume')}</Text>
+                <Text size="xs" c="dimmed">{audioSettings.volume}%</Text>
+              </Group>
+              <Slider
+                min={0}
+                max={100}
+                step={1}
+                mb="md"
+                value={audioSettings.volume}
+                onChange={(v) => updateAudioSettings({ volume: v })}
+                label={(v) => `${v}%`}
+              />
+              <Switch
+                size="sm"
+                label={t('trainer.imersao.sons_treino')}
+                checked={audioSettings.sfxEnabled}
+                onChange={(e) => updateAudioSettings({ sfxEnabled: e.currentTarget.checked })}
+              />
+            </Popover.Dropdown>
+          </Popover>
+          <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
+            {t('trainer.voltar')}
+          </Button>
         </Group>
-      </Card>
+      </Group>
 
-      {/* ── Immersion settings — weapon viewmodel + drill sound effects ── */}
-      <Card p="xl" mb="xl">
-        <Group gap="md" mb="md" wrap="nowrap">
-          <ThemeIcon size={44} radius="md" variant="light" color="brandCyan">
-            <IconVolume2 size={24} />
-          </ThemeIcon>
-          <Box style={{ minWidth: 0, flex: 1 }}>
-            <Text fw={600} size="lg">{t('trainer.imersao.titulo')}</Text>
-          </Box>
-        </Group>
-        <Stack gap="md">
-          <Box>
-            <Group justify="space-between" mb={4}>
-              <Text size="sm">{t('trainer.imersao.volume')}</Text>
-              <Text size="xs" c="dimmed">{audioSettings.volume}%</Text>
-            </Group>
-            <Slider
-              min={0}
-              max={100}
-              step={1}
-              value={audioSettings.volume}
-              onChange={(v) => updateAudioSettings({ volume: v })}
-              label={(v) => `${v}%`}
-            />
-          </Box>
-          <Switch
-            label={t('trainer.imersao.sons_treino')}
-            checked={audioSettings.sfxEnabled}
-            onChange={(e) => updateAudioSettings({ sfxEnabled: e.currentTarget.checked })}
-          />
-        </Stack>
-      </Card>
+      {/* ── Category filter ── */}
+      <Group gap="sm" mb="lg" wrap="wrap">
+        <SegmentedControl
+          size="xs"
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          data={[
+            { label: t('trainer.categorias.todos'), value: 'todos' },
+            ...CATEGORIES.map((cat) => ({ label: t(`trainer.categorias.${cat}`), value: cat })),
+          ]}
+        />
+        {categoryFilter !== 'todos' && (
+          <Badge variant="light" color={CATEGORY_COLORS[categoryFilter]}>
+            {selectedCategoryLevel != null
+              ? t('trainer.nivel_aim.nivel', { level: selectedCategoryLevel })
+              : t('trainer.categorias.sem_nivel')}
+          </Badge>
+        )}
+      </Group>
 
       {/* ── Sensitivity discovery — a guided diagnostic test, not a scored drill ── */}
       {onDescobrirSensibilidade && (
-        <Card p="xl" mb="xl" className="trainer-select-card" onClick={onDescobrirSensibilidade} style={{ cursor: 'pointer' }}>
-          <Group gap="md" wrap="nowrap" align="flex-start">
-            <ThemeIcon size={44} radius="md" variant="light" color="brandCyan">
-              <IconCompass size={24} />
+        <Card p="md" mb="lg" className="trainer-select-card" onClick={onDescobrirSensibilidade} style={{ cursor: 'pointer' }}>
+          <Group gap="md" wrap="nowrap">
+            <ThemeIcon size={38} radius="md" variant="light" color="brandCyan">
+              <IconCompass size={20} />
             </ThemeIcon>
             <Box style={{ minWidth: 0, flex: 1 }}>
-              <Text fw={600} size="lg">{t('sensibilidade.descoberta.card_titulo')}</Text>
-              <Text size="sm" c="dimmed" lh={1.5}>{t('sensibilidade.descoberta.card_descricao')}</Text>
+              <Text fw={600} size="sm">{t('sensibilidade.descoberta.card_titulo')}</Text>
+              <Text size="xs" c="dimmed" lineClamp={1}>{t('sensibilidade.descoberta.card_descricao')}</Text>
             </Box>
           </Group>
         </Card>
       )}
 
-      {/* ── Drill selection ── */}
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-        {EXERCISE_IDS.map((exerciseId) => {
-          const Icon = EXERCISE_ICONS[exerciseId]
-          const color = EXERCISE_COLORS[exerciseId]
-          const scores = scoresByExercise[exerciseId] || []
+      {/* ── Drill grid ── */}
+      <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 4 }} spacing="sm">
+        {visibleDrills.map((drill) => {
+          const Icon  = CATEGORY_ICONS[drill.category]
+          const color = CATEGORY_COLORS[drill.category]
+          const scores = scoresByExercise[drill.id] || []
           const best = bestScoreFor(scores)
           const lastDifficulty = scores[0]?.difficulty || null
 
           return (
             <Card
-              key={exerciseId}
-              p="xl"
-              className="trainer-select-card"
-              onClick={() => setSelection({ exercise: exerciseId, difficulty: lastDifficulty || 'medio' })}
+              key={drill.id}
+              p="md"
+              className="trainer-select-card trainer-drill-card"
+              onClick={() => setSelection({ exercise: drill.id, difficulty: lastDifficulty || 'medio' })}
               style={{ cursor: 'pointer' }}
             >
-              <Group gap="md" wrap="nowrap" align="flex-start">
-                <ThemeIcon size={44} radius="md" variant="light" color={color}>
-                  <Icon size={24} />
+              <Group gap="sm" wrap="nowrap" align="flex-start">
+                <ThemeIcon size={34} radius="md" variant="light" color={color}>
+                  <Icon size={18} />
                 </ThemeIcon>
                 <Box style={{ minWidth: 0, flex: 1 }}>
-                  <Text fw={600} size="lg">{t(`trainer.exercicios.${exerciseId}.nome`)}</Text>
-                  <Text size="sm" c="dimmed" lh={1.5}>{t(`trainer.exercicios.${exerciseId}.descricao`)}</Text>
+                  <Text fw={600} size="sm" truncate>{t(`trainer.exercicios.${drill.id}.nome`)}</Text>
+                  <Text size="xs" c="dimmed" lineClamp={1}>{t(`trainer.exercicios.${drill.id}.descricao`)}</Text>
                 </Box>
               </Group>
-              <Divider my="md" />
-              <Group justify="space-between">
-                <Text size="xs" c="dimmed">
-                  {best != null ? t('trainer.card.recorde', { score: best }) : t('trainer.card.sem_tentativas')}
+              <Group justify="space-between" mt="sm" gap={6} wrap="nowrap">
+                <Text size="xs" c="dimmed" truncate>
+                  {loading ? '…' : best != null ? t('trainer.card.recorde', { score: best }) : t('trainer.card.sem_tentativas')}
                 </Text>
                 {lastDifficulty && (
-                  <Badge size="sm" variant="light" color={color}>{t(`trainer.dificuldades.${lastDifficulty}`)}</Badge>
+                  <Badge size="xs" variant="light" color={color}>{t(`trainer.dificuldades.${lastDifficulty}`)}</Badge>
                 )}
               </Group>
             </Card>

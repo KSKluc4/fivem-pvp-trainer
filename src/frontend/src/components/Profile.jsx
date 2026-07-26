@@ -14,8 +14,7 @@ import {
 import { toast } from '../services/toast'
 import { initials, avatarHue } from '../services/avatar'
 import { useAllTrainerScores } from '../trainer/useAllTrainerScores'
-import { EXERCISE_IDS } from '../trainer/scenarios2d/index.js'
-import { exerciseAimLevel, overallAimLevel } from '../trainer/aimLevel.js'
+import { perCategoryLevels, overallAimLevel } from '../trainer/aimLevel.js'
 
 const ACCEPT = 'image/jpeg,image/png,image/webp'
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
@@ -137,10 +136,7 @@ export default function Profile({ user, onUserUpdate, onBack }) {
   const hue   = avatarHue(user.username)
   const inits = initials(user.name)
 
-  const perExerciseLevels = Object.fromEntries(
-    EXERCISE_IDS.map((id) => [id, exerciseAimLevel(scoresByExercise[id] || [])]),
-  )
-  const aimLevel = overallAimLevel(perExerciseLevels)
+  const aimLevel = overallAimLevel(perCategoryLevels(scoresByExercise))
 
   const bannerImg = bannerUpload.previewUrl || me.banner_url
   const avatarImg = avatarUpload.previewUrl || me.avatar_url

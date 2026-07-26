@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next'
 import { getProgress, getActionLevel, getActivityHeatmap } from '../services/api'
 import { useAllTrainerScores } from '../trainer/useAllTrainerScores'
 import { EXERCISE_IDS } from '../trainer/scenarios2d/index.js'
-import { exerciseAimLevel, overallAimLevel } from '../trainer/aimLevel.js'
+import { perCategoryLevels, overallAimLevel } from '../trainer/aimLevel.js'
+import { CATEGORIES, drillsInCategory } from '../trainer/catalog.js'
 
 const HEATMAP_DAYS = 90
 const HEATMAP_COLORS = {
@@ -38,7 +39,8 @@ export default function Progress({ userId, username, onBack }) {
   const [data, setData]       = useState([])
   const [loading, setLoading] = useState(true)
   const { scoresByExercise, loading: aimLoading } = useAllTrainerScores()
-  const [selectedExercise, setSelectedExercise] = useState(EXERCISE_IDS[0])
+  const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0])
+  const [selectedExercise, setSelectedExercise] = useState(drillsInCategory(CATEGORIES[0])[0].id)
   const [actionLevel, setActionLevel]   = useState(null)
   const [actionLevelLoading, setActionLevelLoading] = useState(true)
   const [heatmap, setHeatmap]           = useState([])
@@ -175,6 +177,11 @@ export default function Progress({ userId, username, onBack }) {
         t={t}
         scoresByExercise={scoresByExercise}
         loading={aimLoading}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat)
+          setSelectedExercise(drillsInCategory(cat)[0].id)
+        }}
         selectedExercise={selectedExercise}
         onSelectExercise={setSelectedExercise}
       />
@@ -268,18 +275,18 @@ export default function Progress({ userId, username, onBack }) {
   )
 }
 
-function AimProgressSection({ t, scoresByExercise, loading, selectedExercise, onSelectExercise }) {
+function AimProgressSection({
+  t, scoresByExercise, loading, selectedCategory, onSelectCategory, selectedExercise, onSelectExercise,
+}) {
   const hasAnyData = EXERCISE_IDS.some((id) => (scoresByExercise[id] || []).length > 0)
-  const perExerciseLevels = Object.fromEntries(
-    EXERCISE_IDS.map((id) => [id, exerciseAimLevel(scoresByExercise[id] || [])]),
-  )
-  const overall = overallAimLevel(perExerciseLevels)
-  const withLevel = EXERCISE_IDS.filter((id) => perExerciseLevels[id] != null)
+  const levelsByCategory = perCategoryLevels(scoresByExercise)
+  const overall = overallAimLevel(levelsByCategory)
+  const withLevel = CATEGORIES.filter((cat) => levelsByCategory[cat] != null)
   const strongest = withLevel.length
-    ? withLevel.reduce((a, b) => (perExerciseLevels[b] > perExerciseLevels[a] ? b : a))
+    ? withLevel.reduce((a, b) => (levelsByCategory[b] > levelsByCategory[a] ? b : a))
     : null
   const weakest = withLevel.length > 1
-    ? withLevel.reduce((a, b) => (perExerciseLevels[b] < perExerciseLevels[a] ? b : a))
+    ? withLevel.reduce((a, b) => (levelsByCategory[b] < levelsByCategory[a] ? b : a))
     : null
 
   const scores = scoresByExercise[selectedExercise] || []
@@ -309,26 +316,33 @@ function AimProgressSection({ t, scoresByExercise, loading, selectedExercise, on
             </Paper>
             <Paper p="sm" ta="center" withBorder>
               <Text size="xs" c="dimmed">{t('dashboard.aim_progress.mais_forte')}</Text>
-              <Text fw={700} size="sm">{strongest ? t(`trainer.exercicios.${strongest}.nome`) : '—'}</Text>
+              <Text fw={700} size="sm">{strongest ? t(`trainer.categorias.${strongest}`) : '—'}</Text>
             </Paper>
             <Paper p="sm" ta="center" withBorder>
               <Text size="xs" c="dimmed">{t('dashboard.aim_progress.mais_fraco')}</Text>
-              <Text fw={700} size="sm">{weakest ? t(`trainer.exercicios.${weakest}.nome`) : '—'}</Text>
+              <Text fw={700} size="sm">{weakest ? t(`trainer.categorias.${weakest}`) : '—'}</Text>
             </Paper>
           </SimpleGrid>
 
           {weakest && (
             <Text size="xs" c="dimmed" mb="md">
-              {t('dashboard.aim_progress.sugestao', { exercise: t(`trainer.exercicios.${weakest}.nome`) })}
+              {t('dashboard.aim_progress.sugestao', { exercise: t(`trainer.categorias.${weakest}`) })}
             </Text>
           )}
 
           <SegmentedControl
             fullWidth
+            mb="sm"
+            value={selectedCategory}
+            onChange={onSelectCategory}
+            data={CATEGORIES.map((cat) => ({ label: t(`trainer.categorias.${cat}`), value: cat }))}
+          />
+          <SegmentedControl
+            fullWidth
             mb="md"
             value={selectedExercise}
             onChange={onSelectExercise}
-            data={EXERCISE_IDS.map((id) => ({ label: t(`trainer.exercicios.${id}.nome`), value: id }))}
+            data={drillsInCategory(selectedCategory).map((d) => ({ label: t(`trainer.exercicios.${d.id}.nome`), value: d.id }))}
           />
 
           {scores.length === 0 ? (
@@ -382,19 +396,26 @@ function RecordesSection({ t, scoresByExercise, loading }) {
       {loading ? (
         <Skeleton height={80} />
       ) : (
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
-          {EXERCISE_IDS.map((id) => {
-            const scores = scoresByExercise[id] || []
-            const best = scores.reduce((b, s) => (b == null || s.score > b ? s.score : b), null)
-            return (
-              <Paper key={id} p="sm" ta="center" withBorder>
-                <Text size="xs" c="dimmed">{t(`trainer.exercicios.${id}.nome`)}</Text>
-                <Text fw={900} size="1.2rem" c="brandCyan">{best ?? '—'}</Text>
-                {best == null && <Text size="xs" c="dimmed">{t('trainer.card.sem_tentativas')}</Text>}
-              </Paper>
-            )
-          })}
-        </SimpleGrid>
+        <Stack gap="md">
+          {CATEGORIES.map((category) => (
+            <Box key={category}>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>{t(`trainer.categorias.${category}`)}</Text>
+              <SimpleGrid cols={{ base: 2, sm: 5 }} spacing="md">
+                {drillsInCategory(category).map((drill) => {
+                  const scores = scoresByExercise[drill.id] || []
+                  const best = scores.reduce((b, s) => (b == null || s.score > b ? s.score : b), null)
+                  return (
+                    <Paper key={drill.id} p="sm" ta="center" withBorder>
+                      <Text size="xs" c="dimmed">{t(`trainer.exercicios.${drill.id}.nome`)}</Text>
+                      <Text fw={900} size="1.2rem" c="brandCyan">{best ?? '—'}</Text>
+                      {best == null && <Text size="xs" c="dimmed">{t('trainer.card.sem_tentativas')}</Text>}
+                    </Paper>
+                  )
+                })}
+              </SimpleGrid>
+            </Box>
+          ))}
+        </Stack>
       )}
     </Card>
   )

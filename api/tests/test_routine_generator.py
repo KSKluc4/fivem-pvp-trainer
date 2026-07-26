@@ -8,7 +8,7 @@ from services.routine_generator import (
     generate_routine, match_count_for_daily_time, MATCH_DURATION, FOCUS_OPTIONS,
 )
 from services.level_service import KILLS_PER_MATCH_BY_LEVEL
-from services.aim_level import EXERCISES as INTERNAL_EXERCISE_IDS
+from services.aim_level import EXERCISES as INTERNAL_EXERCISE_IDS, CATEGORY_DRILLS
 
 PROFILE = {
     'focus_area': 'aim', 'experience_level': 'intermediario',
@@ -193,7 +193,7 @@ def test_aim_accelerated_defaults_to_off():
 
 # ── Aim block: internal drills only (the KovaaK's/Aim Lab replacement) ──────
 
-def test_main_section_only_ever_contains_the_four_internal_drills():
+def test_main_section_only_ever_contains_catalog_drills():
     routine = generate_routine(PROFILE, today=date(2026, 7, 6))
     for ex in routine['sections'][1]['exercises']:
         assert ex['exercise'] in INTERNAL_EXERCISE_IDS
@@ -201,36 +201,46 @@ def test_main_section_only_ever_contains_the_four_internal_drills():
         assert ex['exercise'] in INTERNAL_EXERCISE_IDS
 
 
-def test_tracking_difficulty_emphasizes_tracking_2d():
+def test_tracking_difficulty_emphasizes_tracking_category():
     profile = dict(PROFILE, aim_difficulty='tracking', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
     main = routine['sections'][1]['exercises']
-    assert main[0]['exercise'] == 'tracking_2d'
+    assert main[0]['category'] == 'tracking'
+    assert main[0]['exercise'] in CATEGORY_DRILLS['tracking']
     # The warmup drill mirrors the day's top priority, one difficulty step down.
-    assert routine['sections'][0]['exercises'][0]['exercise'] == 'tracking_2d'
+    warmup = routine['sections'][0]['exercises'][0]
+    assert warmup['category'] == 'tracking'
+    assert warmup['exercise'] in CATEGORY_DRILLS['tracking']
 
 
-def test_flick_difficulty_emphasizes_flick_2d_and_grid_2d():
+def test_flick_difficulty_emphasizes_flicking_and_clicking_categories():
     profile = dict(PROFILE, aim_difficulty='flick', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
-    main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'flick_2d'
-    assert 'grid_2d' in main_ids
+    main = routine['sections'][1]['exercises']
+    categories = [ex['category'] for ex in main]
+    assert categories[0] == 'flicking'
+    assert 'clicking' in categories
+    for ex in main:
+        assert ex['exercise'] in CATEGORY_DRILLS[ex['category']]
 
 
-def test_close_range_emphasizes_micro_2d_and_grid_2d():
+def test_close_range_emphasizes_precision_and_clicking_categories():
     profile = dict(PROFILE, aim_difficulty='close', reflex_level='medio')
     routine = generate_routine(profile, today=date(2026, 7, 6))
-    main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'micro_2d'
-    assert 'grid_2d' in main_ids
+    main = routine['sections'][1]['exercises']
+    categories = [ex['category'] for ex in main]
+    assert categories[0] == 'precision'
+    assert 'clicking' in categories
+    for ex in main:
+        assert ex['exercise'] in CATEGORY_DRILLS[ex['category']]
 
 
-def test_slow_reflex_emphasizes_flick_2d():
+def test_slow_reflex_emphasizes_reaction_category():
     profile = dict(PROFILE, aim_difficulty='', reflex_level='lento')
     routine = generate_routine(profile, today=date(2026, 7, 6))
-    main_ids = [ex['exercise'] for ex in routine['sections'][1]['exercises']]
-    assert main_ids[0] == 'flick_2d'
+    main = routine['sections'][1]['exercises']
+    assert main[0]['category'] == 'reaction'
+    assert main[0]['exercise'] in CATEGORY_DRILLS['reaction']
 
 
 def test_short_daily_time_yields_fewer_main_drills_than_long_daily_time():
@@ -241,17 +251,17 @@ def test_short_daily_time_yields_fewer_main_drills_than_long_daily_time():
 
 
 def test_warmup_is_one_round_one_step_below_main_difficulty():
-    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_2d': 5})
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking': 5})
     warmup_ex = routine['sections'][0]['exercises'][0]
-    main_ex   = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_2d')
+    main_ex   = next(e for e in routine['sections'][1]['exercises'] if e['category'] == 'tracking')
     assert warmup_ex['rounds'] == 1
     assert main_ex['difficulty'] == 'dificil'
     assert warmup_ex['difficulty'] == 'medio'  # one step down from 'dificil'
 
 
 def test_main_drills_use_recommended_difficulty_from_aim_levels():
-    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking_2d': 1})
-    main_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'tracking_2d')
+    routine = generate_routine(PROFILE, today=date(2026, 7, 6), aim_levels={'tracking': 1})
+    main_ex = next(e for e in routine['sections'][1]['exercises'] if e['category'] == 'tracking')
     assert main_ex['difficulty'] == 'facil'
 
 
@@ -275,15 +285,15 @@ def test_each_aim_exercise_has_a_deep_link_ready_shape():
     # Every warmup/main exercise must carry exactly what App.jsx needs to
     # deep-link straight into the trainer: exercise id, difficulty, and how
     # many rounds constitute "done".
-    routine = generate_routine(dict(PROFILE, daily_time=65), today=date(2026, 7, 6), aim_levels={'grid_2d': 4})
+    routine = generate_routine(dict(PROFILE, daily_time=65), today=date(2026, 7, 6), aim_levels={'clicking': 4})
     for ex in routine['sections'][0]['exercises'] + routine['sections'][1]['exercises']:
         assert ex['exercise'] in INTERNAL_EXERCISE_IDS
         assert ex['difficulty'] in ('facil', 'medio', 'dificil')
         assert ex['rounds'] >= 1
         assert ex['name']
 
-    grid_2d_ex = next(e for e in routine['sections'][1]['exercises'] if e['exercise'] == 'grid_2d')
-    assert grid_2d_ex['difficulty'] == 'dificil'
+    clicking_ex = next(e for e in routine['sections'][1]['exercises'] if e['category'] == 'clicking')
+    assert clicking_ex['difficulty'] == 'dificil'
 
 
 def test_main_rounds_stay_within_sane_bounds():

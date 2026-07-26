@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, g
 from database import get_today_session, get_latest_questionnaire, create_training_session
 from services.routine_generator import generate_routine
 from services.level_service import resolve_action_level
-from services.aim_level import compute_per_exercise_levels, resolve_aim_accelerator
+from services.aim_level import compute_per_category_levels, resolve_aim_accelerator
 from utils import require_auth
 
 training_bp = Blueprint('training', __name__)
@@ -31,7 +31,7 @@ def get_training(user_id):
     # table here must never block the routine itself, so this stays fully
     # decoupled from resolve_action_level's own error handling.
     try:
-        aim_levels = compute_per_exercise_levels(user_id)
+        aim_levels = compute_per_category_levels(user_id)
         aim_accelerated = resolve_aim_accelerator(user_id, aim_levels)
     except Exception:
         aim_levels, aim_accelerated = {}, False

@@ -371,6 +371,19 @@
       "medio": "Médio",
       "dificil": "Difícil"
     },
+    "categorias": {
+      "todos": "Todos",
+      "tracking": "Tracking",
+      "clicking": "Clique",
+      "flicking": "Flick",
+      "precision": "Precisão",
+      "reaction": "Reação",
+      "sem_nivel": "Sem nível ainda"
+    },
+    "config": {
+      "abrir": "Configurações",
+      "titulo": "Configurações"
+    },
     "crosshair_estilos": {
       "cross": "Cruz",
       "dot": "Ponto",
@@ -381,22 +394,106 @@
         "nome": "Tracking Suave",
         "descricao": "Mantenha a mira em um alvo que se move de forma fluida e imprevisível"
       },
+      "tracking_zigzag_2d": {
+        "nome": "Tracking Ziguezague",
+        "descricao": "O alvo muda de direção bruscamente, sem suavização, em ciclos curtos"
+      },
+      "tracking_paciente_2d": {
+        "nome": "Tracking Paciente",
+        "descricao": "Alvo lento e pequeno — exige paciência e estabilidade, não velocidade"
+      },
+      "tracking_velocista_2d": {
+        "nome": "Tracking Velocista",
+        "descricao": "Alvo rápido e grande — prioriza velocidade de braço sobre precisão fina"
+      },
+      "tracking_pare_siga_2d": {
+        "nome": "Tracking Pare-e-Siga",
+        "descricao": "Movimento suave interrompido por paradas bruscas e repentinas"
+      },
       "grid_2d": {
         "nome": "Grade de Tiro",
         "descricao": "Acerte alvos estáticos que nascem um por vez em posições aleatórias"
+      },
+      "clicking_trio_2d": {
+        "nome": "Trio de Cliques",
+        "descricao": "Três alvos vivos ao mesmo tempo — escolha a própria ordem de ataque"
+      },
+      "clicking_tabuleiro_2d": {
+        "nome": "Tabuleiro",
+        "descricao": "Alvos nascem em células fixas de uma grade — memória muscular em vez de busca"
+      },
+      "clicking_fugaz_2d": {
+        "nome": "Alvo Fugaz",
+        "descricao": "Alvos somem sozinhos depois de um tempo — hesitar custa o ponto"
+      },
+      "clicking_alfinete_2d": {
+        "nome": "Alfinete",
+        "descricao": "Alvos estáticos minúsculos — só cliques limpos contam"
       },
       "flick_2d": {
         "nome": "Flick Rápido",
         "descricao": "Flicka rápido para alvos a distâncias variadas antes do tempo acabar"
       },
+      "flick_longo_2d": {
+        "nome": "Flick Longo",
+        "descricao": "Flicks de longa distância — o alvo sempre nasce longe da mira"
+      },
+      "flick_pendulo_2d": {
+        "nome": "Flick Pêndulo",
+        "descricao": "Alvos alternam estritamente entre a esquerda e a direita da mira"
+      },
+      "flick_isca_2d": {
+        "nome": "Flick Isca",
+        "descricao": "Todo alvo real vem acompanhado de uma isca azul — não caia na armadilha"
+      },
+      "flick_corrente_2d": {
+        "nome": "Flick Corrente",
+        "descricao": "Cada alvo nasce em relação ao anterior, não à posição da mira"
+      },
       "micro_2d": {
         "nome": "Micro Ajuste",
         "descricao": "Pequenas correções em alvos próximos à mira, janela curta"
+      },
+      "precisao_minguante_2d": {
+        "nome": "Precisão Minguante",
+        "descricao": "O alvo encolhe do tamanho normal até quase sumir — acerte cedo"
+      },
+      "precisao_mosca_2d": {
+        "nome": "Precisão Mosca",
+        "descricao": "Alvo com anel interno que vale o dobro — precisão de posicionamento acima de volume"
+      },
+      "precisao_salto_2d": {
+        "nome": "Precisão Salto",
+        "descricao": "O alvo pula uma vez logo após aparecer — acerte a correção"
+      },
+      "precisao_fresta_2d": {
+        "nome": "Precisão Fresta",
+        "descricao": "Alvo estreito e vertical — a precisão horizontal é tudo"
+      },
+      "reacao_gatilho_2d": {
+        "nome": "Reação Gatilho",
+        "descricao": "Tela em branco e depois um alvo surge em posição aleatória — reação pura"
+      },
+      "reacao_dupla_2d": {
+        "nome": "Reação Dupla",
+        "descricao": "Dois postos fixos — o ativo alterna, mira rápido em quem acender"
+      },
+      "reacao_espera_2d": {
+        "nome": "Reação de Espera",
+        "descricao": "Um ponto fixo no centro com atraso imprevisível — tempo de reação puro"
+      },
+      "reacao_rajada_2d": {
+        "nome": "Reação em Rajada",
+        "descricao": "Sequência de tiros rápidos, quase sem intervalo — não perca o ritmo"
+      },
+      "reacao_semaforo_2d": {
+        "nome": "Reação Semáforo",
+        "descricao": "Vermelho é pra atirar, azul é pra deixar quieto — vá ou não vá"
       }
     },
     "nivel_aim": {
       "titulo": "Nível de Aim Geral",
-      "sem_dados": "Treine cada exercício pelo menos 5 vezes para calcular seu nível de aim",
+      "sem_dados_curto": "Sem dados suficientes",
       "nivel": "Nível {{level}}",
       "proximo": "rumo ao nível {{level}}",
       "nivel_maximo": "Nível máximo!"

@@ -36,11 +36,9 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
   const containerRef = useRef(null)
   const arenaRef     = useRef(null)
   const cursorRef    = useRef(null)
-  const targetRef    = useRef(null)
-  const scorerRef    = useRef(null)
+  const sessionRef   = useRef(null)
   const elapsedRef   = useRef(0)
   const finishedRef  = useRef(false)
-  const wasOnTargetRef = useRef(false)
   const roundsCompletedRef = useRef(0)
   const resumePhaseRef = useRef('playing')
 
@@ -60,8 +58,6 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
 
   const phaseRef = useRef(phase)
   useEffect(() => { phaseRef.current = phase }, [phase])
-  const difficultyRef = useRef(difficulty)
-  useEffect(() => { difficultyRef.current = difficulty }, [difficulty])
   const crosshairStyleRef = useRef(crosshairStyle)
   useEffect(() => { crosshairStyleRef.current = crosshairStyle }, [crosshairStyle])
 
@@ -70,11 +66,9 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     const cursor = cursorRef.current
     if (!arena || !cursor) return
     const { width, height } = arena.getSize()
-    targetRef.current  = scenario.createTarget(width, height, difficulty, () => cursor.getPosition())
-    scorerRef.current  = scenario.createScorer()
+    sessionRef.current = scenario.createSession(width, height, difficulty, () => cursor.getPosition())
     elapsedRef.current = 0
     finishedRef.current = false
-    wasOnTargetRef.current = false
     setHud({ timeLeft: scenario.sessionDurationS, score: 0, accuracyPct: 0, streak: 0 })
     setCountdownN(3)
     setPhase('countdown')
@@ -84,7 +78,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     if (finishedRef.current) return
     finishedRef.current = true
 
-    const scorer = scorerRef.current
+    const session = sessionRef.current
     const snapshotLast = lastAttemptFor(difficulty)
     const snapshotBest = personalBestFor(difficulty)
     setComparison({ lastAttempt: snapshotLast, personalBest: snapshotBest })
@@ -93,21 +87,18 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     roundsCompletedRef.current += 1
     setRoundsDone(roundsCompletedRef.current)
 
+    const sessionResult = session.result
     const entry = {
       exercise:   scenario.id,
       difficulty,
-      score:      scorer.score,
-      accuracy:   +scorer.accuracyPct.toFixed(2),
+      score:      sessionResult.score,
+      accuracy:   +sessionResult.accuracyPct.toFixed(2),
       duration_s: scenario.sessionDurationS,
     }
     saveScore(entry).then(({ savedRemotely }) => {
       setResult({
-        score:           scorer.score,
-        accuracyPct:     scorer.accuracyPct,
-        bestStreakMs:    scenario.mode === 'continuous' ? scorer.bestStreakMs : 0,
-        avgReactionMs:   scenario.mode === 'click' ? scorer.avgReactionMs : 0,
-        mode:            scenario.mode,
-        exercise:        scenario.id,
+        ...sessionResult,
+        exercise: scenario.id,
         difficulty,
         savedRemotely,
       })
@@ -126,35 +117,22 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     if (!arena || !cursor) return
     arena.clearAndDrawBackground()
 
-    if (phaseRef.current === 'playing' && !finishedRef.current && targetRef.current && scorerRef.current) {
-      if (scenario.mode === 'continuous') {
-        targetRef.current.update(dt)
-        const cur = cursor.getPosition()
-        const isOnTarget = targetRef.current.containsPoint(cur.x, cur.y)
-        // Edge-triggered — a subtle cue on entering the target, not a
-        // continuous tone. Off by default (trainerAudioSettings), no UI
-        // toggle yet — playOnTargetTick() itself checks the setting.
-        if (isOnTarget && !wasOnTargetRef.current) playOnTargetTick()
-        wasOnTargetRef.current = isOnTarget
-        scorerRef.current.update(dt * 1000, isOnTarget)
-      } else {
-        targetRef.current.update(dt * 1000)
-        const cfg = scenario.difficulties[difficultyRef.current] || {}
-        if (cfg.timeoutMs && targetRef.current.timeAliveMs >= cfg.timeoutMs) {
-          targetRef.current.respawn()
-        }
-      }
+    const session = sessionRef.current
+    if (phaseRef.current === 'playing' && !finishedRef.current && session) {
+      // All drill logic (movement, spawn delays, timeouts, hover scoring)
+      // lives inside the session — the player only forwards time.
+      const { enteredTarget } = session.update(dt * 1000)
+      // Edge-triggered — a subtle cue on entering the target, not a
+      // continuous tone. Off by default (trainerAudioSettings), no UI
+      // toggle yet — playOnTargetTick() itself checks the setting.
+      if (enteredTarget) playOnTargetTick()
       elapsedRef.current += dt
       const timeLeft = Math.max(0, scenario.sessionDurationS - elapsedRef.current)
-      setHud({
-        timeLeft, score: scorerRef.current.score,
-        accuracyPct: scorerRef.current.accuracyPct,
-        streak: scenario.mode === 'continuous' ? scorerRef.current.currentStreakMs : scorerRef.current.currentStreak,
-      })
+      setHud({ timeLeft, ...session.hud })
       if (timeLeft <= 0) finishSessionRef.current()
     }
 
-    if (targetRef.current) targetRef.current.draw(arena.ctx)
+    if (session) session.draw(arena.ctx)
     cursor.draw(arena.ctx, crosshairStyleRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -220,19 +198,13 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     function onPointerDown() {
       if (scenario.mode !== 'click') return
       if (phaseRef.current !== 'playing' || finishedRef.current) return
-      if (!targetRef.current || !scorerRef.current) return
-      const cursor = cursorRef.current
-      if (!cursor) return
-      const pos = cursor.getPosition()
-      const isHit = targetRef.current.containsPoint(pos.x, pos.y)
+      const session = sessionRef.current
+      const cursor  = cursorRef.current
+      if (!session || !cursor) return
+      const { hit } = session.click(cursor.getPosition())
       playShoot()
-      if (isHit) playHit()
-      scorerRef.current.registerShot(isHit, targetRef.current.timeAliveMs)
-      if (isHit) { targetRef.current.flashHit(); targetRef.current.respawn() }
-      setHud((h) => ({
-        ...h, score: scorerRef.current.score, accuracyPct: scorerRef.current.accuracyPct,
-        streak: scorerRef.current.currentStreak,
-      }))
+      if (hit) playHit()
+      setHud((h) => ({ ...h, ...session.hud }))
     }
     canvas.addEventListener('pointerdown', onPointerDown)
     return () => canvas.removeEventListener('pointerdown', onPointerDown)

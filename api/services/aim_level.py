@@ -1,69 +1,93 @@
-"""Per-exercise "aim level" (1-5), derived from the user's trainer_scores.
+"""Per-CATEGORY "aim level" (1-5), derived from the user's trainer_scores.
 
-Single source of truth for the score thresholds — recalibrate here only.
-Mirrored (same exercise ids, same numbers) on the frontend in
+Single source of truth for the calibration table — recalibrate here only.
+Mirrored (same drill ids, same numbers, same formula) on the frontend in
 src/frontend/src/trainer/aimLevel.js, which needs its own copy since the
 header/dashboard displays run in the browser and can't import Python. Keep
-the two in sync when tuning thresholds.
+the two in sync when tuning.
 
-Level for a SINGLE score is looked up from that score's own difficulty
-thresholds (a score is only meaningful relative to the difficulty it was
-played at). A per-exercise level is the rounded average of the per-score
-levels across the last RECENT_WINDOW scores (any difficulty mixed in is
-fine — each score is judged against its own difficulty first). Below
-MIN_ATTEMPTS scores for that exercise, the level is None ("not enough data
-yet") rather than defaulting to 1 — callers should treat None as "exclude
-from averages", not "worst level".
+── The whole formula, in one place ─────────────────────────────────────────
+
+1. Normalize a single score by its own drill AND difficulty:
+       normalized = clamp(score / CALIBRATION[drill][difficulty], 0, 1)
+   CALIBRATION holds ONE number per drill per difficulty: the score that
+   represents top-tier (level 5) performance in a 60s session.
+
+2. Map it to continuous level points:  points = 1 + 4 * normalized  (1..5)
+
+3. Category level = round(mean(points)) over the newest RECENT_WINDOW scores
+   POOLED across all of that category's drills (any drill/difficulty mix —
+   each score was already normalized by its own pair). Below MIN_ATTEMPTS
+   pooled scores the category level is None ("not enough data yet") —
+   callers must exclude None from averages, never treat it as 1.
+
+4. Overall aim level = plain mean of the non-None category levels.
+
+v3.1.0: levels moved from per-drill to per-CATEGORY (the drill library grew
+from 4 to 25 — see src/frontend/src/trainer/catalog.js, whose ids/categories
+CATEGORY_DRILLS below mirrors). The 4 pre-3.1.0 drills keep their exercise
+ids, so existing trainer_scores rows feed the new category levels with no
+migration; their calibration values are their old level-5 thresholds.
 """
 
-# Score thresholds: minimum value to reach that level (2-5). Below the
-# level-2 threshold is level 1 (baseline, everyone starts there).
-#
-# v3.0.0: the 4 drills moved from a 3D/pointer-lock engine to a 2D canvas
-# engine with new exercise ids (tracking_2d/grid_2d/flick_2d/micro_2d) — the
-# 2D scoring scale isn't directly comparable to the old 3D one, so old
-# tracking_suave/shot_grid/quick_flick/micro_adjust scores stay in the DB
-# untouched/orphaned and these thresholds start fresh for the new ids.
-#
-# tracking_2d: score = milliseconds spent on-target over a 60s session.
-TRACKING_2D_THRESHOLDS = {
-    'facil':   {2: 15000, 3: 25000, 4: 35000, 5: 45000},
-    'medio':   {2: 10000, 3: 18000, 4: 27000, 5: 38000},
-    'dificil': {2: 6000,  3: 12000, 4: 20000, 5: 30000},
-}
-# grid_2d: score = targets hit in 60s (no timeout, waits for the click).
-GRID_2D_THRESHOLDS = {
-    'facil':   {2: 25, 3: 35, 4: 45, 5: 55},
-    'medio':   {2: 20, 3: 30, 4: 40, 5: 50},
-    'dificil': {2: 15, 3: 24, 4: 33, 5: 42},
-}
-# flick_2d: score = targets hit in 60s before the 1.2s timeout.
-FLICK_2D_THRESHOLDS = {
-    'facil':   {2: 18, 3: 26, 4: 34, 5: 42},
-    'medio':   {2: 14, 3: 21, 4: 28, 5: 36},
-    'dificil': {2: 10, 3: 16, 4: 22, 5: 28},
-}
-# micro_2d: score = targets hit in 60s within a short (0.55-0.9s) window.
-MICRO_2D_THRESHOLDS = {
-    'facil':   {2: 30, 3: 42, 4: 54, 5: 66},
-    'medio':   {2: 24, 3: 34, 4: 44, 5: 54},
-    'dificil': {2: 18, 3: 26, 4: 34, 5: 42},
+# Catalog/UI order — also the tie-break order the routine generator uses.
+CATEGORIES = ['tracking', 'clicking', 'flicking', 'precision', 'reaction']
+
+# Mirrors trainer/catalog.js (ids + categories only, not gameplay params).
+CATEGORY_DRILLS = {
+    'tracking':  ['tracking_2d', 'tracking_zigzag_2d', 'tracking_paciente_2d',
+                  'tracking_velocista_2d', 'tracking_pare_siga_2d'],
+    'clicking':  ['grid_2d', 'clicking_trio_2d', 'clicking_tabuleiro_2d',
+                  'clicking_fugaz_2d', 'clicking_alfinete_2d'],
+    'flicking':  ['flick_2d', 'flick_longo_2d', 'flick_pendulo_2d',
+                  'flick_isca_2d', 'flick_corrente_2d'],
+    'precision': ['micro_2d', 'precisao_minguante_2d', 'precisao_mosca_2d',
+                  'precisao_salto_2d', 'precisao_fresta_2d'],
+    'reaction':  ['reacao_gatilho_2d', 'reacao_dupla_2d', 'reacao_espera_2d',
+                  'reacao_rajada_2d', 'reacao_semaforo_2d'],
 }
 
-THRESHOLDS_BY_EXERCISE = {
-    'tracking_2d': TRACKING_2D_THRESHOLDS,
-    'grid_2d':     GRID_2D_THRESHOLDS,
-    'flick_2d':    FLICK_2D_THRESHOLDS,
-    'micro_2d':    MICRO_2D_THRESHOLDS,
+EXERCISES = [drill for drills in CATEGORY_DRILLS.values() for drill in drills]
+
+CATEGORY_OF_EXERCISE = {
+    drill: category for category, drills in CATEGORY_DRILLS.items() for drill in drills
 }
 
-EXERCISES = list(THRESHOLDS_BY_EXERCISE.keys())
+# Score worth level 5, per drill per difficulty (tracking drills score ms on
+# target; everything else scores hits — mosca scores ring points).
+CALIBRATION = {
+    'tracking_2d':           {'facil': 45000, 'medio': 38000, 'dificil': 30000},
+    'tracking_zigzag_2d':    {'facil': 40000, 'medio': 32000, 'dificil': 24000},
+    'tracking_paciente_2d':  {'facil': 46000, 'medio': 40000, 'dificil': 33000},
+    'tracking_velocista_2d': {'facil': 42000, 'medio': 34000, 'dificil': 26000},
+    'tracking_pare_siga_2d': {'facil': 44000, 'medio': 36000, 'dificil': 28000},
+    'grid_2d':               {'facil': 55, 'medio': 50, 'dificil': 42},
+    'clicking_trio_2d':      {'facil': 60, 'medio': 55, 'dificil': 48},
+    'clicking_tabuleiro_2d': {'facil': 58, 'medio': 52, 'dificil': 45},
+    'clicking_fugaz_2d':     {'facil': 45, 'medio': 38, 'dificil': 30},
+    'clicking_alfinete_2d':  {'facil': 40, 'medio': 34, 'dificil': 27},
+    'flick_2d':              {'facil': 42, 'medio': 36, 'dificil': 28},
+    'flick_longo_2d':        {'facil': 36, 'medio': 30, 'dificil': 24},
+    'flick_pendulo_2d':      {'facil': 40, 'medio': 34, 'dificil': 27},
+    'flick_isca_2d':         {'facil': 34, 'medio': 28, 'dificil': 22},
+    'flick_corrente_2d':     {'facil': 44, 'medio': 38, 'dificil': 30},
+    'micro_2d':              {'facil': 66, 'medio': 54, 'dificil': 42},
+    'precisao_minguante_2d': {'facil': 40, 'medio': 34, 'dificil': 26},
+    'precisao_mosca_2d':     {'facil': 70, 'medio': 58, 'dificil': 46},
+    'precisao_salto_2d':     {'facil': 42, 'medio': 35, 'dificil': 28},
+    'precisao_fresta_2d':    {'facil': 38, 'medio': 32, 'dificil': 25},
+    'reacao_gatilho_2d':     {'facil': 30, 'medio': 26, 'dificil': 20},
+    'reacao_dupla_2d':       {'facil': 40, 'medio': 34, 'dificil': 27},
+    'reacao_espera_2d':      {'facil': 30, 'medio': 26, 'dificil': 20},
+    'reacao_rajada_2d':      {'facil': 46, 'medio': 40, 'dificil': 32},
+    'reacao_semaforo_2d':    {'facil': 26, 'medio': 22, 'dificil': 17},
+}
 
-# Below this many recorded attempts, an exercise's level isn't computed at
-# all (None) — also the threshold for a per-exercise level to count toward
-# the header's overall average.
+# Below this many recorded attempts (pooled per category), a category's
+# level isn't computed at all (None) — also the threshold for a category to
+# count toward the overall average.
 MIN_ATTEMPTS = 5
-RECENT_WINDOW = 10
+RECENT_WINDOW = 15
 
 MIN_LEVEL = 1
 MAX_LEVEL = 5
@@ -78,38 +102,35 @@ LEVEL_TO_DIFFICULTY = {1: 'facil', 2: 'facil', 3: 'medio', 4: 'dificil', 5: 'dif
 AIM_TIER_TRACKING_CATEGORY = 'aim_tier_tracking'
 
 
-def level_for_single_score(exercise: str, difficulty: str, score) -> int:
-    """1-5. Unknown exercise/difficulty or non-numeric score -> 1 (baseline)."""
-    thresholds = THRESHOLDS_BY_EXERCISE.get(exercise, {}).get(difficulty)
+def level_points_for_score(exercise: str, difficulty: str, score) -> float:
+    """Steps 1+2 of the formula: one score -> continuous 1..5 points.
+    Unknown drill/difficulty or non-numeric score -> 1.0 (baseline)."""
+    ref = CALIBRATION.get(exercise, {}).get(difficulty)
     try:
         score = float(score)
     except (TypeError, ValueError):
-        return MIN_LEVEL
-    if not thresholds:
-        return MIN_LEVEL
-    level = MIN_LEVEL
-    for lvl in (2, 3, 4, 5):
-        if score >= thresholds[lvl]:
-            level = lvl
-    return level
+        return float(MIN_LEVEL)
+    if not ref:
+        return float(MIN_LEVEL)
+    normalized = min(1.0, max(0.0, score / ref))
+    return 1 + 4 * normalized
 
 
-def exercise_aim_level(scores: list):
-    """scores: list of {'exercise', 'difficulty', 'score'} dicts for ONE
-    exercise, newest-first (matches get_trainer_scores' ordering). Only the
-    first RECENT_WINDOW entries are considered. Returns an int 1-5, or None
-    if there are fewer than MIN_ATTEMPTS scores."""
+def category_aim_level(scores: list):
+    """Step 3. scores: list of {'exercise', 'difficulty', 'score'} dicts
+    pooled for ONE category, newest-first. Only the first RECENT_WINDOW
+    entries count. Returns an int 1-5, or None below MIN_ATTEMPTS."""
     window = scores[:RECENT_WINDOW]
     if len(window) < MIN_ATTEMPTS:
         return None
-    levels = [level_for_single_score(s['exercise'], s['difficulty'], s['score']) for s in window]
-    return round(sum(levels) / len(levels))
+    points = [level_points_for_score(s['exercise'], s['difficulty'], s['score']) for s in window]
+    return min(MAX_LEVEL, max(MIN_LEVEL, round(sum(points) / len(points))))
 
 
-def overall_aim_level(per_exercise_levels: dict):
-    """per_exercise_levels: {exercise: level_or_None}. Returns the average
-    (float) of the non-None levels, or None if none are available yet."""
-    values = [lvl for lvl in per_exercise_levels.values() if lvl is not None]
+def overall_aim_level(per_category_levels: dict):
+    """Step 4. per_category_levels: {category: level_or_None}. Returns the
+    average (float) of the non-None levels, or None if none are available."""
+    values = [lvl for lvl in per_category_levels.values() if lvl is not None]
     if not values:
         return None
     return sum(values) / len(values)
@@ -121,21 +142,27 @@ def recommended_difficulty(aim_level) -> str:
     return LEVEL_TO_DIFFICULTY.get(round(aim_level), 'medio')
 
 
-def compute_per_exercise_levels(user_id: int) -> dict:
-    """Fetches the last RECENT_WINDOW scores for each known exercise and
-    returns {exercise: level_or_None}. DB-dependent — imported lazily so
-    this module (and the pure functions above) stay importable/testable
-    without a live Supabase connection."""
+def compute_per_category_levels(user_id: int) -> dict:
+    """Fetches the user's recent scores ONCE (unfiltered), groups them by
+    category and returns {category: level_or_None}. DB-dependent — imported
+    lazily so this module (and the pure functions above) stay importable/
+    testable without a live Supabase connection."""
     from database import get_trainer_scores
 
-    return {
-        exercise: exercise_aim_level(get_trainer_scores(user_id, exercise, limit=RECENT_WINDOW))
-        for exercise in EXERCISES
-    }
+    # One request covering every drill — newest-first globally, so each
+    # category's pooled slice is newest-first too. 500 rows comfortably
+    # covers 5 categories × RECENT_WINDOW even for heavy daily use.
+    rows = get_trainer_scores(user_id, None, limit=500)
+    by_category = {category: [] for category in CATEGORIES}
+    for row in rows:
+        category = CATEGORY_OF_EXERCISE.get(row.get('exercise'))
+        if category:
+            by_category[category].append(row)
+    return {category: category_aim_level(scores) for category, scores in by_category.items()}
 
 
-def resolve_aim_accelerator(user_id: int, per_exercise_levels: dict = None) -> bool:
-    """Returns True if the user's overall aim level (avg of per-exercise
+def resolve_aim_accelerator(user_id: int, per_category_levels: dict = None) -> bool:
+    """Returns True if the user's overall aim level (avg of per-category
     levels, MIN_ATTEMPTS+ scores only) has gone up a whole tier since the
     last time this ran — used to accelerate (not replace) the mata-mata
     kill-quota escalation in services.level_service.
@@ -145,14 +172,14 @@ def resolve_aim_accelerator(user_id: int, per_exercise_levels: dict = None) -> b
     only a fresh increase does. Falls back to False if goal_levels isn't
     migrated yet or there isn't enough trainer data to compute a level.
 
-    per_exercise_levels can be passed in to reuse an already-computed dict
+    per_category_levels can be passed in to reuse an already-computed dict
     (e.g. the same one used for the daily-routine recommendation) instead
     of hitting the DB again.
     """
     from database import get_goal_level, upsert_goal_level
 
     try:
-        levels = per_exercise_levels if per_exercise_levels is not None else compute_per_exercise_levels(user_id)
+        levels = per_category_levels if per_category_levels is not None else compute_per_category_levels(user_id)
         overall = overall_aim_level(levels)
         if overall is None:
             return False
