@@ -107,7 +107,7 @@ test('spawn "chain" spawns the next target near the last hit, not near the curso
   const drill = makeDrill('flicking', {
     radiusFrac: 0.05, timeoutMs: null, spawn: 'chain', distanceRangeFrac: [0.02, 0.03],
   })
-  const cursor = { x: 5, y: 5 } // far corner — chain spawns should ignore this after the first hit
+  const cursor = { x: 40, y: 60 } // well clear of the margin clamp — chain spawns should ignore this after the first hit
   const session = new DrillSession(drill, 'medio', W, H, cursorAt(cursor))
 
   const first = session.slots[0].target
@@ -291,4 +291,83 @@ test('createDrillSession returns a working DrillSession instance', () => {
   const session = createDrillSession(drill, 'medio', W, H, cursorAt(CENTER))
   assert.ok(session instanceof DrillSession)
   assert.equal(session.mode, 'click')
+})
+
+// ── resize() ──────────────────────────────────────────────────────────────
+
+test('resize rescales an existing click-mode target proportionally, not a random teleport', () => {
+  const drill = makeDrill('clicking', { radiusFrac: 0.05, timeoutMs: null, spawn: 'center' })
+  const session = new DrillSession(drill, 'medio', 100, 100, cursorAt(CENTER))
+  const before = { x: session.slots[0].target.x, y: session.slots[0].target.y }
+  assert.deepEqual(before, { x: 50, y: 50 })
+
+  session.resize(200, 300) // 2x width, 3x height
+
+  const after = session.slots[0].target
+  assert.equal(after.x, before.x * 2)
+  assert.equal(after.y, before.y * 3)
+})
+
+test('resize updates radius/margins so a subsequent spawn uses the new field size', () => {
+  const drill = makeDrill('clicking', { radiusFrac: 0.1, timeoutMs: null, spawn: 'random' })
+  const session = new DrillSession(drill, 'medio', 100, 100, cursorAt(CENTER))
+  const oldRadius = session.radius
+
+  session.resize(500, 500)
+
+  assert.equal(session.radius, 0.1 * 500)
+  assert.notEqual(session.radius, oldRadius)
+  assert.equal(session.slots[0].target.radius, session.radius)
+})
+
+test('resize rescales the continuous-mode target and its mover', () => {
+  const drill = makeDrill('tracking', { radiusFrac: 0.05, speedFrac: 0.2, turnInterval: [1000, 1000], turnRate: 1 })
+  const session = new DrillSession(drill, 'medio', 100, 100, cursorAt(CENTER))
+  session.target.x = 50
+  session.target.y = 50
+
+  session.resize(200, 200)
+
+  assert.equal(session.target.x, 100)
+  assert.equal(session.target.y, 100)
+  assert.equal(session.mover.width, 200)
+  assert.equal(session.mover.height, 200)
+  assert.equal(session.mover.speed, 0.2 * 200)
+})
+
+test('resize re-clamps a target that would otherwise land outside the new margin-safe field', () => {
+  const drill = makeDrill('clicking', { radiusFrac: 0.05, timeoutMs: null, spawn: 'center' })
+  const session = new DrillSession(drill, 'medio', 100, 100, cursorAt(CENTER))
+  // Force the target near the (old) edge, then shrink the canvas drastically
+  // — naive proportional scaling alone would still leave plenty of margin
+  // here, but this locks in that the re-clamp safety net runs on every resize.
+  session.slots[0].target.x = 94
+  session.slots[0].target.y = 94
+
+  session.resize(40, 40)
+
+  const t = session.slots[0].target
+  assert.ok(t.x <= 40 - session.marginX + 1e-9)
+  assert.ok(t.y <= 40 - session.marginY + 1e-9)
+})
+
+test('resize regenerates grid cells and duo posts for the new field size', () => {
+  const gridDrill = makeDrill('clicking', { radiusFrac: 0.05, timeoutMs: null, spawn: 'grid', grid: { cols: 2, rows: 2 } })
+  const gridSession = new DrillSession(gridDrill, 'medio', 100, 100, cursorAt(CENTER))
+  const oldCell = gridSession.gridCells[0]
+
+  gridSession.resize(400, 400)
+
+  assert.notDeepEqual(gridSession.gridCells[0], oldCell)
+  for (const cell of gridSession.gridCells) {
+    assert.ok(cell.x >= gridSession.marginX && cell.x <= 400 - gridSession.marginX)
+    assert.ok(cell.y >= gridSession.marginY && cell.y <= 400 - gridSession.marginY)
+  }
+
+  const duoDrill = makeDrill('clicking', { radiusFrac: 0.05, timeoutMs: null, spawn: 'duo' })
+  const duoSession = new DrillSession(duoDrill, 'medio', 100, 100, cursorAt(CENTER))
+  duoSession.resize(400, 100)
+  for (const post of duoSession.duoPosts) {
+    assert.ok(post.x >= duoSession.marginX && post.x <= 400 - duoSession.marginX)
+  }
 })

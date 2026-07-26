@@ -1,10 +1,15 @@
 import { randRange } from '../engine/spawn.js'
-import { randomPointInBounds2D, pointNearCursor2D, clampToArenaBounds2D, ARENA_BOUNDS_2D } from './spawn2d.js'
+import { randomPointInBounds2D, pointNearCursor2D, clampToArenaBounds2D } from './spawn2d.js'
 import { Target2D } from './target2d.js'
 import { ClickScorer2D, TrackingScorer2D } from './clickScorer2d.js'
 import { TrackingMover } from './movers.js'
 import { TARGET_COLOR, AVOID_COLOR, AVOID_GLOW, CATEGORY_ACCENTS } from './theme2d.js'
 import { modeOf } from '../catalog.js'
+
+// Extra breathing room (px) beyond a target's own visual edge when computing
+// how close it may spawn/drift to the field's edge — see marginX/marginY
+// below. Purely cosmetic (keeps targets from looking glued to the border).
+const EDGE_SLACK_PX = 6
 
 // The one generic drill runtime — every catalog entry, old and new, runs
 // through this class. It reads the entry's per-difficulty params (see the
@@ -13,11 +18,20 @@ import { modeOf } from '../catalog.js'
 // ExercisePlayer only ever talks to this interface:
 //   update(dtMs)  -> { enteredTarget }   (moves/spawns/expires, scores hover)
 //   click(pos)    -> { hit }             (no-op for continuous drills)
+//   resize(w, h)  -> repositions/rescales everything already on screen
 //   draw(ctx), hud, result
 //
 // Parity guarantee: for the 4 pre-3.1.0 drills the observable behavior
 // (spawn rules, timeout handling, scoring, hit flash) is unchanged — their
 // params exercise only the code paths the old per-drill modules had.
+//
+// Every spawn position is clamped to marginX/marginY of the CANVAS edge —
+// never a fixed universal fraction — where marginX/marginY are the target's
+// own (aspect-corrected) radius plus EDGE_SLACK_PX. This is the fix for the
+// "target spawns partially under the HUD / off the field" bug: as long as
+// the caller (ExercisePlayer) gives this class the size of the PLAYABLE
+// FIELD ONLY (HUD lives outside that area entirely, not overlaid on top of
+// it), every target is guaranteed fully visible and clickable.
 export class DrillSession {
   constructor(drill, difficultyKey, width, height, getCursorPos) {
     this.drill  = drill
@@ -27,15 +41,15 @@ export class DrillSession {
     this.getCursorPos = getCursorPos || (() => ({ x: width / 2, y: height / 2 }))
     this.mode   = modeOf(drill)
     this.accent = CATEGORY_ACCENTS[drill.category]
+    this.aspectX = this.cfg.aspect?.x ?? 1
+    this.aspectY = this.cfg.aspect?.y ?? 1
 
-    const minDim = Math.min(width, height)
-    this.minDim = minDim
-    this.radius = this.cfg.radiusFrac * minDim
+    this._recomputeSpatials(width, height)
 
     if (this.mode === 'continuous') {
       this.scorer = new TrackingScorer2D()
-      this.target = this._makeTarget(() => randomPointInBounds2D(width, height))
-      this.mover  = new TrackingMover(this.target, this.cfg, width, height)
+      this.target = this._makeTarget(() => randomPointInBounds2D(width, height, this.marginX, this.marginY))
+      this.mover  = new TrackingMover(this.target, this.cfg, width, height, this.marginX, this.marginY)
       this.wasOnTarget = false
       return
     }
@@ -47,16 +61,21 @@ export class DrillSession {
     this.duoIndex     = Math.random() < 0.5 ? 0 : 1
 
     if (this.cfg.spawn === 'grid') this.gridCells = this._buildGridCells(this.cfg.grid)
-    if (this.cfg.spawn === 'duo') {
-      this.duoPosts = [
-        { x: width * 0.30, y: height * 0.5 },
-        { x: width * 0.70, y: height * 0.5 },
-      ]
-    }
+    if (this.cfg.spawn === 'duo')  this.duoPosts  = this._buildDuoPosts()
 
     // One slot per simultaneous target; each cycles spawn → live → retire.
     const count = this.cfg.simultaneous || 1
     this.slots = Array.from({ length: count }, () => this._freshSlot())
+  }
+
+  // radius/margins derive from radiusFrac * min(width,height) — recomputed
+  // here (constructor AND resize) so the two never drift apart.
+  _recomputeSpatials(width, height) {
+    const minDim = Math.min(width, height)
+    this.minDim  = minDim
+    this.radius  = this.cfg.radiusFrac * minDim
+    this.marginX = this.radius * this.aspectX + EDGE_SLACK_PX
+    this.marginY = this.radius * this.aspectY + EDGE_SLACK_PX
   }
 
   _makeTarget(spawnPosition, { avoid = false } = {}) {
@@ -65,25 +84,32 @@ export class DrillSession {
       radius:    this.radius,
       color:     avoid ? AVOID_COLOR : TARGET_COLOR,
       glowColor: avoid ? AVOID_GLOW : this.accent,
-      aspectX:   this.cfg.aspect?.x ?? 1,
-      aspectY:   this.cfg.aspect?.y ?? 1,
+      aspectX:   this.aspectX,
+      aspectY:   this.aspectY,
       ringFrac:  avoid ? null : (this.cfg.rings?.innerFrac ?? null),
     })
   }
 
   _buildGridCells({ cols, rows }) {
-    const [x0, x1] = ARENA_BOUNDS_2D.x
-    const [y0, y1] = ARENA_BOUNDS_2D.y
+    const x0 = this.marginX, x1 = this.width  - this.marginX
+    const y0 = this.marginY, y1 = this.height - this.marginY
     const cells = []
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         cells.push({
-          x: this.width  * (x0 + (x1 - x0) * ((c + 0.5) / cols)),
-          y: this.height * (y0 + (y1 - y0) * ((r + 0.5) / rows)),
+          x: x0 + (x1 - x0) * ((c + 0.5) / cols),
+          y: y0 + (y1 - y0) * ((r + 0.5) / rows),
         })
       }
     }
     return cells
+  }
+
+  _buildDuoPosts() {
+    return [
+      clampToArenaBounds2D(this.width * 0.30, this.height * 0.5, this.width, this.height, this.marginX, this.marginY),
+      clampToArenaBounds2D(this.width * 0.70, this.height * 0.5, this.width, this.height, this.marginX, this.marginY),
+    ]
   }
 
   _spawnPosition() {
@@ -91,15 +117,15 @@ export class DrillSession {
     switch (cfg.spawn) {
       case 'nearCursor': {
         const cursor = this.getCursorPos()
-        if (!cfg.alternate) return pointNearCursor2D(cursor, cfg.distanceRangeFrac, this.width, this.height)
+        if (!cfg.alternate) return pointNearCursor2D(cursor, cfg.distanceRangeFrac, this.width, this.height, this.marginX, this.marginY)
         // Pendulum: strictly alternate sides, within ±45° of horizontal.
         const theta = (this.pendulumSide === 1 ? 0 : Math.PI) + (Math.random() - 0.5) * (Math.PI / 2)
         this.pendulumSide *= -1
         const r = randRange(cfg.distanceRangeFrac) * this.minDim
-        return clampToArenaBounds2D(cursor.x + Math.cos(theta) * r, cursor.y + Math.sin(theta) * r, this.width, this.height)
+        return clampToArenaBounds2D(cursor.x + Math.cos(theta) * r, cursor.y + Math.sin(theta) * r, this.width, this.height, this.marginX, this.marginY)
       }
       case 'chain':
-        return pointNearCursor2D(this.chainAnchor || this.getCursorPos(), cfg.distanceRangeFrac, this.width, this.height)
+        return pointNearCursor2D(this.chainAnchor || this.getCursorPos(), cfg.distanceRangeFrac, this.width, this.height, this.marginX, this.marginY)
       case 'grid': {
         let idx = Math.floor(Math.random() * this.gridCells.length)
         if (this.gridCells.length > 1 && idx === this.lastGridCell) idx = (idx + 1) % this.gridCells.length
@@ -110,10 +136,10 @@ export class DrillSession {
         this.duoIndex = 1 - this.duoIndex
         return this.duoPosts[this.duoIndex]
       case 'center':
-        return { x: this.width * 0.5, y: this.height * 0.5 }
+        return clampToArenaBounds2D(this.width * 0.5, this.height * 0.5, this.width, this.height, this.marginX, this.marginY)
       case 'random':
       default:
-        return randomPointInBounds2D(this.width, this.height)
+        return randomPointInBounds2D(this.width, this.height, this.marginX, this.marginY)
     }
   }
 
@@ -133,7 +159,7 @@ export class DrillSession {
     // the hit flash plays on the newly spawned target.
     if (flash) slot.target.flashHit()
     if (this.cfg.decoy && !slot.noGo) {
-      const decoyPos = pointNearCursor2D(this.getCursorPos(), this.cfg.distanceRangeFrac, this.width, this.height)
+      const decoyPos = pointNearCursor2D(this.getCursorPos(), this.cfg.distanceRangeFrac, this.width, this.height, this.marginX, this.marginY)
       slot.decoy = this._makeTarget(() => decoyPos, { avoid: true })
     } else {
       slot.decoy = null
@@ -177,7 +203,7 @@ export class DrillSession {
         slot.jumped = true
         const theta = Math.random() * Math.PI * 2
         const d = jump.distanceFrac * this.minDim
-        const p = clampToArenaBounds2D(slot.target.x + Math.cos(theta) * d, slot.target.y + Math.sin(theta) * d, this.width, this.height)
+        const p = clampToArenaBounds2D(slot.target.x + Math.cos(theta) * d, slot.target.y + Math.sin(theta) * d, this.width, this.height, this.marginX, this.marginY)
         slot.target.moveTo(p.x, p.y)
       }
       // Expiring unhit is not a registered miss (same rule the old drills
@@ -213,6 +239,50 @@ export class DrillSession {
     if (noGoSlot) this._retireSlot(noGoSlot)
     else if (decoySlot) decoySlot.decoy = null
     return { hit: false }
+  }
+
+  // Called by ExercisePlayer whenever the PLAYABLE FIELD itself resizes
+  // (window resize, sidebar collapse/expand, maximize). Rescales everything
+  // already on screen proportionally to the new dimensions — no target
+  // "teleports" to an unrelated spot, it just tracks the same relative
+  // position it already had — then re-clamps into the new margin-safe field
+  // as a final safety net (covers the canvas being resized to a very
+  // different aspect ratio, where naive proportional scaling alone
+  // wouldn't guarantee containment).
+  resize(newWidth, newHeight) {
+    const oldWidth = this.width, oldHeight = this.height
+    if (newWidth <= 0 || newHeight <= 0) return
+    const scaleX = oldWidth  > 0 ? newWidth  / oldWidth  : 1
+    const scaleY = oldHeight > 0 ? newHeight / oldHeight : 1
+
+    this.width  = newWidth
+    this.height = newHeight
+    this._recomputeSpatials(newWidth, newHeight)
+
+    const rescale = (t) => {
+      if (!t) return
+      const p = clampToArenaBounds2D(t.x * scaleX, t.y * scaleY, newWidth, newHeight, this.marginX, this.marginY)
+      t.x = p.x
+      t.y = p.y
+      t.radius = this.radius
+    }
+
+    if (this.mode === 'continuous') {
+      rescale(this.target)
+      this.mover.resize(newWidth, newHeight, this.marginX, this.marginY)
+      return
+    }
+
+    for (const slot of this.slots) {
+      rescale(slot.target)
+      rescale(slot.decoy)
+    }
+    if (this.chainAnchor) {
+      const p = clampToArenaBounds2D(this.chainAnchor.x * scaleX, this.chainAnchor.y * scaleY, newWidth, newHeight, this.marginX, this.marginY)
+      this.chainAnchor = p
+    }
+    if (this.cfg.spawn === 'grid') this.gridCells = this._buildGridCells(this.cfg.grid)
+    if (this.cfg.spawn === 'duo')  this.duoPosts  = this._buildDuoPosts()
   }
 
   draw(ctx) {

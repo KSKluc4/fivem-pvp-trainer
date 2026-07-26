@@ -6,20 +6,24 @@
 export function createCursorTracker(canvas) {
   const pos = { x: 0, y: 0 }
 
-  function onMove(e) {
+  function syncFromEvent(e) {
     const rect = canvas.getBoundingClientRect()
     pos.x = Math.min(rect.width, Math.max(0, e.clientX - rect.left))
     pos.y = Math.min(rect.height, Math.max(0, e.clientY - rect.top))
   }
 
   function attach() {
-    canvas.addEventListener('pointermove', onMove)
+    canvas.addEventListener('pointermove', syncFromEvent)
   }
 
   function detach() {
-    canvas.removeEventListener('pointermove', onMove)
+    canvas.removeEventListener('pointermove', syncFromEvent)
   }
 
+  // getPosition() alone reflects wherever the last pointermove landed, which
+  // is stale for a pointerdown that isn't preceded by a move at the same
+  // spot (synthetic/programmatic clicks, some touch/pen input). Callers that
+  // hit-test a click must syncFromEvent(e) with the pointerdown event first.
   function getPosition() {
     return pos
   }
@@ -52,5 +56,5 @@ export function createCursorTracker(canvas) {
     ctx.restore()
   }
 
-  return { attach, detach, getPosition, draw }
+  return { attach, detach, getPosition, syncFromEvent, draw }
 }

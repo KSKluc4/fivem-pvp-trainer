@@ -6,6 +6,7 @@ import { createArena2D } from './engine2d/arena2d.js'
 import { createCursorTracker } from './engine2d/cursor2d.js'
 import { createLoop } from './engine/loop.js'
 import { SCENARIOS } from './scenarios2d/index.js'
+import { CATEGORY_ACCENTS } from './engine2d/theme2d.js'
 import { CROSSHAIR_STYLES } from './hud/Crosshair'
 import Hud from './hud/Hud'
 import ResultsScreen from './hud/ResultsScreen'
@@ -139,13 +140,30 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
   const onFrameRef = useRef(onFrame)
   onFrameRef.current = onFrame
 
+  // Shared by the blur/visibilitychange/Escape auto-pause below AND the
+  // HUD's own pause button — one definition of "pause if a session is
+  // actually running right now".
+  const handlePauseClick = useCallback(() => {
+    if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') {
+      resumePhaseRef.current = phaseRef.current
+      setPhase('paused')
+    }
+  }, [])
+  const pauseIfActiveRef = useRef(handlePauseClick)
+  pauseIfActiveRef.current = handlePauseClick
+
   // Mount-once: canvas/arena/cursor/rAF-loop lifecycle, auto-pause on
   // blur/tab-hide, Escape to pause. No pointer lock anywhere — the cursor
   // roams free inside the bounded canvas the whole time.
   useEffect(() => {
     const canvas    = canvasRef.current
     const container = containerRef.current
-    const arena  = createArena2D(canvas, container)
+    // The field (container) resizing — window resize, sidebar collapse,
+    // maximize — must rescale whatever's already on screen instead of
+    // leaving it at a now-stale pixel position (or, worse, off the field).
+    const arena  = createArena2D(canvas, container, (oldW, oldH, newW, newH) => {
+      sessionRef.current?.resize?.(newW, newH)
+    })
     const cursor = createCursorTracker(canvas)
     cursor.attach()
     arenaRef.current  = arena
@@ -154,12 +172,7 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     const loop = createLoop((dt, fps) => onFrameRef.current(dt, fps))
     loop.start()
 
-    function pauseIfActive() {
-      if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') {
-        resumePhaseRef.current = phaseRef.current
-        setPhase('paused')
-      }
-    }
+    function pauseIfActive() { pauseIfActiveRef.current() }
     function onVisibilityChange() {
       if (document.visibilityState === 'hidden') pauseIfActive()
     }
@@ -195,12 +208,16 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
     const canvas = canvasRef.current
     if (!canvas) return
 
-    function onPointerDown() {
+    function onPointerDown(e) {
       if (scenario.mode !== 'click') return
       if (phaseRef.current !== 'playing' || finishedRef.current) return
       const session = sessionRef.current
       const cursor  = cursorRef.current
       if (!session || !cursor) return
+      // Hit-test the click's own coordinates, not wherever the last
+      // pointermove happened to land — those can differ for synthetic
+      // clicks or touch/pen input with no preceding move at the same spot.
+      cursor.syncFromEvent(e)
       const { hit } = session.click(cursor.getPosition())
       playShoot()
       if (hit) playHit()
@@ -258,92 +275,104 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
         </Button>
       </Group>
 
-      {/* The canvas/arena/cursor mount once and stay in the DOM for the
-          component's whole lifetime — setup/results are shown as overlays on
-          top of it instead of unmounting it. */}
-      <div ref={containerRef} className={`trainer-canvas-wrap${active ? ' trainer-canvas-wrap--active' : ''}`}>
-        <canvas ref={canvasRef} className="trainer-canvas" />
+      {/* drill-panel is the one bordered/glowing box — HUD bar (its own row,
+          never overlapping the field) stacked above trainer-canvas-wrap
+          (the actual playable field). The canvas/arena/cursor mount once
+          and stay in the DOM for the component's whole lifetime —
+          setup/results are shown as overlays on top of the FIELD only,
+          never over the HUD. */}
+      <div className="drill-session-body">
+        <div className="drill-panel" style={{ '--field-accent': CATEGORY_ACCENTS[scenario.category] }}>
+          {active && (
+            <Hud
+              {...hud}
+              exerciseName={exerciseName}
+              category={scenario.category}
+              sessionDurationS={scenario.sessionDurationS}
+              mode={scenario.mode}
+              accuracyLabelKey={scenario.mode === 'continuous' ? 'trainer.na_mira' : 'trainer.precisao'}
+              sfxOn={sfxOn}
+              onToggleMute={handleToggleMute}
+              onPause={handlePauseClick}
+            />
+          )}
 
-        {active && (
-          <Hud
-            {...hud}
-            exerciseName={exerciseName}
-            sessionDurationS={scenario.sessionDurationS}
-            mode={scenario.mode}
-            accuracyLabelKey={scenario.mode === 'continuous' ? 'trainer.na_mira' : 'trainer.precisao'}
-            sfxOn={sfxOn}
-            onToggleMute={handleToggleMute}
-          />
-        )}
+          <div
+            ref={containerRef}
+            className={`trainer-canvas-wrap trainer-canvas-wrap--flat${active ? ' trainer-canvas-wrap--active' : ''}`}
+          >
+            <canvas ref={canvasRef} className="trainer-canvas" />
 
-        {phase === 'results' && result && (
-          <div className="trainer-overlay">
-            <Card style={{ maxWidth: 640, width: '100%' }}>
-              <ResultsScreen
-                result={result}
-                exerciseName={exerciseName}
-                lastAttempt={comparison.lastAttempt}
-                personalBest={comparison.personalBest}
-                savedRemotely={result.savedRemotely}
-                roundInfo={roundInfo}
-                isFinalRound={isFinalRound}
-                onRetry={handleRetry}
-                onBack={onBack}
-                onComplete={isFinalRound ? () => onRoutineComplete?.() : undefined}
-              />
-            </Card>
-          </div>
-        )}
-
-        {phase === 'setup' && (
-          <div className="trainer-overlay">
-            <Card className="trainer-setup-card">
-              <Stack gap="md">
-                <Box>
-                  <Text size="sm" mb={6}>{t('trainer.dificuldade')}</Text>
-                  <SegmentedControl
-                    fullWidth
-                    value={difficulty}
-                    onChange={setDifficulty}
-                    data={Object.keys(scenario.difficulties).map((key) => ({ label: t(`trainer.dificuldades.${key}`), value: key }))}
+            {phase === 'results' && result && (
+              <div className="trainer-overlay">
+                <Card style={{ maxWidth: 640, width: '100%' }}>
+                  <ResultsScreen
+                    result={result}
+                    exerciseName={exerciseName}
+                    lastAttempt={comparison.lastAttempt}
+                    personalBest={comparison.personalBest}
+                    savedRemotely={result.savedRemotely}
+                    roundInfo={roundInfo}
+                    isFinalRound={isFinalRound}
+                    onRetry={handleRetry}
+                    onBack={onBack}
+                    onComplete={isFinalRound ? () => onRoutineComplete?.() : undefined}
                   />
-                </Box>
-                <Box>
-                  <Text size="sm" mb={6}>{t('trainer.estilo_mira')}</Text>
-                  <SegmentedControl
-                    fullWidth
-                    value={crosshairStyle}
-                    onChange={setCrosshairStyle}
-                    data={CROSSHAIR_STYLES.map((s) => ({ label: t(`trainer.crosshair_estilos.${s}`), value: s }))}
-                  />
-                </Box>
-                <Text size="xs" c="dimmed">
-                  <Trans i18nKey="trainer.instrucoes" components={{ bold: <b /> }} />
-                </Text>
-                <Button
-                  size="md"
-                  leftSection={<IconPlayerPlay size={18} />}
-                  onClick={startCountdown}
-                >
-                  {t('trainer.iniciar')}
-                </Button>
-              </Stack>
-            </Card>
-          </div>
-        )}
+                </Card>
+              </div>
+            )}
 
-        {phase === 'countdown' && (
-          <div className="trainer-overlay trainer-overlay--countdown">
-            <Text className="trainer-countdown-number">{countdownN > 0 ? countdownN : t('trainer.vai')}</Text>
-          </div>
-        )}
+            {phase === 'setup' && (
+              <div className="trainer-overlay">
+                <Card className="trainer-setup-card">
+                  <Stack gap="md">
+                    <Box>
+                      <Text size="sm" mb={6}>{t('trainer.dificuldade')}</Text>
+                      <SegmentedControl
+                        fullWidth
+                        value={difficulty}
+                        onChange={setDifficulty}
+                        data={Object.keys(scenario.difficulties).map((key) => ({ label: t(`trainer.dificuldades.${key}`), value: key }))}
+                      />
+                    </Box>
+                    <Box>
+                      <Text size="sm" mb={6}>{t('trainer.estilo_mira')}</Text>
+                      <SegmentedControl
+                        fullWidth
+                        value={crosshairStyle}
+                        onChange={setCrosshairStyle}
+                        data={CROSSHAIR_STYLES.map((s) => ({ label: t(`trainer.crosshair_estilos.${s}`), value: s }))}
+                      />
+                    </Box>
+                    <Text size="xs" c="dimmed">
+                      <Trans i18nKey="trainer.instrucoes" components={{ bold: <b /> }} />
+                    </Text>
+                    <Button
+                      size="md"
+                      leftSection={<IconPlayerPlay size={18} />}
+                      onClick={startCountdown}
+                    >
+                      {t('trainer.iniciar')}
+                    </Button>
+                  </Stack>
+                </Card>
+              </div>
+            )}
 
-        {phase === 'paused' && (
-          <div className="trainer-overlay trainer-overlay--clickable" onClick={handleResume}>
-            <Text fw={700} size="lg">{t('trainer.pausado')}</Text>
-            <Text size="sm" c="dimmed">{t('trainer.clique_continuar')}</Text>
+            {phase === 'countdown' && (
+              <div className="trainer-overlay trainer-overlay--countdown">
+                <Text className="trainer-countdown-number">{countdownN > 0 ? countdownN : t('trainer.vai')}</Text>
+              </div>
+            )}
+
+            {phase === 'paused' && (
+              <div className="trainer-overlay trainer-overlay--clickable" onClick={handleResume}>
+                <Text fw={700} size="lg">{t('trainer.pausado')}</Text>
+                <Text size="sm" c="dimmed">{t('trainer.clique_continuar')}</Text>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </Box>
   )

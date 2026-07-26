@@ -12,29 +12,20 @@ import ExercisePlayer from './ExercisePlayer'
 import { useAllTrainerScores } from './useAllTrainerScores'
 import { CATEGORIES, DRILLS, drillsInCategory } from './catalog.js'
 import { perCategoryLevels, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
+import { CATEGORY_COLORS } from './engine2d/theme2d.js'
 import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
 import { setTrainerAudioVolume } from './audio/trainerAudio.js'
 import './trainer.css'
 
-// One icon + accent color per CATEGORY (theme tokens only — brandCyan/
-// brandPurple are custom theme colors, the rest are standard Mantine ones
-// already used elsewhere). Same 5 hues engine2d/theme2d.js sources the
-// in-canvas target glow from, so a card's icon color and its drill's glow
-// agree.
+// One icon per CATEGORY — accent colors live in engine2d/theme2d.js
+// (CATEGORY_COLORS/CATEGORY_ACCENTS), the single source of truth shared by
+// the canvas, this grid's icon/chip, and the in-session HUD.
 const CATEGORY_ICONS = {
   tracking:  IconFocus2,
   clicking:  IconGrid3x3,
   flicking:  IconBolt,
   precision: IconTargetArrow,
   reaction:  IconStopwatch,
-}
-
-export const CATEGORY_COLORS = {
-  tracking:  'brandCyan',
-  clicking:  'orange',
-  flicking:  'brandPurple',
-  precision: 'green',
-  reaction:  'yellow',
 }
 
 function bestScoreFor(scores) {
