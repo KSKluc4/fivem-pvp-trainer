@@ -103,7 +103,16 @@ test('spawn "grid" only uses configured cells and never repeats the same cell tw
   }
 })
 
-test('spawn "chain" spawns the next target near the last hit, not near the cursor', () => {
+test('spawn "chain" spawns the next target near the last hit, not near the cursor', (t) => {
+  // Both the initial (near-cursor) and chained (near-last-hit) spawns pull
+  // from the same Math.random()-driven pointNearCursor2D — with real
+  // randomness the two offsets can (rarely) point back toward the cursor
+  // and make it closer than the last hit by chance, flaking the assertion.
+  // Pin every offset to angle 0, same direction each time, so the two
+  // spawns walk straight away from the cursor and the distances can never
+  // cross: deterministic regardless of Math.random.
+  t.mock.method(Math, 'random', () => 0)
+
   const drill = makeDrill('flicking', {
     radiusFrac: 0.05, timeoutMs: null, spawn: 'chain', distanceRangeFrac: [0.02, 0.03],
   })

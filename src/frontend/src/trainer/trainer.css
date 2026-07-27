@@ -164,3 +164,73 @@ body.trainer-active .mantine-AppShell-main > .mantine-Container-root {
   transform: translateY(-3px);
   box-shadow: var(--mantine-shadow-md);
 }
+
+/* ─── Category filter chips ──────────────────────────────────────────────
+   Replaces the old SegmentedControl (hard dividers, gray, weak active
+   state) with independent pill buttons, each carrying its category's
+   accent color so it doubles as a color key for the drill grid below. */
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid var(--mantine-color-dark-4);
+  background: transparent;
+  color: var(--mantine-color-dimmed);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.category-chip:hover { background: var(--mantine-color-dark-6); }
+
+.category-chip:focus-visible {
+  outline: 2px solid var(--mantine-color-brandCyan-5);
+  outline-offset: 2px;
+}
+
+.category-chip--neutral.category-chip--active {
+  background: var(--mantine-color-dark-1);
+  border-color: var(--mantine-color-dark-1);
+  color: var(--mantine-color-dark-9);
+}
+
+/* Accent (per-category) chips carry --chip-accent/-soft/-border custom
+   properties set inline from CATEGORY_COLORS/categoryRgba(), so this one
+   rule set covers all 5 categories. */
+.category-chip--accent {
+  border-color: var(--chip-accent-border, var(--mantine-color-dark-4));
+}
+.category-chip--accent:hover {
+  background: var(--chip-accent-soft);
+  border-color: var(--chip-accent);
+}
+.category-chip--accent .category-chip__icon { color: var(--chip-accent); }
+
+.category-chip--accent.category-chip--active {
+  background: var(--chip-accent);
+  border-color: var(--chip-accent);
+  color: #0a0a12; /* near-black reads with reliable contrast across all 5 hues */
+}
+.category-chip--accent.category-chip--active .category-chip__icon { color: inherit; }
+
+.category-chip__count { opacity: 0.7; font-weight: 500; }
+
+/* Discreet per-category level readout, shown next to the active chip —
+   wraps below it naturally on narrow widths since it's a flex sibling. */
+.category-chip-level {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 600;
+  color: var(--chip-accent);
+  background: var(--chip-accent-soft);
+}

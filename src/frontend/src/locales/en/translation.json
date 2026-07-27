@@ -379,7 +379,8 @@
       "flicking": "Flicking",
       "precision": "Precision",
       "reaction": "Reaction",
-      "sem_nivel": "No level yet"
+      "sem_nivel": "No level yet",
+      "filtro_aria": "Filter by category"
     },
     "config": {
       "abrir": "Settings",

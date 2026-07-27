@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
   Container, Box, Group, Stack, Title, Text, Button, Card, SimpleGrid, Badge,
-  RingProgress, ThemeIcon, ActionIcon, Popover, Slider, Switch, SegmentedControl,
+  RingProgress, ThemeIcon, ActionIcon, Popover, Slider, Switch,
 } from '@mantine/core'
 import {
   IconArrowLeft, IconFocus2, IconGrid3x3, IconBolt, IconTargetArrow, IconStopwatch,
@@ -12,7 +12,7 @@ import ExercisePlayer from './ExercisePlayer'
 import { useAllTrainerScores } from './useAllTrainerScores'
 import { CATEGORIES, DRILLS, drillsInCategory } from './catalog.js'
 import { perCategoryLevels, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
-import { CATEGORY_COLORS } from './engine2d/theme2d.js'
+import { CATEGORY_COLORS, categoryRgba } from './engine2d/theme2d.js'
 import { loadTrainerAudioSettings, saveTrainerAudioSettings } from './audio/trainerAudioSettings.js'
 import { setTrainerAudioVolume } from './audio/trainerAudio.js'
 import './trainer.css'
@@ -79,7 +79,6 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
   const progressPct  = overall != null ? Math.min(100, (overall - flooredLevel) * 100) : 0
   const atMaxLevel    = flooredLevel === MAX_LEVEL
 
-  const selectedCategoryLevel = categoryFilter !== 'todos' ? levelsByCategory[categoryFilter] : null
   const visibleDrills = categoryFilter === 'todos' ? DRILLS : drillsInCategory(categoryFilter)
 
   return (
@@ -151,24 +150,56 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
         </Group>
       </Group>
 
-      {/* ── Category filter ── */}
-      <Group gap="sm" mb="lg" wrap="wrap">
-        <SegmentedControl
-          size="xs"
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          data={[
-            { label: t('trainer.categorias.todos'), value: 'todos' },
-            ...CATEGORIES.map((cat) => ({ label: t(`trainer.categorias.${cat}`), value: cat })),
-          ]}
-        />
-        {categoryFilter !== 'todos' && (
-          <Badge variant="light" color={CATEGORY_COLORS[categoryFilter]}>
-            {selectedCategoryLevel != null
-              ? t('trainer.nivel_aim.nivel', { level: selectedCategoryLevel })
-              : t('trainer.categorias.sem_nivel')}
-          </Badge>
-        )}
+      {/* ── Category filter — one pill per category, in its accent color, with
+           an icon + drill count. "Todos" is first and stays neutral. Plain
+           <button> + aria-pressed instead of Mantine's SegmentedControl: each
+           chip is independently focusable/keyboard-activatable and its
+           checked state is announced natively, without fighting a shared
+           divider-based control for per-item coloring. ── */}
+      <Group gap={8} mb="lg" wrap="wrap" role="group" aria-label={t('trainer.categorias.filtro_aria')}>
+        <button
+          type="button"
+          className={`category-chip category-chip--neutral${categoryFilter === 'todos' ? ' category-chip--active' : ''}`}
+          aria-pressed={categoryFilter === 'todos'}
+          onClick={() => setCategoryFilter('todos')}
+        >
+          <span className="category-chip__label">{t('trainer.categorias.todos')}</span>
+          <span className="category-chip__count">· {DRILLS.length}</span>
+        </button>
+        {CATEGORIES.map((cat) => {
+          const Icon = CATEGORY_ICONS[cat]
+          const active = categoryFilter === cat
+          const level = levelsByCategory[cat]
+          return (
+            <Fragment key={cat}>
+              <button
+                type="button"
+                className={`category-chip category-chip--accent${active ? ' category-chip--active' : ''}`}
+                style={{
+                  '--chip-accent':       'var(--mantine-color-' + CATEGORY_COLORS[cat] + '-6)',
+                  '--chip-accent-soft':  categoryRgba(cat, 0.14),
+                  '--chip-accent-border': categoryRgba(cat, 0.4),
+                }}
+                aria-pressed={active}
+                onClick={() => setCategoryFilter(cat)}
+              >
+                <Icon size={15} className="category-chip__icon" />
+                <span className="category-chip__label">{t(`trainer.categorias.${cat}`)}</span>
+                <span className="category-chip__count">· {drillsInCategory(cat).length}</span>
+              </button>
+              {active && (
+                <span
+                  className="category-chip-level"
+                  style={{ '--chip-accent': 'var(--mantine-color-' + CATEGORY_COLORS[cat] + '-6)', '--chip-accent-soft': categoryRgba(cat, 0.14) }}
+                >
+                  {level != null
+                    ? t('trainer.nivel_aim.nivel', { level })
+                    : t('trainer.categorias.sem_nivel')}
+                </span>
+              )}
+            </Fragment>
+          )
+        })}
       </Group>
 
       {/* ── Sensitivity discovery — a guided diagnostic test, not a scored drill ── */}

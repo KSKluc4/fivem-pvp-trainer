@@ -33,3 +33,14 @@ export const CATEGORY_COLORS = {
   precision: 'green',
   reaction:  'yellow',
 }
+
+// Alpha-blended category accent, for DOM elements that need a soft tint
+// (chip backgrounds/borders) rather than the solid hex or a Mantine color
+// name — e.g. the trainer category filter chips.
+export function categoryRgba(category, alpha) {
+  const hex = CATEGORY_ACCENTS[category]
+  if (!hex) return `rgba(255, 255, 255, ${alpha})`
+  const n = parseInt(hex.slice(1), 16)
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}

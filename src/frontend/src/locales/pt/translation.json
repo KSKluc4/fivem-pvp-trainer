@@ -379,7 +379,8 @@
       "flicking": "Flick",
       "precision": "Precisão",
       "reaction": "Reação",
-      "sem_nivel": "Sem nível ainda"
+      "sem_nivel": "Sem nível ainda",
+      "filtro_aria": "Filtrar por categoria"
     },
     "config": {
       "abrir": "Configurações",
