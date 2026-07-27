@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DRILLS } from '../catalog.js'
-import { createDrillSession } from './drillSession.js'
+import { createDrillSession, RENDER_OVERSHOOT } from './drillSession.js'
 
 // Regression test for the "targets spawn under the HUD / off the field"
 // bug: the HUD used to be absolutely-positioned OVER the canvas, and target
@@ -36,11 +36,13 @@ function corners(width, height) {
 }
 
 // Checks the target's full (aspect-corrected) visual extent — not just its
-// center point — never escapes the field. A tiny epsilon absorbs floating
-// point rounding, not real containment slack.
+// center point, and not just its resting radius, but the largest it can ever
+// actually render at (spawn-pop overshoot stacked with a hit-flash, see
+// RENDER_OVERSHOOT in drillSession.js) — never escapes the field. A tiny
+// epsilon absorbs floating point rounding, not real containment slack.
 function assertContained(t, width, height, label) {
-  const rx = t.radius * t.aspectX
-  const ry = t.radius * t.aspectY
+  const rx = t.radius * t.aspectX * RENDER_OVERSHOOT
+  const ry = t.radius * t.aspectY * RENDER_OVERSHOOT
   const EPS = 1e-6
   assert.ok(t.x - rx >= -EPS, `${label}: left edge escapes field (x=${t.x}, rx=${rx})`)
   assert.ok(t.x + rx <= width + EPS, `${label}: right edge escapes field (x=${t.x}, rx=${rx}, width=${width})`)
@@ -95,6 +97,35 @@ test('every catalog drill, every difficulty, every field size, every corner curs
             if (i === 30) cursorPos = { x: width - cursor.x, y: height - cursor.y }
           }
         }
+      }
+    }
+  }
+})
+
+// Regression for the exact real-world sequence that produced the "target/
+// crosshair sat under the HUD" report: ExercisePlayer reads arena.getSize()
+// to build the session BEFORE the HUD bar is mounted (phase is still
+// 'setup', so the field container is still its full pre-HUD height) — the
+// HUD then mounts and the field's real (shorter) height only reaches
+// DrillSession via a resize() call a frame later. Proves resize() re-clamps
+// everything into the new, shorter field immediately, with no stale/
+// escaping target in between.
+test('resize() to a shorter field (HUD mounting after session creation) keeps every target contained', () => {
+  const HUD_HEIGHT_PX = 70
+  for (const drill of DRILLS) {
+    for (const difficulty of DIFFICULTIES) {
+      const width = 960, height = 600
+      const shrunkHeight = height - HUD_HEIGHT_PX
+      const label = `${drill.id}/${difficulty}/resize-shrink`
+      const session = createDrillSession(drill, difficulty, width, height, () => ({ x: width / 2, y: height / 2 }))
+
+      session.update(50)
+      session.resize(width, shrunkHeight)
+      assertSlotsContained(session, width, shrunkHeight, `${label} @ resize`)
+
+      for (let i = 0; i < 20; i++) {
+        session.update(50)
+        assertSlotsContained(session, width, shrunkHeight, `${label} @ t=${(i + 1) * 50}ms post-resize`)
       }
     }
   }

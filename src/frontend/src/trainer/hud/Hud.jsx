@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Group, Text } from '@mantine/core'
+import { ActionIcon, Badge, Divider, Group, Text } from '@mantine/core'
 import { IconVolume2, IconVolumeOff, IconPlayerPause } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { CATEGORY_COLORS } from '../engine2d/theme2d.js'
@@ -33,8 +33,8 @@ export default function Hud({
             {t(`trainer.categorias.${category}`)}
           </Badge>
           <div style={{ minWidth: 0 }}>
-            <Text size="10px" c="dimmed" truncate>{exerciseName}</Text>
-            <Text fw={800} size="1.35rem" c={accentColor} className="tabular-nums" lh={1.1}>
+            <Text size="10px" c="dimmed" truncate className="drill-hud-label">{exerciseName}</Text>
+            <Text fw={800} c={accentColor} className="tabular-nums drill-hud-score" lh={1.1}>
               {score}
             </Text>
           </div>
@@ -54,12 +54,13 @@ export default function Hud({
         <Group gap={18} wrap="nowrap" align="center">
           <div style={{ textAlign: 'right' }}>
             <Text fw={800} size="1.05rem" className="tabular-nums" lh={1.1}>{accuracyPct.toFixed(1)}%</Text>
-            <Text size="10px" c="dimmed">{t(accuracyLabelKey)}</Text>
+            <Text size="10px" c="dimmed" className="drill-hud-label">{t(accuracyLabelKey)}</Text>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'right' }} className="drill-hud-streak">
             <Text fw={700} size="0.95rem" className="tabular-nums" lh={1.1}>{streakLabel}</Text>
-            <Text size="10px" c="dimmed">{t('trainer.hud.sequencia')}</Text>
+            <Text size="10px" c="dimmed" className="drill-hud-label">{t('trainer.hud.sequencia')}</Text>
           </div>
+          <Divider orientation="vertical" className="drill-hud-divider" />
           <Group gap={2} wrap="nowrap">
             <ActionIcon
               variant="subtle"

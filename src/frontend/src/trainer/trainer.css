@@ -27,6 +27,71 @@ body.trainer-active .mantine-AppShell-main > .mantine-Container-root {
   flex-direction: column;
 }
 
+/* ─── Drill session outer frame: proportional, not fixed ────────────────────
+   Only ExercisePlayer's .trainer-view carries --drill (DiscoveryPlayer keeps
+   the plain fixed AppShell padding — out of scope here). Fluid between the
+   same ~12px/~32px bounds the HUD bar and header below scale within, so the
+   whole screen reads equally "respirado" whether the window is minimized,
+   half-screen, or maximized — not just at the one size it was eyeballed at. */
+/* Mantine composes AppShell.Main's actual padding-top/-left/etc from
+   --app-shell-padding PLUS the fixed header/navbar/footer offsets (see
+   @mantine/core/styles/AppShell.css) — overriding the `padding` shorthand
+   directly, instead of this variable, would blow away that offset and let
+   the session screen render underneath the fixed header. */
+body.trainer-active .mantine-AppShell-main:has(.trainer-view--drill) {
+  --app-shell-padding: clamp(12px, 2.5vw, 32px);
+}
+
+.trainer-view--drill {
+  /* Lets the header row (trainer-header-row) and, independently, the HUD
+     bar (drill-hud-bar, its own nested container) degrade based on actual
+     rendered width — which already reflects both window size AND sidebar
+     collapse/expand, unlike a viewport media query. */
+  container-type: inline-size;
+  container-name: trainer-view;
+}
+
+.trainer-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+  min-width: 0;
+  margin-bottom: clamp(8px, 1.6vw, 16px);
+}
+
+.trainer-header-session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trainer-header-drillname {
+  font-size: clamp(1rem, 0.82rem + 0.6vw, 1.3rem);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trainer-header-badge { flex: 0 0 auto; text-transform: uppercase; letter-spacing: 0.02em; }
+
+.trainer-header-back { flex: 0 0 auto; }
+
+/* Narrow content area (window shrunk AND/OR sidebar expanded eating the
+   space) — the category badge is the first thing to go, then the drill name
+   itself, leaving just Voltar so the header never wraps/overlaps the HUD
+   right below it. */
+@container trainer-view (max-width: 520px) {
+  .trainer-header-badge { display: none; }
+}
+@container trainer-view (max-width: 360px) {
+  .trainer-header-session { display: none; }
+  .trainer-header-row { justify-content: flex-end; }
+}
+
 /* ─── Drill session: HUD bar + playable field, stacked, never overlapping ──
    .drill-panel is the one bordered/glowing box. .drill-hud-bar (added by
    ExercisePlayer, not used by DiscoveryPlayer) is a real row ABOVE
@@ -51,11 +116,17 @@ body.trainer-active .mantine-AppShell-main > .mantine-Container-root {
      wide enough for flick/reaction drills to breathe, not so wide it turns
      into a flattened corridor on an ultrawide/maximized window. max-width
      caps it so a very TALL/narrow window (where height*1.6 would overflow
-     the available width) never causes horizontal overflow. */
+     the available width) never causes horizontal overflow.
+     No container-type here on purpose — this element already resolves its
+     own width FROM its height via aspect-ratio under a flex min-height
+     floor; adding size containment on top of that risks fighting its own
+     sizing. The HUD bar (a plain grid, unaffected by aspect-ratio) is the
+     query container for its own descendants instead — see .drill-hud-bar. */
   aspect-ratio: 8 / 5;
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  gap: clamp(2px, 0.6vw, 8px);
   border-radius: var(--mantine-radius-lg);
   border: 1px solid var(--mantine-color-dark-5);
   overflow: hidden;
@@ -64,25 +135,79 @@ body.trainer-active .mantine-AppShell-main > .mantine-Container-root {
 }
 
 .drill-hud-bar {
+  container-type: inline-size;
+  container-name: drill-hud;
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* auto/1fr/auto, not 1fr/auto/1fr: the left (score) and right (accuracy +
+     streak + pause/mute) blocks size to their own content and the center
+     (timer) absorbs whatever's left — giving left and right equal 1fr
+     shares regardless of how lopsided their actual content is (left is one
+     digit, right is two stat blocks plus two icon buttons) starved the
+     right block at the field's real minimum width (.drill-panel's 320px
+     floor, reachable with the sidebar collapsed), and its content spilled
+     left into the timer instead of shrinking. minmax(0, …) still lets every
+     track shrink below its content size under real pressure, so the
+     @container rules below (which cut font sizes/padding at that point)
+     can do their job instead of being overridden by an unshrinkable track. */
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
   align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
+  gap: clamp(8px, 1.4vw, 14px);
+  padding: clamp(8px, 1.4vw, 14px) clamp(12px, 2.2vw, 22px);
   background: var(--mantine-color-dark-7);
   border-bottom: 1px solid var(--mantine-color-dark-5);
 }
 
-.drill-hud-block--left   { justify-self: start; min-width: 0; }
-.drill-hud-block--center { justify-self: center; text-align: center; }
-.drill-hud-block--right  { justify-self: end; }
+.drill-hud-block--left   { justify-self: start;  min-width: 0; }
+.drill-hud-block--center { justify-self: center; text-align: center; min-width: 0; }
+.drill-hud-block--right  { justify-self: end;    min-width: 0; }
 
 .drill-hud-badge { text-transform: uppercase; letter-spacing: 0.02em; }
+
+/* The score is the headline number of the whole HUD — bigger and set off
+   from the drill name above it with real spacing instead of sitting flush
+   against it. */
+.drill-hud-score {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(1.3rem, 1.05rem + 1vw, 1.7rem);
+}
+
+/* Separates the pause/mute controls from the accuracy/streak numbers so the
+   cluster doesn't read as one undifferentiated row of digits. */
+.drill-hud-divider { align-self: stretch; margin: 0 2px; opacity: 0.5; }
 
 /* Score/timer/accuracy/streak digits use tabular figures so they don't
    shift width (and everything around them "dance") as the digits change. */
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Small dimmed captions (drill name under the score, "precisão"/"sequência"
+   labels) — first to go once the HUD bar itself gets tight, so the numbers
+   that actually matter keep their room instead of everything getting
+   clipped or overlapping. */
+@container drill-hud (max-width: 480px) {
+  .drill-hud-label { display: none; }
+  .drill-hud-score { font-size: 1.1rem; margin-top: 0; }
+  .drill-hud-block--center .tabular-nums { font-size: 1.3rem; }
+}
+/* .drill-panel's own min-width floor is 320px (see below) — reachable with
+   the sidebar collapsed on a narrow window — so this is a real, reachable
+   size, not a hypothetical one. Shrinks everything further and drops the
+   category badge (the HUD already repeats it from the header above) so the
+   center timer and the right block's numbers never collide. */
+@container drill-hud (max-width: 360px) {
+  .drill-hud-bar { gap: 4px; padding-inline: clamp(8px, 2vw, 12px); }
+  .drill-hud-badge { display: none; }
+  .drill-hud-score { font-size: 1rem; }
+  .drill-hud-block--center .tabular-nums { font-size: 1rem; }
+  .drill-hud-block--right .tabular-nums { font-size: 0.85rem; }
+  .drill-hud-divider { display: none; }
+  /* Streak is the least essential number on the HUD (accuracy and the
+     score already carry the session's headline stats) — first full stat
+     to go, not just its label, freeing enough width that accuracy and the
+     pause/mute icons never have to fight the timer for room. */
+  .drill-hud-streak { display: none; }
+}
 
 .trainer-canvas-wrap {
   position: relative;

@@ -11,6 +11,17 @@ import { modeOf } from '../catalog.js'
 // below. Purely cosmetic (keeps targets from looking glued to the border).
 const EDGE_SLACK_PX = 6
 
+// Target2D.draw() doesn't always render at exactly `radius`: the spawn "pop"
+// (easeOutBack, target2d.js) overshoots to ~1.10x, and a freshly-respawned
+// target plays its hit-flash at the same time (up to 1.4x on its own) — the
+// two stack because a respawn always restarts spawnScale from 0 while the
+// previous hit's flash is still decaying. Numerically maximizing
+// easeOutBack(t/140) * (1 + max(0,(160-t))/160 * 0.4) over t gives ~1.3325.
+// Without this factor, a target spawned at the old margin (radius + slack)
+// visibly clips its own rendered edge during that ~70ms window — reported
+// as "a target sat partially under the HUD". Rounded up for safety.
+export const RENDER_OVERSHOOT = 1.34
+
 // The one generic drill runtime — every catalog entry, old and new, runs
 // through this class. It reads the entry's per-difficulty params (see the
 // parameter reference in catalog.js) and drives targets, spawn logic,
@@ -74,8 +85,8 @@ export class DrillSession {
     const minDim = Math.min(width, height)
     this.minDim  = minDim
     this.radius  = this.cfg.radiusFrac * minDim
-    this.marginX = this.radius * this.aspectX + EDGE_SLACK_PX
-    this.marginY = this.radius * this.aspectY + EDGE_SLACK_PX
+    this.marginX = this.radius * this.aspectX * RENDER_OVERSHOOT + EDGE_SLACK_PX
+    this.marginY = this.radius * this.aspectY * RENDER_OVERSHOOT + EDGE_SLACK_PX
   }
 
   _makeTarget(spawnPosition, { avoid = false } = {}) {

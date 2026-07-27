@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Box, Button, Group, Text, Title, SegmentedControl, Stack, Card } from '@mantine/core'
+import { Box, Button, Group, Text, Title, Badge, SegmentedControl, Stack, Card } from '@mantine/core'
 import { IconArrowLeft, IconPlayerPlay } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { createArena2D } from './engine2d/arena2d.js'
 import { createCursorTracker } from './engine2d/cursor2d.js'
 import { createLoop } from './engine/loop.js'
 import { SCENARIOS } from './scenarios2d/index.js'
-import { CATEGORY_ACCENTS } from './engine2d/theme2d.js'
+import { CATEGORY_ACCENTS, CATEGORY_COLORS } from './engine2d/theme2d.js'
 import { CROSSHAIR_STYLES } from './hud/Crosshair'
 import Hud from './hud/Hud'
 import ResultsScreen from './hud/ResultsScreen'
@@ -262,18 +262,36 @@ export default function ExercisePlayer({ exerciseId, initialDifficulty, targetRo
 
   const active = phase === 'countdown' || phase === 'playing' || phase === 'paused'
   const exerciseName = t(`trainer.exercicios.${exerciseId}.nome`)
+  const accentColor = CATEGORY_COLORS[scenario.category] ?? 'brandCyan'
 
   return (
-    <Box className="trainer-view">
-      <Group justify="space-between" mb="md">
-        <Group gap={6}>
-          <Title order={1} size="h2">{t('trainer.titulo')}</Title>
-          <Text c="dimmed" size="sm">{exerciseName}</Text>
-        </Group>
-        <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
+    <Box className="trainer-view trainer-view--drill">
+      {/* Two headers, never both mounted: the full "Treinar agora" title on
+          setup/results (same as the selection screen, for continuity), and
+          a lean drill-name + category badge once a session is actually
+          running — the big title was competing with the HUD for vertical
+          space and attention right when the HUD matters most. Both shrink/
+          hide progressively via the trainer-header-row container query
+          (trainer-view--drill below) so Voltar always survives narrow
+          windows even if the rest doesn't fit. */}
+      <div className="trainer-header-row">
+        {active ? (
+          <div className="trainer-header-session">
+            <Title order={3} className="trainer-header-drillname">{exerciseName}</Title>
+            <Badge size="sm" variant="light" color={accentColor} className="trainer-header-badge">
+              {t(`trainer.categorias.${scenario.category}`)}
+            </Badge>
+          </div>
+        ) : (
+          <Group gap={6} wrap="nowrap" className="trainer-header-setup">
+            <Title order={1} size="h2">{t('trainer.titulo')}</Title>
+            <Text c="dimmed" size="sm" truncate>{exerciseName}</Text>
+          </Group>
+        )}
+        <Button variant="light" leftSection={<IconArrowLeft size={16} />} onClick={onBack} className="trainer-header-back">
           {t('trainer.voltar')}
         </Button>
-      </Group>
+      </div>
 
       {/* drill-panel is the one bordered/glowing box — HUD bar (its own row,
           never overlapping the field) stacked above trainer-canvas-wrap
