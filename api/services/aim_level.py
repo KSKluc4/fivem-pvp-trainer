@@ -55,6 +55,14 @@ CATEGORY_OF_EXERCISE = {
 
 # Score worth level 5, per drill per difficulty (tracking drills score ms on
 # target; everything else scores hits — mosca scores ring points).
+#
+# v3.3.0: precisao_mosca_2d's medio/dificil lowered alongside a catalog.js
+# radius/rings tightening (see src/frontend/src/trainer/difficultyIndex.js —
+# that drill had the flattest facil→dificil difficulty progression in the
+# catalog). facil is untouched. Scores already recorded under the old,
+# easier medio/dificil params aren't flagged as such — there's no
+# trainer_scores column for which param version a run used, and adding one
+# is a schema migration (CLAUDE.md §2/§5), out of scope here.
 CALIBRATION = {
     'tracking_2d':           {'facil': 45000, 'medio': 38000, 'dificil': 30000},
     'tracking_zigzag_2d':    {'facil': 40000, 'medio': 32000, 'dificil': 24000},
@@ -73,7 +81,7 @@ CALIBRATION = {
     'flick_corrente_2d':     {'facil': 44, 'medio': 38, 'dificil': 30},
     'micro_2d':              {'facil': 66, 'medio': 54, 'dificil': 42},
     'precisao_minguante_2d': {'facil': 40, 'medio': 34, 'dificil': 26},
-    'precisao_mosca_2d':     {'facil': 70, 'medio': 58, 'dificil': 46},
+    'precisao_mosca_2d':     {'facil': 70, 'medio': 53, 'dificil': 38},
     'precisao_salto_2d':     {'facil': 42, 'medio': 35, 'dificil': 28},
     'precisao_fresta_2d':    {'facil': 38, 'medio': 32, 'dificil': 25},
     'reacao_gatilho_2d':     {'facil': 30, 'medio': 26, 'dificil': 20},

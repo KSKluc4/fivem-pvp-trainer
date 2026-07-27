@@ -207,9 +207,14 @@ export const DRILLS = [
     // Bullseye: the inner ring is worth double — placement over volume.
     id: 'precisao_mosca_2d', category: 'precision',
     params: {
+      // facil unchanged — medio/dificil pulled harder: this was the
+      // flattest facil→dificil progression in the whole catalog (see
+      // difficultyIndex.js/difficultyIndex.test.mjs) — radius and ring
+      // alone weren't shrinking enough to feel meaningfully harder tier
+      // over tier.
       facil:   { radiusFrac: 0.062, timeoutMs: null, spawn: 'random', rings: { innerFrac: 0.42, innerPoints: 2, outerPoints: 1 } },
-      medio:   { radiusFrac: 0.050, timeoutMs: null, spawn: 'random', rings: { innerFrac: 0.38, innerPoints: 2, outerPoints: 1 } },
-      dificil: { radiusFrac: 0.040, timeoutMs: null, spawn: 'random', rings: { innerFrac: 0.34, innerPoints: 2, outerPoints: 1 } },
+      medio:   { radiusFrac: 0.046, timeoutMs: null, spawn: 'random', rings: { innerFrac: 0.34, innerPoints: 2, outerPoints: 1 } },
+      dificil: { radiusFrac: 0.033, timeoutMs: null, spawn: 'random', rings: { innerFrac: 0.27, innerPoints: 2, outerPoints: 1 } },
     },
   },
   {

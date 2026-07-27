@@ -53,7 +53,15 @@ export const CALIBRATION = {
   // precision — score = hits (mosca: points, inner ring counts double)
   micro_2d:              { facil: 66, medio: 54, dificil: 42 },
   precisao_minguante_2d: { facil: 40, medio: 34, dificil: 26 },
-  precisao_mosca_2d:     { facil: 70, medio: 58, dificil: 46 },
+  // medio/dificil lowered in v3.3.0 alongside the catalog.js radius/rings
+  // tightening (see difficultyIndex.js) — the drill got harder, so the same
+  // skill now tops out at a lower raw score. facil is untouched (so is its
+  // threshold). Scores recorded on the old, easier medio/dificil params
+  // still land wherever this new, lower bar puts them — there's no schema
+  // field recording which param version a trainer_scores row was played
+  // under, and adding one is a migration (CLAUDE.md §2/§5), so this is a
+  // knowing, undocumented-in-the-DB tradeoff, not an oversight.
+  precisao_mosca_2d:     { facil: 70, medio: 53, dificil: 38 },
   precisao_salto_2d:     { facil: 42, medio: 35, dificil: 28 },
   precisao_fresta_2d:    { facil: 38, medio: 32, dificil: 25 },
   // reaction — score = hits in 60s (spawn delays eat into the clock)
