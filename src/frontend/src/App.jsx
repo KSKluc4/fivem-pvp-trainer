@@ -19,6 +19,7 @@ import Profile          from './components/Profile'
 import UpdateBanner     from './components/UpdateBanner'
 import AdminPanel       from './components/AdminPanel'
 import TrainerView      from './trainer/TrainerView'
+import PresetPlayer     from './trainer/PresetPlayer'
 import DiscoverySensitivityFlow from './trainer/discovery/DiscoverySensitivityFlow'
 import { syncTrainerSensFromServer } from './trainer/sensitivity/trainerSensitivity'
 
@@ -45,6 +46,15 @@ export default function App() {
   const [routine,   setRoutine]   = useState(null)
   const [emailPromptOpen, setEmailPromptOpen] = useState(false)
   const [trainerHint, setTrainerHint] = useState(null)
+  const [activePresetId, setActivePresetId] = useState(null)
+  // Whether TODAY's session is completed — read from GET /training on load
+  // (a fresh session from a questionnaire submit/reactivate/focus-change is
+  // always freshly-created, hence always false; no need to thread it
+  // through those responses too), and flipped live when the daily routine
+  // or a preset gets finished within the same sitting (onSessionCompleted/
+  // onPresetComplete below) — the welcome-back card this feeds should
+  // reflect "already done today" immediately, not just on next app open.
+  const [sessionCompleted, setSessionCompleted] = useState(false)
   const [pendingCompletion, setPendingCompletion] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1')
 
@@ -68,6 +78,7 @@ export default function App() {
       const res = await getTraining(u.id)
       setSessionId(res.data.session_id)
       setRoutine(res.data.routine)
+      setSessionCompleted(!!res.data.completed)
       setView('routine')
     } catch {
       setView('questionnaire')
@@ -121,6 +132,7 @@ export default function App() {
   const handleQuestionnaireComplete = (data) => {
     setSessionId(data.session_id)
     setRoutine(data.routine)
+    setSessionCompleted(false) // _activate_profile always starts a brand-new session — never completed yet
     setView('routine')
   }
 
@@ -247,12 +259,16 @@ export default function App() {
               userId={user?.id}
               sessionId={sessionId}
               routine={routine}
+              sessionCompleted={sessionCompleted}
               username={user?.name || ''}
               onViewProgress={() => setView('progress')}
               onChangeProfile={handleChangeProfile}
+              onFocusChanged={handleQuestionnaireComplete}
+              onSessionCompleted={() => setSessionCompleted(true)}
               onHistoricoPerfis={() => setView('historico_perfis')}
               onSensibilidade={() => setView('sensibilidade')}
               onTrainer={(hint) => { setTrainerHint(hint || null); setView('trainer') }}
+              onStartPreset={(id) => { setActivePresetId(id); setView('preset') }}
               pendingCompletion={pendingCompletion}
               onPendingCompletionConsumed={() => setPendingCompletion(null)}
             />
@@ -266,11 +282,27 @@ export default function App() {
             />
           )}
 
+          {view === 'preset' && activePresetId && (
+            <PresetPlayer
+              key={`preset-${activePresetId}-${sessionId}`}
+              presetId={activePresetId}
+              sessionId={sessionId}
+              userId={user?.id}
+              onBack={() => { setActivePresetId(null); setView('routine') }}
+              onPresetComplete={() => {
+                setActivePresetId(null)
+                setSessionCompleted(true)
+                setView('routine')
+              }}
+            />
+          )}
+
           {view === 'trainer' && (
             <TrainerView
               key="trainer"
               initialHint={trainerHint}
               onBack={() => setView('routine')}
+              onStartPreset={(id) => { setActivePresetId(id); setView('preset') }}
               onRoutineComplete={(exerciseName) => {
                 setTrainerHint(null)
                 setPendingCompletion(exerciseName)

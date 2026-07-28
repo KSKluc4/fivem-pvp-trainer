@@ -6,6 +6,7 @@ import path from 'node:path'
 import {
   levelPointsForScore, categoryAimLevel, overallAimLevel, recommendedDifficulty,
   poolCategoryScores, categoryOfExercise,
+  leastRecentCategory, weakestCategory, suggestVariationCategory,
   CALIBRATION, CATEGORIES, MIN_ATTEMPTS, RECENT_WINDOW, MIN_LEVEL, MAX_LEVEL,
 } from './aimLevel.js'
 import { DRILL_IDS, drillsInCategory } from './catalog.js'
@@ -156,4 +157,69 @@ test('categoryOfExercise mirrors the catalog for every drill', () => {
 
 test('categoryOfExercise returns null for an unknown exercise', () => {
   assert.equal(categoryOfExercise('not_real'), null)
+})
+
+// ── leastRecentCategory / weakestCategory / suggestVariationCategory ───────
+
+// One representative drill id per category, each row stamped with created_at
+// so _lastTrainedTimestamps has something to sort by.
+const REP_DRILL = { tracking: 'tracking_2d', clicking: 'grid_2d', flicking: 'flick_2d', precision: 'micro_2d', reaction: 'reacao_gatilho_2d' }
+
+function scoresAt(category, isoDate) {
+  return { [REP_DRILL[category]]: [{ exercise: REP_DRILL[category], score: 1, created_at: isoDate }] }
+}
+
+test('leastRecentCategory picks the category with the oldest last-trained score', () => {
+  const scoresByExercise = {
+    ...scoresAt('tracking', '2026-01-10'),
+    ...scoresAt('clicking', '2026-01-05'), // oldest
+    ...scoresAt('flicking', '2026-01-12'),
+    ...scoresAt('precision', '2026-01-15'),
+    ...scoresAt('reaction', '2026-01-18'),
+  }
+  assert.equal(leastRecentCategory(scoresByExercise), 'clicking')
+})
+
+test('leastRecentCategory ranks a never-trained category as the stalest, not excluded', () => {
+  const scoresByExercise = {
+    ...scoresAt('tracking', '2026-01-01'), // very old, but still trained at least once
+    ...scoresAt('clicking', '2026-01-20'),
+    ...scoresAt('flicking', '2026-01-20'),
+    ...scoresAt('precision', '2026-01-20'),
+    // 'reaction' has no scores at all
+  }
+  assert.equal(leastRecentCategory(scoresByExercise), 'reaction')
+})
+
+test('weakestCategory picks the lowest per-category level', () => {
+  assert.equal(weakestCategory({ tracking: 4, clicking: 2, flicking: 5, precision: 3, reaction: 3 }), 'clicking')
+})
+
+test('weakestCategory ranks a category with no level (null) below any measured level', () => {
+  assert.equal(weakestCategory({ tracking: 1, clicking: null, flicking: 2, precision: 2, reaction: 2 }), 'clicking')
+})
+
+test('suggestVariationCategory prefers the lowest level over recency', () => {
+  const scoresByExercise = { ...scoresAt('tracking', '2026-01-01'), ...scoresAt('clicking', '2026-01-20') }
+  // clicking was trained most recently but has the lowest level — level wins.
+  const levels = { tracking: 4, clicking: 1, flicking: 3, precision: 3, reaction: 3 }
+  assert.equal(suggestVariationCategory(scoresByExercise, levels), 'clicking')
+})
+
+test('suggestVariationCategory falls back to recency when levels tie (e.g. no data anywhere yet)', () => {
+  const scoresByExercise = {
+    ...scoresAt('tracking', '2026-01-10'),
+    ...scoresAt('clicking', '2026-01-01'), // oldest among these
+    ...scoresAt('flicking', '2026-01-15'),
+    ...scoresAt('precision', '2026-01-18'),
+    ...scoresAt('reaction', '2026-01-20'),
+  }
+  assert.equal(suggestVariationCategory(scoresByExercise, {}), 'clicking')
+})
+
+test('suggestVariationCategory never returns the excluded category', () => {
+  const levels = { tracking: 1, clicking: 5, flicking: 5, precision: 5, reaction: 5 }
+  assert.notEqual(suggestVariationCategory({}, levels, 'tracking'), 'tracking')
+  // with tracking excluded, the next-lowest (all tied at 5) falls back to recency among the rest
+  assert.ok(['clicking', 'flicking', 'precision', 'reaction'].includes(suggestVariationCategory({}, levels, 'tracking')))
 })

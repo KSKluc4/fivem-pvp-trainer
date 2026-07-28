@@ -1,88 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
-  Box, Stepper, Progress, Radio, Checkbox, SimpleGrid, Text, Title, Button,
+  Box, Stepper, Progress, Radio, SimpleGrid, Text, Title, Button,
   Group, Stack, Center, Alert, Transition, ThemeIcon,
 } from '@mantine/core'
-import {
-  IconAlertCircle, IconChevronLeft, IconTargetArrow,
-  IconRun, IconTarget, IconTelescope, IconHeartRateMonitor,
-  IconCrosshair, IconBolt, IconArrowsMove,
-  IconSwords, IconCrown,
-  IconFocusCentered, IconSparkles,
-  IconClock, IconGauge, IconBoltFilled,
-  IconLineDashed, IconWaveSine, IconArrowsShuffle,
-  IconBattery1, IconBattery2, IconBatteryCharging,
-} from '@tabler/icons-react'
+import { IconAlertCircle, IconChevronLeft } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { submitQuestionnaire } from '../services/api'
-
-// Question copy (question/subtitle/option label+description) lives in the
-// locale files under questionario.perguntas.<id> — this array only carries
-// the structural bits (order, option values/icon/color) that drive the UI.
-// `value` is what actually gets submitted to the backend — untouched by the
-// icon/copy polish, so existing routines and saved answers stay compatible.
-const QUESTIONS = [
-  {
-    id: 'specific_weakness',
-    multiSelect: true,
-    options: [
-      { value: 'moving_target', icon: IconRun,              color: 'brandCyan' },
-      { value: 'headshot',      icon: IconTarget,            color: 'brandPurple' },
-      { value: 'long_range',    icon: IconTelescope,         color: 'orange' },
-      { value: 'reaction',      icon: IconHeartRateMonitor,  color: 'red' },
-    ],
-  },
-  {
-    id: 'focus_area',
-    multiSelect: true,
-    options: [
-      { value: 'aim',      icon: IconCrosshair,  color: 'brandCyan' },
-      { value: 'reflex',   icon: IconBolt,        color: 'brandPurple' },
-      { value: 'movement', icon: IconArrowsMove,  color: 'orange' },
-    ],
-  },
-  {
-    id: 'experience_level',
-    options: [
-      { value: 'iniciante',     icon: IconTarget, color: 'gray' },
-      { value: 'intermediario', icon: IconSwords, color: 'brandCyan' },
-      { value: 'avancado',      icon: IconCrown,   color: 'brandPurple' },
-    ],
-  },
-  {
-    id: 'aim_difficulty',
-    multiSelect: true,
-    options: [
-      { value: 'tracking', icon: IconFocusCentered, color: 'brandCyan' },
-      { value: 'flick',    icon: IconSparkles,       color: 'brandPurple' },
-      { value: 'close',    icon: IconTargetArrow,    color: 'orange' },
-    ],
-  },
-  {
-    id: 'reflex_level',
-    options: [
-      { value: 'lento',  icon: IconClock,       color: 'gray' },
-      { value: 'medio',  icon: IconGauge,        color: 'brandCyan' },
-      { value: 'rapido', icon: IconBoltFilled,   color: 'brandPurple' },
-    ],
-  },
-  {
-    id: 'movement_quality',
-    options: [
-      { value: 'previsivel',   icon: IconLineDashed,    color: 'gray' },
-      { value: 'moderado',     icon: IconWaveSine,      color: 'brandCyan' },
-      { value: 'imprevisivel', icon: IconArrowsShuffle, color: 'brandPurple' },
-    ],
-  },
-  {
-    id: 'daily_time',
-    options: [
-      { value: 25, icon: IconBattery1,        color: 'brandCyan' },
-      { value: 45, icon: IconBattery2,        color: 'brandPurple' },
-      { value: 65, icon: IconBatteryCharging, color: 'orange' },
-    ],
-  },
-]
+import { QUESTIONS } from '../questionnaireQuestions.js'
+import MultiSelectQuestionCard from './MultiSelectQuestionCard'
 
 export default function Questionnaire({ username, onComplete }) {
   const { t } = useTranslation()
@@ -195,30 +120,12 @@ export default function Questionnaire({ username, onComplete }) {
                   <Text size="xs" c="dimmed" mb={6}>
                     {t('questionario.multiselect_contador', { count: (answers[current.id] || []).length })}
                   </Text>
-                  <Checkbox.Group value={answers[current.id] || []} onChange={handleMultiToggle}>
-                    <SimpleGrid cols={1} spacing="sm">
-                      {current.options.map((opt) => (
-                        <Checkbox.Card
-                          value={String(opt.value)}
-                          key={opt.value}
-                          radius="md"
-                          p="md"
-                          className={`q-option-card${shakeOption === String(opt.value) ? ' q-option-card--shake' : ''}`}
-                        >
-                          <Group wrap="nowrap" align="center" gap="sm">
-                            <Checkbox.Indicator />
-                            <ThemeIcon size={40} radius="md" variant="light" color={opt.color}>
-                              <opt.icon size={22} />
-                            </ThemeIcon>
-                            <Box style={{ flex: 1 }}>
-                              <Text fw={700} size="sm">{t(`${qBase}.opcoes.${opt.value}.label`)}</Text>
-                              <Text size="xs" c="dimmed">{t(`${qBase}.opcoes.${opt.value}.description`)}</Text>
-                            </Box>
-                          </Group>
-                        </Checkbox.Card>
-                      ))}
-                    </SimpleGrid>
-                  </Checkbox.Group>
+                  <MultiSelectQuestionCard
+                    question={current}
+                    value={answers[current.id] || []}
+                    onChange={handleMultiToggle}
+                    shakeOption={shakeOption}
+                  />
                   {shakeOption && (
                     <Text size="xs" c="orange" mt={6}>{t('questionario.multiselect_maximo')}</Text>
                   )}

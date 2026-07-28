@@ -310,3 +310,128 @@ def test_reactivate_requires_auth():
     client = make_client()
     res = client.post('/api/questionnaire/history/3/reactivate')
     assert res.status_code == 401
+
+
+# ── GET /questionnaire/current — route ────────────────────────────────────────
+
+def test_get_current_returns_the_normalized_active_profile():
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=HISTORY_ROW):
+        client = make_client()
+        res = client.get('/api/questionnaire/current', headers=auth_headers())
+
+        assert res.status_code == 200
+        assert res.get_json() == HISTORY_ROW
+
+
+def test_get_current_returns_404_when_no_profile_exists_yet():
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=None):
+        client = make_client()
+        res = client.get('/api/questionnaire/current', headers=auth_headers())
+        assert res.status_code == 404
+
+
+def test_get_current_requires_auth():
+    client = make_client()
+    res = client.get('/api/questionnaire/current')
+    assert res.status_code == 401
+
+
+# ── POST /questionnaire/focus — route ("Mudar meu foco") ─────────────────────
+
+CURRENT_PROFILE = {
+    'focus_area': ['aim'], 'aim_difficulty': ['tracking'], 'specific_weakness': ['headshot'],
+    'experience_level': 'avancado', 'reflex_level': 'rapido', 'movement_quality': 'imprevisivel',
+    'daily_time': 65, 'preferred_tool': 'aimlab', 'main_weapon': 'rifle',
+}
+
+FOCUS_PAYLOAD = {
+    'focus_area': ['movement'], 'aim_difficulty': ['close', 'flick'], 'specific_weakness': ['reaction'],
+}
+
+
+def test_update_focus_returns_404_when_no_profile_exists_yet():
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=None):
+        client = make_client()
+        res = client.post('/api/questionnaire/focus', json=FOCUS_PAYLOAD, headers=auth_headers())
+        assert res.status_code == 404
+
+
+def test_update_focus_changes_only_the_3_focus_fields_and_keeps_everything_else():
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=dict(CURRENT_PROFILE)), \
+         patch('routes.questionnaire.save_questionnaire') as mock_save, \
+         patch('routes.questionnaire.resolve_action_level', return_value=(2, '')), \
+         patch('routes.questionnaire.compute_per_category_levels', return_value={'tracking': 4}), \
+         patch('routes.questionnaire.resolve_aim_accelerator', return_value=False), \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE) as mock_generate, \
+         patch('routes.questionnaire.create_training_session', return_value=55), \
+         patch('routes.questionnaire.get_user_by_id', return_value={'id': 7, 'name': 'Jogador'}):
+        client = make_client()
+        res = client.post('/api/questionnaire/focus', json=FOCUS_PAYLOAD, headers=auth_headers())
+
+        assert res.status_code == 201
+        body = res.get_json()
+        assert body['session_id'] == 55
+        assert body['routine'] == PREVIEW_ROUTINE
+
+        saved_profile = mock_save.call_args[0][1]
+        # The 3 focus fields changed to exactly what was sent...
+        assert saved_profile['focus_area'] == ['movement']
+        assert saved_profile['aim_difficulty'] == ['close', 'flick']
+        assert saved_profile['specific_weakness'] == ['reaction']
+        # ...and every other answer is byte-identical to the profile that was there before.
+        assert saved_profile['experience_level'] == 'avancado'
+        assert saved_profile['reflex_level'] == 'rapido'
+        assert saved_profile['movement_quality'] == 'imprevisivel'
+        assert saved_profile['daily_time'] == 65
+        assert saved_profile['preferred_tool'] == 'aimlab'
+        assert saved_profile['main_weapon'] == 'rifle'
+
+        # The user's real current aim levels reach generate_routine — a focus
+        # change must not silently downgrade an established player's drills
+        # back to 'medio'.
+        _, kwargs = mock_generate.call_args
+        assert kwargs['aim_levels'] == {'tracking': 4}
+        assert kwargs['aim_accelerated'] is False
+
+
+def test_update_focus_degrades_aim_levels_to_empty_on_a_supabase_hiccup_without_blocking():
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=dict(CURRENT_PROFILE)), \
+         patch('routes.questionnaire.save_questionnaire'), \
+         patch('routes.questionnaire.resolve_action_level', return_value=(2, '')), \
+         patch('routes.questionnaire.compute_per_category_levels', side_effect=Exception('boom')), \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE) as mock_generate, \
+         patch('routes.questionnaire.create_training_session', return_value=55), \
+         patch('routes.questionnaire.get_user_by_id', return_value={'id': 7, 'name': 'Jogador'}):
+        client = make_client()
+        res = client.post('/api/questionnaire/focus', json=FOCUS_PAYLOAD, headers=auth_headers())
+
+        assert res.status_code == 201
+        _, kwargs = mock_generate.call_args
+        assert kwargs['aim_levels'] == {}
+        assert kwargs['aim_accelerated'] is False
+
+
+def test_update_focus_accepts_bare_scalars_and_caps_at_2_like_submit_does():
+    payload = {'focus_area': 'aim', 'aim_difficulty': ['tracking', 'flick', 'close'], 'specific_weakness': ''}
+    with patch('routes.questionnaire.get_latest_questionnaire', return_value=dict(CURRENT_PROFILE)), \
+         patch('routes.questionnaire.save_questionnaire') as mock_save, \
+         patch('routes.questionnaire.resolve_action_level', return_value=(2, '')), \
+         patch('routes.questionnaire.compute_per_category_levels', return_value={}), \
+         patch('routes.questionnaire.resolve_aim_accelerator', return_value=False), \
+         patch('routes.questionnaire.generate_routine', return_value=PREVIEW_ROUTINE), \
+         patch('routes.questionnaire.create_training_session', return_value=55), \
+         patch('routes.questionnaire.get_user_by_id', return_value={'id': 7, 'name': 'Jogador'}):
+        client = make_client()
+        res = client.post('/api/questionnaire/focus', json=payload, headers=auth_headers())
+
+        assert res.status_code == 201
+        saved_profile = mock_save.call_args[0][1]
+        assert saved_profile['focus_area'] == ['aim']
+        assert saved_profile['aim_difficulty'] == ['tracking', 'flick']  # capped at 2
+        assert saved_profile['specific_weakness'] == []  # blank -> empty list, no default (matches _as_list('', ''))
+
+
+def test_update_focus_requires_auth():
+    client = make_client()
+    res = client.post('/api/questionnaire/focus', json=FOCUS_PAYLOAD)
+    assert res.status_code == 401

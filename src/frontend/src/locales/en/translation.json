@@ -337,6 +337,71 @@
       "discord": "Discord",
       "goat_desc": "great for deathmatch training",
       "plf_desc": "great for improving your drops"
+    },
+    "presets": {
+      "titulo": "Routine presets",
+      "subtitulo": "Quick alternative workouts, ready to go — completing one also counts as today's training.",
+      "extra_badge": "Extra workout",
+      "extra_aviso": "Today's routine is already done — this is an extra workout and won't double-count toward your streak.",
+      "atalho_titulo": "Routine presets",
+      "atalho_subtitulo": "No time for the questionnaire? Start a ready-made workout now.",
+      "duracao": "~{{minutes}} min",
+      "exercicios_one": "{{count}} drill",
+      "exercicios_other": "{{count}} drills",
+      "toast_progresso": "{{preset}}: {{done}}/{{total}} — next: {{next}}",
+      "toast_concluido": "{{preset}} complete! Good training.",
+      "toast_erro": "Error saving your training. Check your connection.",
+      "nao_encontrado": "Preset not found.",
+      "catalogo": {
+        "aquecimento_rapido": {
+          "nome": "Quick warmup",
+          "descricao": "A light pass through every category to wake up your aim."
+        },
+        "foco_tracking": {
+          "nome": "Tracking focus",
+          "descricao": "Three tracking drills for following moving targets."
+        },
+        "foco_clique": {
+          "nome": "Clicking focus",
+          "descricao": "Fast, clean static-target clicks."
+        },
+        "foco_flick": {
+          "nome": "Flick focus",
+          "descricao": "Fast reorientation onto off-center targets."
+        },
+        "foco_precisao_reacao": {
+          "nome": "Precision/Reaction focus",
+          "descricao": "Fine precision and reaction time, side by side."
+        },
+        "treino_completo": {
+          "nome": "Full workout",
+          "descricao": "A long session covering all five categories."
+        }
+      }
+    },
+    "trocar_foco": {
+      "botao": "Change my focus",
+      "tooltip": "Change just your focus answers, without redoing the whole questionnaire",
+      "titulo": "Change my focus",
+      "subtitulo": "Adjust just the 3 focus questions below — the rest of your profile stays the same.",
+      "continuar": "Continue",
+      "confirmar_corpo": "This will replace today's routine with a new one, using your updated focus. Continue?",
+      "confirmar_botao": "Replace today's routine",
+      "sucesso": "Focus updated — today's routine refreshed!"
+    },
+    "boas_vindas": {
+      "novo_usuario": "Welcome! Today's routine is ready below — shall we get started?",
+      "concluido_titulo": "Today's routine is done! 🎉",
+      "concluido_streak_one": "{{count}}-day streak — nice work!",
+      "concluido_streak_other": "{{count}}-day streak — nice work!",
+      "treino_extra_botao": "Do an extra warmup",
+      "retomada": "It's been a while since you trained — no worries, let's ease back in at your pace.",
+      "retomada_botao": "Quick warmup",
+      "hoje_focou": "You already trained {{categoria}} today.",
+      "ontem_focou": "Yesterday you focused on {{categoria}}.",
+      "recente_focou": "The last few days you focused on {{categoria}}.",
+      "repetir_foco": "Repeat focus",
+      "variar_para": "Switch to {{categoria}}"
     }
   },
   "historico_perfis": {

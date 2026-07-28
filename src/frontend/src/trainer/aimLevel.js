@@ -128,3 +128,53 @@ export function recommendedDifficulty(aimLevel) {
 export function categoryOfExercise(exerciseId) {
   return DRILLS_BY_ID[exerciseId]?.category || null
 }
+
+// {category: lastTrainedTimestampMs} — a category with zero scores ever
+// gets -Infinity, i.e. maximally stale, never excluded. poolCategoryScores
+// is already newest-first, so its first row is the most recent one. Exported
+// (not just used internally) so welcomeState.js can derive "when did this
+// player last touch the aim trainer at all" from the same numbers, without
+// re-deriving its own pooling logic.
+export function categoryLastTrainedTimestamps(scoresByExercise) {
+  return Object.fromEntries(
+    CATEGORIES.map((category) => {
+      const pooled = poolCategoryScores(scoresByExercise, category)
+      const lastMs = pooled.length ? new Date(pooled[0].created_at || 0).getTime() : -Infinity
+      return [category, lastMs]
+    }),
+  )
+}
+
+// The category the player hasn't touched in the longest time — "menos
+// treinada recentemente". A category with no scores at all ranks first
+// (never trained is the strongest possible "stale" signal, not a reason to
+// skip it).
+export function leastRecentCategory(scoresByExercise) {
+  const timestamps = categoryLastTrainedTimestamps(scoresByExercise)
+  return CATEGORIES.slice().sort((a, b) => timestamps[a] - timestamps[b])[0]
+}
+
+// The category with the lowest aim level — "menor nível". No data yet
+// (null) ranks below level 1, i.e. as MORE in need of attention than any
+// measured level, not excluded from consideration.
+export function weakestCategory(perCategoryLevels) {
+  const rank = (category) => (perCategoryLevels || {})[category] ?? 0
+  return CATEGORIES.slice().sort((a, b) => rank(a) - rank(b))[0]
+}
+
+// Combines both signals for a single "train something else today"
+// suggestion: lowest level first (the stronger, numeric signal), then least
+// recently trained as the tie-break — which is also what carries the whole
+// ranking when no category has attempts yet (every level is the same
+// "no data" rank). `excludeCategory` keeps a "Variar para X" suggestion from
+// just re-suggesting the category the player already repeated.
+export function suggestVariationCategory(scoresByExercise, perCategoryLevels, excludeCategory = null) {
+  const candidates = CATEGORIES.filter((c) => c !== excludeCategory)
+  if (candidates.length === 0) return null
+  const timestamps = categoryLastTrainedTimestamps(scoresByExercise)
+  const levelRank  = (category) => (perCategoryLevels || {})[category] ?? 0
+  return candidates.slice().sort((a, b) => {
+    const byLevel = levelRank(a) - levelRank(b)
+    return byLevel !== 0 ? byLevel : timestamps[a] - timestamps[b]
+  })[0]
+}

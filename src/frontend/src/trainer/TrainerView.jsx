@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import ExercisePlayer from './ExercisePlayer'
+import RoutinePresets from './RoutinePresets'
 import { useAllTrainerScores } from './useAllTrainerScores'
 import { CATEGORIES, DRILLS, drillsInCategory } from './catalog.js'
 import { perCategoryLevels, overallAimLevel, MAX_LEVEL } from './aimLevel.js'
@@ -39,7 +40,7 @@ function bestScoreFor(scores) {
 // and an optional `initialHint` (exercise + difficulty, plus optionally
 // rounds + exerciseName) that skips straight to ExercisePlayer — used by
 // the daily routine's per-card "Treinar" deep-link.
-export default function TrainerView({ onBack, initialHint = null, onRoutineComplete, onDescobrirSensibilidade }) {
+export default function TrainerView({ onBack, initialHint = null, onRoutineComplete, onDescobrirSensibilidade, onStartPreset }) {
   const { t } = useTranslation()
   const { scoresByExercise, loading } = useAllTrainerScores()
   const [selection, setSelection] = useState(
@@ -201,6 +202,9 @@ export default function TrainerView({ onBack, initialHint = null, onRoutineCompl
           )
         })}
       </Group>
+
+      {/* ── Preset shortcut — a curated multi-drill session, one click away ── */}
+      {onStartPreset && <RoutinePresets compact onStartPreset={onStartPreset} />}
 
       {/* ── Sensitivity discovery — a guided diagnostic test, not a scored drill ── */}
       {onDescobrirSensibilidade && (

@@ -19,7 +19,7 @@ def get_training(user_id):
     session = get_today_session(user_id, today)
 
     if session:
-        return jsonify({'session_id': session['id'], 'routine': session['routine']})
+        return jsonify({'session_id': session['id'], 'routine': session['routine'], 'completed': bool(session['completed'])})
 
     profile = get_latest_questionnaire(user_id)
     if not profile:
@@ -39,4 +39,4 @@ def get_training(user_id):
     routine    = generate_routine(dict(profile), action_level=action_level, action_level_note=action_level_note,
                                    aim_accelerated=aim_accelerated, aim_levels=aim_levels)
     session_id = create_training_session(user_id, today, routine)
-    return jsonify({'session_id': session_id, 'routine': routine})
+    return jsonify({'session_id': session_id, 'routine': routine, 'completed': False})

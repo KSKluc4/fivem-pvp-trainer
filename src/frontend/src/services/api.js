@@ -98,6 +98,10 @@ export const getQuestionnaireHistory = (page = 1, pageSize = 10) =>
   api.get('/questionnaire/history', { params: { page, page_size: pageSize } })
 export const reactivateProfile = (profileId) => api.post(`/questionnaire/history/${profileId}/reactivate`)
 
+// ── "Mudar meu foco" shortcut ─────────────────────────────────────────────────
+export const getCurrentQuestionnaire = () => api.get('/questionnaire/current')
+export const updateFocus            = (data) => api.post('/questionnaire/focus', data)
+
 // ── Dashboard additions (SPEC-006) ────────────────────────────────────────────
 export const getActionLevel    = (userId)          => api.get(`/progress/${userId}/action-level`)
 export const getActivityHeatmap = (userId, days = 90) =>

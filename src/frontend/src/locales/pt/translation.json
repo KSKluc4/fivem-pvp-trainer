@@ -337,6 +337,71 @@
       "discord": "Discord",
       "goat_desc": "ideal para treinar mata-mata",
       "plf_desc": "ideal para melhorar seus drops"
+    },
+    "presets": {
+      "titulo": "Presets de rotina",
+      "subtitulo": "Treinos alternativos e rápidos, prontos para começar — completar um também conta como treino do dia.",
+      "extra_badge": "Treino extra",
+      "extra_aviso": "Sua rotina de hoje já foi concluída — isso é um treino extra e não conta duas vezes para o streak.",
+      "atalho_titulo": "Presets de rotina",
+      "atalho_subtitulo": "Sem tempo para o questionário? Comece um treino pronto agora.",
+      "duracao": "~{{minutes}} min",
+      "exercicios_one": "{{count}} exercício",
+      "exercicios_other": "{{count}} exercícios",
+      "toast_progresso": "{{preset}}: {{done}}/{{total}} — próximo: {{next}}",
+      "toast_concluido": "{{preset}} concluído! Bom treino.",
+      "toast_erro": "Erro ao salvar o treino. Verifique sua conexão.",
+      "nao_encontrado": "Preset não encontrado.",
+      "catalogo": {
+        "aquecimento_rapido": {
+          "nome": "Aquecimento rápido",
+          "descricao": "Uma passada leve por todas as categorias para ativar a mira."
+        },
+        "foco_tracking": {
+          "nome": "Foco Tracking",
+          "descricao": "Três drills de tracking para acompanhar alvos em movimento."
+        },
+        "foco_clique": {
+          "nome": "Foco Clique",
+          "descricao": "Cliques estáticos rápidos e precisos."
+        },
+        "foco_flick": {
+          "nome": "Foco Flick",
+          "descricao": "Reorientação rápida para alvos fora do centro."
+        },
+        "foco_precisao_reacao": {
+          "nome": "Foco Precisão/Reação",
+          "descricao": "Precisão fina e tempo de reação, lado a lado."
+        },
+        "treino_completo": {
+          "nome": "Treino completo",
+          "descricao": "Uma sessão longa cobrindo as cinco categorias."
+        }
+      }
+    },
+    "trocar_foco": {
+      "botao": "Mudar meu foco",
+      "tooltip": "Trocar só as respostas de foco, sem refazer o questionário inteiro",
+      "titulo": "Mudar meu foco",
+      "subtitulo": "Ajuste só as 3 respostas de foco abaixo — as demais respostas do seu perfil continuam as mesmas.",
+      "continuar": "Continuar",
+      "confirmar_corpo": "Isso vai substituir a rotina de hoje por uma nova, com o foco atualizado. Continuar?",
+      "confirmar_botao": "Substituir rotina de hoje",
+      "sucesso": "Foco atualizado — rotina de hoje atualizada!"
+    },
+    "boas_vindas": {
+      "novo_usuario": "Bem-vindo! Sua rotina de hoje está pronta ali embaixo — vamos começar?",
+      "concluido_titulo": "Rotina de hoje concluída! 🎉",
+      "concluido_streak_one": "Streak de {{count}} dia — mandou bem!",
+      "concluido_streak_other": "Streak de {{count}} dias — mandou bem!",
+      "treino_extra_botao": "Fazer aquecimento extra",
+      "retomada": "Faz um tempo que você não treina — sem culpa, bora retomar no seu ritmo?",
+      "retomada_botao": "Aquecimento rápido",
+      "hoje_focou": "Hoje você já treinou {{categoria}}.",
+      "ontem_focou": "Ontem você focou em {{categoria}}.",
+      "recente_focou": "Nos últimos dias você focou em {{categoria}}.",
+      "repetir_foco": "Repetir foco",
+      "variar_para": "Variar para {{categoria}}"
     }
   },
   "historico_perfis": {

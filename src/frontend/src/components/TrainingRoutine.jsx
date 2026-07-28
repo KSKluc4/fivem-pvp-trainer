@@ -5,11 +5,14 @@ import {
 import {
   IconChartBar, IconAdjustmentsHorizontal, IconSettings, IconFlame, IconBolt,
   IconClipboardList, IconBrandDiscord, IconTrophy, IconSwords, IconTargetArrow,
-  IconHistory,
+  IconHistory, IconFocus2,
 } from '@tabler/icons-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { saveProgress } from '../services/api'
 import { toast } from '../services/toast'
+import RoutinePresets from '../trainer/RoutinePresets'
+import WelcomeCard from '../trainer/WelcomeCard'
+import FocusShortcutModal from './FocusShortcutModal'
 
 // Legacy KovaaK's/Aim Lab exercise difficulty tiers — only ever seen on
 // routines generated before the internal-drills-only rewrite.
@@ -114,13 +117,15 @@ const FIVEM_SERVERS = [
 ]
 
 export default function TrainingRoutine({
-  userId, sessionId, routine, username, onViewProgress, onChangeProfile, onHistoricoPerfis,
-  onSensibilidade, onTrainer, pendingCompletion, onPendingCompletionConsumed,
+  userId, sessionId, routine, username, sessionCompleted = false, onViewProgress, onChangeProfile,
+  onFocusChanged, onSessionCompleted, onHistoricoPerfis,
+  onSensibilidade, onTrainer, onStartPreset, pendingCompletion, onPendingCompletionConsumed,
 }) {
   const { t } = useTranslation()
   const [completed, setCompleted]     = useState({})
   const [saving, setSaving]           = useState(false)
   const [saved, setSaved]             = useState(false)
+  const [focusModalOpen, setFocusModalOpen] = useState(false)
 
   const checkableExercises = routine.sections.flatMap((s) => (isCheckableSection(s) ? s.exercises || [] : []))
   const completedCount = Object.values(completed).filter(Boolean).length
@@ -159,6 +164,7 @@ export default function TrainingRoutine({
         exercise_name: '__session__', completed: 1, session_completed: true,
       })
       setSaved(true)
+      onSessionCompleted?.()
       toast.success(t('rotina.toast_sessao_finalizada', { count: completedCount }))
     } catch (e) {
       console.error(e)
@@ -170,6 +176,10 @@ export default function TrainingRoutine({
 
   return (
     <Box className="routine">
+      {/* ── Retomada inteligente — context banner, always about a preset,
+           never the questionnaire ── */}
+      {onStartPreset && <WelcomeCard sessionCompleted={sessionCompleted} onStartPreset={onStartPreset} />}
+
       {/* ── Header ── */}
       <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap">
         <Box>
@@ -194,6 +204,16 @@ export default function TrainingRoutine({
           >
             {t('rotina.sensibilidade')}
           </Button>
+          {onFocusChanged && (
+            <Button
+              variant="subtle" color="gray"
+              leftSection={<IconFocus2 size={16} />}
+              onClick={() => setFocusModalOpen(true)}
+              title={t('rotina.trocar_foco.tooltip')}
+            >
+              {t('rotina.trocar_foco.botao')}
+            </Button>
+          )}
           <Button
             variant="subtle" color="gray"
             leftSection={<IconSettings size={16} />}
@@ -311,6 +331,13 @@ export default function TrainingRoutine({
         })}
       </Stack>
 
+      {/* ── Presets — quick alternative workouts, not part of the daily
+           routine above; completing one still counts as today's training
+           (RoutinePresets/PresetPlayer) ── */}
+      {onStartPreset && (
+        <RoutinePresets sessionCompleted={sessionCompleted} onStartPreset={onStartPreset} />
+      )}
+
       {/* ── Footer ── */}
       <Card mb="lg">
         <Group justify="space-between" wrap="wrap" gap="md">
@@ -357,6 +384,14 @@ export default function TrainingRoutine({
           ))}
         </Stack>
       </Card>
+
+      {onFocusChanged && (
+        <FocusShortcutModal
+          opened={focusModalOpen}
+          onClose={() => setFocusModalOpen(false)}
+          onFocusChanged={onFocusChanged}
+        />
+      )}
     </Box>
   )
 }
