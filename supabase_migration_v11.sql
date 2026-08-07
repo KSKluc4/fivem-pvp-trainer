@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS sens_calibrations (
 -- Disable RLS (backend uses the service_role key, which bypasses RLS anyway;
 -- every query is already scoped by user_id at the application layer — same
 -- pattern as trainer_scores/goals/goal_levels).
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO nesta tabela. Não desligue RLS
+-- em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE sens_calibrations DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_sens_calibrations_user ON sens_calibrations(user_id, created_at DESC);

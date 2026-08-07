@@ -82,6 +82,8 @@ BEGIN
 END$$;
 
 -- ── 6. Disable RLS (service_role key bypasses anyway) ────────────────────────
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO em todas estas tabelas. Não
+-- desligue RLS em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE users               DISABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions            DISABLE ROW LEVEL SECURITY;
 ALTER TABLE questionnaire_results DISABLE ROW LEVEL SECURITY;

@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 -- Disable RLS (backend uses the service_role key, which bypasses RLS anyway;
 -- every query is already scoped by user_id/token_hash at the application
 -- layer — same pattern as users/sessions/questionnaire_results/goals).
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO nesta tabela. Não desligue RLS
+-- em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE password_reset_tokens DISABLE ROW LEVEL SECURITY;
 
 -- Only the hash is ever stored — the raw token exists only in the email link.

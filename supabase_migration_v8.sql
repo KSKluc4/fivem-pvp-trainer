@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS trainer_scores (
 -- Disable RLS (backend uses the service_role key, which bypasses RLS anyway;
 -- every query is already scoped by user_id at the application layer — same
 -- pattern as goals/goal_levels/sensitivity_conversions).
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO nesta tabela. Não desligue RLS
+-- em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE trainer_scores DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_trainer_scores_user_exercise ON trainer_scores(user_id, exercise, created_at DESC);

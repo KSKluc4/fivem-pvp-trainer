@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS goal_levels (
   UNIQUE (user_id, category)
 );
 
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO nesta tabela. Não desligue RLS
+-- em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE goal_levels DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_goal_levels_user ON goal_levels(user_id);

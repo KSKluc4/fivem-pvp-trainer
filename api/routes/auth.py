@@ -35,9 +35,15 @@ PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://fivem-pvp-trainer.v
 # Limites por IP. O teto por conta do forgot-password (RESET_RATE_LIMIT) não
 # protege de quem tem uma lista de emails: 3/hora vezes N contas conhecidas é
 # um envio ilimitado na prática, e cada email custa uma chamada paga ao Resend.
+#
+# FORGOT_IP_LIMIT é folgado de propósito: o público é FiveM brasileiro, onde
+# CGNAT de operadora móvel e lan house fazem muita gente legítima compartilhar
+# o mesmo IP público. O contador também é consumido antes da validação do email
+# (ver forgot_password), então um email digitado errado gasta uma tentativa —
+# apertar demais aqui se pareceria com "o site não manda o email".
 LOGIN_LIMIT     = (10, timedelta(minutes=15))
 REGISTER_LIMIT  = (5,  timedelta(hours=1))
-FORGOT_IP_LIMIT = (5,  timedelta(hours=1))
+FORGOT_IP_LIMIT = (20, timedelta(hours=1))
 TOO_MANY_MSG    = 'Muitas tentativas. Tente novamente em alguns minutos.'
 
 

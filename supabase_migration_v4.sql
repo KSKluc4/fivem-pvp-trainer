@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS user_servers (
 -- Disable RLS (backend uses the service_role key, which bypasses RLS anyway;
 -- every query is already scoped by user_id at the application layer — same
 -- pattern as users/sessions/questionnaire_results/training_sessions/progress).
+-- SUPERADO PELA MIGRATION v14: o RLS foi LIGADO nesta tabela. Não desligue RLS
+-- em migrations futuras — ver supabase_migration_v14.sql.
 ALTER TABLE user_servers DISABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_user_servers_user_id ON user_servers(user_id);
