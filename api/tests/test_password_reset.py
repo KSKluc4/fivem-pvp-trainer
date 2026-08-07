@@ -130,6 +130,29 @@ def test_forgot_password_rate_limited_still_generic_and_skips_send(
     mock_send.assert_not_called()
 
 
+@patch('routes.auth.send_password_reset_email')
+@patch('routes.auth.create_password_reset_token')
+@patch('routes.auth.count_recent_password_reset_requests')
+@patch('routes.auth.get_user_by_email')
+def test_forgot_password_link_ignores_attacker_supplied_host_header(
+    mock_get_user, mock_count, mock_create, mock_send,
+):
+    """O link de redefinição sai de PUBLIC_BASE_URL, nunca do cabeçalho Host —
+    senão daria para pedir a redefinição da senha de uma vítima e fazer o email
+    apontar para o site do atacante levando junto o token válido."""
+    mock_get_user.return_value = {'id': 1, 'email': 'a@a.com', 'name': 'A'}
+    mock_count.return_value = 0
+    client = make_client()
+
+    res = client.post('/api/auth/forgot-password', json={'email': 'a@a.com'},
+                      headers={'Host': 'site-do-atacante.com'})
+
+    assert res.status_code == 200
+    reset_url = mock_send.call_args[0][2]
+    assert reset_url.startswith(auth_routes.PUBLIC_BASE_URL + '/reset-password?token=')
+    assert 'site-do-atacante.com' not in reset_url
+
+
 # ── /auth/reset-password: token validation, expiration, single use ──────────
 
 @patch('routes.auth.invalidate_user_reset_tokens')

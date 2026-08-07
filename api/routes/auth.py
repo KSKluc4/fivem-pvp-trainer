@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, g
 from database import (
@@ -14,6 +15,7 @@ from utils import (
     is_valid_email, generate_reset_token, hash_reset_token, is_token_expired,
 )
 from services.email import send_password_reset_email
+from services.rate_limit import check_and_hit, client_ip
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -21,6 +23,21 @@ RESET_TOKEN_TTL    = timedelta(hours=1)
 RESET_RATE_LIMIT   = 3
 RESET_RATE_WINDOW  = timedelta(hours=1)
 FORGOT_PASSWORD_MSG = 'Se este email estiver cadastrado, enviamos um link de redefinição de senha.'
+
+# A URL pública é fixa e vem de configuração — NUNCA de request.host_url, que
+# sai do cabeçalho Host escolhido por quem chama a rota. Montar o link de
+# redefinição a partir do Host permitiria pedir a redefinição da senha de uma
+# vítima e fazer o email (legítimo, vindo do nosso domínio) apontar para um
+# site do atacante levando junto o token válido.
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://fivem-pvp-trainer.vercel.app').rstrip('/')
+
+# Limites por IP. O teto por conta do forgot-password (RESET_RATE_LIMIT) não
+# protege de quem tem uma lista de emails: 3/hora vezes N contas conhecidas é
+# um envio ilimitado na prática, e cada email custa uma chamada paga ao Resend.
+LOGIN_LIMIT     = (10, timedelta(minutes=15))
+REGISTER_LIMIT  = (5,  timedelta(hours=1))
+FORGOT_IP_LIMIT = (5,  timedelta(hours=1))
+TOO_MANY_MSG    = 'Muitas tentativas. Tente novamente em alguns minutos.'
 
 
 def _build_auth_response(user_id: int, name: str, username: str,
@@ -41,6 +58,9 @@ def _build_auth_response(user_id: int, name: str, username: str,
 
 @auth_bp.route('/auth/register', methods=['POST'])
 def register():
+    if not check_and_hit(f'register:ip:{client_ip()}', *REGISTER_LIMIT):
+        return jsonify({'error': TOO_MANY_MSG}), 429
+
     data     = request.get_json() or {}
     name     = str(data.get('name',     '')).strip()
     username = str(data.get('username', '')).strip().lower()
@@ -72,6 +92,9 @@ def register():
 
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
+    if not check_and_hit(f'login:ip:{client_ip()}', *LOGIN_LIMIT):
+        return jsonify({'error': TOO_MANY_MSG}), 429
+
     data       = request.get_json() or {}
     identifier = str(data.get('identifier', '')).strip().lower()
     password   = str(data.get('password', ''))
@@ -216,9 +239,15 @@ def forgot_password():
     data  = request.get_json() or {}
     email = str(data.get('email', '')).strip().lower()
 
+    # fail_open=False: esta é a rota que gasta dinheiro (cada envio é uma
+    # chamada paga ao Resend), então um Supabase fora do ar bloqueia em vez de
+    # liberar. A resposta continua sendo a mesma mensagem genérica de sempre —
+    # nem o limite pode revelar se o email existe.
+    ip_ok = check_and_hit(f'forgot:ip:{client_ip()}', *FORGOT_IP_LIMIT, fail_open=False)
+
     # Always return the same generic message regardless of what happens below —
     # this endpoint must never reveal whether an email is registered.
-    if is_valid_email(email):
+    if ip_ok and is_valid_email(email):
         user = get_user_by_email(email)
         if user:
             since  = (datetime.now(timezone.utc) - RESET_RATE_WINDOW).isoformat()
@@ -228,7 +257,7 @@ def forgot_password():
                 expires_at = (datetime.now(timezone.utc) + RESET_TOKEN_TTL).isoformat()
                 create_password_reset_token(user['id'], hash_reset_token(token), expires_at)
 
-                reset_url = f"{request.host_url.rstrip('/')}/reset-password?token={token}"
+                reset_url = f'{PUBLIC_BASE_URL}/reset-password?token={token}'
                 send_password_reset_email(user['email'], user['name'], reset_url)
 
     return jsonify({'message': FORGOT_PASSWORD_MSG}), 200

@@ -71,6 +71,15 @@ def health():
         db_ok = True
     except Exception:
         db_ok = False
+
+    # Carona no mesmo cron: rate_limit_hits é puro contador descartável e só
+    # precisa da janela mais recente. Best-effort — nunca afeta a resposta.
+    try:
+        from services.rate_limit import purge_old_hits
+        purge_old_hits()
+    except Exception:
+        pass
+
     return jsonify({'ok': True, 'db': db_ok})
 
 
