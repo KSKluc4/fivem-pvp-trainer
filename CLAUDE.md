@@ -57,10 +57,16 @@ explicitamente revistas aqui.
   escrito. Se houver ambiguidade ou lacuna na spec, apontar antes de improvisar uma
   solução — não decidir por conta própria.
 
-## 9. 21st.dev é referência de design, não fonte de código
+## 9. 21st.dev e shadcn são referência de design, não fonte de código
 
-- O MCP do 21st.dev pode ser usado como **referência** de design. Componentes de lá vêm
-  em TSX + Tailwind + shadcn/Radix — este projeto usa JSX + Mantine, sem Tailwind.
-- NUNCA instalar ou colar componentes do 21st diretamente: sempre reimplementar o design
-  em Mantine, usando os tokens do `theme.js` e as convenções existentes do projeto.
-- Nenhuma dependência de Tailwind/Radix/shadcn deve ser adicionada.
+- Os MCPs do 21st.dev e do shadcn podem ser usados como **referência** de design.
+  Componentes de lá vêm em TSX + Tailwind + shadcn/Radix — este projeto usa JSX +
+  Mantine, sem Tailwind.
+- NUNCA instalar ou colar componentes desses MCPs diretamente: sempre reimplementar o
+  design em Mantine, usando os tokens do `theme.js` e as convenções existentes do projeto.
+- Nenhuma dependência de Tailwind/Radix/shadcn deve ser adicionada a este projeto.
+
+## 10. Verificação visual com chrome-devtools
+
+- O MCP `chrome-devtools` deve ser usado para verificação visual real das telas sempre que
+  possível — não assumir que uma mudança de UI está correta sem olhar a tela renderizada.
