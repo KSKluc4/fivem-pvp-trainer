@@ -86,3 +86,32 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, aut
 --
 -- E o bucket de storage 'profiles' continua com leitura pública de propósito
 -- (avatares/banners), sem policy de escrita para anon — inalterado pela v14.
+
+
+-- ── 5. ANTES DE RODAR: confira qual chave o backend usa ──────────────────────
+--
+-- Tudo aqui assume que a produção conecta como service_role, que ignora RLS
+-- (BYPASSRLS). api/database.py aceita três variáveis em cascata
+-- (SUPABASE_SECRET_KEY / SUPABASE_SERVICE_KEY / SUPABASE_KEY).
+--
+-- Em Vercel → Settings → Environment Variables → Production, revele o valor: ele
+-- precisa ser a chave SECRET/service_role — 'sb_secret_...' no formato novo, ou
+-- um JWT cujo payload contenha "role":"service_role" no formato antigo.
+--
+-- Se for a publishable/anon ('sb_publishable_...' ou "role":"anon"), NÃO rode as
+-- seções 2 e 3: elas derrubariam o backend inteiro no instante em que rodassem.
+
+
+-- ── 6. ROLLBACK DE EMERGÊNCIA ────────────────────────────────────────────────
+--
+-- Se o app parar de responder logo depois deste SQL, descomente e cole o bloco
+-- abaixo para voltar ao estado anterior em segundos — depois investigue qual
+-- chave o backend está usando (seção 5).
+--
+-- DO $$ DECLARE t TEXT; BEGIN
+--   FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+--     EXECUTE format('ALTER TABLE public.%I DISABLE ROW LEVEL SECURITY', t);
+--   END LOOP;
+-- END$$;
+-- GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated;
+-- GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;

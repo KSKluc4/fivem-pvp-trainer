@@ -73,12 +73,16 @@ def health():
         db_ok = False
 
     # Carona no mesmo cron: rate_limit_hits é puro contador descartável e só
-    # precisa da janela mais recente. Best-effort — nunca afeta a resposta.
-    try:
-        from services.rate_limit import purge_old_hits
-        purge_old_hits()
-    except Exception:
-        pass
+    # precisa da janela mais recente. Só na invocação agendada (a Vercel manda
+    # x-vercel-cron nela) — esta rota é pública, e sem essa checagem qualquer um
+    # dispararia um DELETE no banco a cada chamada. Best-effort, nunca afeta a
+    # resposta.
+    if request.headers.get('x-vercel-cron'):
+        try:
+            from services.rate_limit import purge_old_hits
+            purge_old_hits()
+        except Exception:
+            pass
 
     return jsonify({'ok': True, 'db': db_ok})
 
