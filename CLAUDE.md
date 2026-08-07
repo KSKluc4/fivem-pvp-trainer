@@ -56,3 +56,11 @@ explicitamente revistas aqui.
 - Features grandes chegam como `specs/SPEC-*.md`. Implementar exatamente o que está
   escrito. Se houver ambiguidade ou lacuna na spec, apontar antes de improvisar uma
   solução — não decidir por conta própria.
+
+## 9. 21st.dev é referência de design, não fonte de código
+
+- O MCP do 21st.dev pode ser usado como **referência** de design. Componentes de lá vêm
+  em TSX + Tailwind + shadcn/Radix — este projeto usa JSX + Mantine, sem Tailwind.
+- NUNCA instalar ou colar componentes do 21st diretamente: sempre reimplementar o design
+  em Mantine, usando os tokens do `theme.js` e as convenções existentes do projeto.
+- Nenhuma dependência de Tailwind/Radix/shadcn deve ser adicionada.
