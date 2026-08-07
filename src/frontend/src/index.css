@@ -223,22 +223,22 @@ body {
 .sidebar-user-btn:hover { background: rgba(255, 255, 255, 0.06); }
 
 /* ─── AppBackground — single reusable layered background, shared by every
-   screen (see components/AppBackground.jsx). Fixed behind all content, two
-   static/near-static layers, cheapest first:
-   1) ::before — a very faint crosshair/reticle grid (aim-training motif),
+   screen (see components/AppBackground.jsx). Fixed behind all content, three
+   layers painted bottom-to-top:
+   1) __canvas — the fluid particle flow field (all the motion lives here, in
+      JS; the canvas paints its own opaque --bg-primary base, so everything
+      that should stay visible has to sit *above* it).
+   2) ::before — a very faint crosshair/reticle grid (aim-training motif),
       masked so it fades out near the edges instead of tiling edge-to-edge.
-   2) ::after  — two brand-color glows (blue top-left, purple bottom-right)
-      plus a vignette, combined in one layer so a single slow opacity pulse
-      "breathes" all three together — no JS, no layout cost.
-   Intensity ("full" on auth screens, "subtle" everywhere else) is purely a
-   set of custom-property overrides — the gradients themselves are defined
-   once. The pulse pauses when the window loses focus (data-focused). ─── */
+   3) ::after  — a static vignette that darkens the corners and keeps the
+      field from competing with body text. No animation on either: the only
+      thing that moves is the canvas, and that loop stops itself when the
+      window is blurred/hidden or a drill is running.
+   Intensity ("full" on auth screens, "subtle" everywhere else) is a set of
+   custom-property overrides here plus a particle budget in fluidField.js. ─── */
 .app-background {
-  --grid-alpha:   .06;
-  --glow-blue:    .12;
-  --glow-purple:  .10;
-  --pulse-lo:     .82;
-  --pulse-hi:     1;
+  --grid-alpha:     .06;
+  --vignette-alpha: .5;
   position: fixed;
   top: 48px; left: 0; right: 0; bottom: 0;
   z-index: -1;
@@ -247,15 +247,21 @@ body {
   background: var(--bg-primary);
 }
 .app-background--subtle {
-  --grid-alpha:   .025;
-  --glow-blue:    .06;
-  --glow-purple:  .05;
-  --pulse-lo:     .9;
+  --grid-alpha:     .025;
+  --vignette-alpha: .38;
+}
+/* z-index (not DOM order) decides the stacking: ::before would otherwise
+   paint *under* the canvas child and be swallowed by its opaque base. */
+.app-background__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 .app-background::before {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background-image:
     repeating-linear-gradient(to right,  rgba(232,232,240,var(--grid-alpha)) 0 1px, transparent 1px 56px),
     repeating-linear-gradient(to bottom, rgba(232,232,240,var(--grid-alpha)) 0 1px, transparent 1px 56px);
@@ -266,21 +272,17 @@ body {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 2;
   background:
-    radial-gradient(ellipse 55% 45% at 10% 8%,  rgba(0,212,255,var(--glow-blue)) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 42% at 90% 94%, rgba(123,47,212,var(--glow-purple)) 0%, transparent 62%),
-    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 55%, rgba(8,8,16,.5) 100%);
-  animation: appBgGlowPulse 9s ease-in-out infinite;
+    radial-gradient(ellipse 140% 120% at 50% 50%, transparent 55%, rgba(8,8,16,var(--vignette-alpha)) 100%);
 }
-.app-background[data-focused="false"]::after { animation-play-state: paused; }
 /* The 3D exercise canvas owns its own opaque background and renders
    continuously at 60fps — the decorative layer behind it is pure waste, so
-   ExercisePlayer toggles this class on <body> for as long as it's mounted. */
+   ExercisePlayer toggles this class on <body> for as long as it's mounted.
+   display:none also drops the full-screen canvas out of compositing, not just
+   out of the paint; AppBackground's own loop is stopped independently by the
+   MutationObserver watching this same class. */
 body.trainer-active .app-background { display: none; }
-@keyframes appBgGlowPulse {
-  0%, 100% { opacity: var(--pulse-lo); }
-  50%      { opacity: var(--pulse-hi); }
-}
 
 /* ─── Auth screens (Login/Register/Forgot) — center the card over AppBackground */
 .auth-screen {
