@@ -23,7 +23,7 @@ import {
 //     window is blurred/hidden or a drill is running (body.trainer-active);
 //   • particle count is a density per CSS px² with a hard ceiling;
 //   • the backing store is capped at 1.5× DPR *and* a total pixel budget;
-//   • prefers-reduced-motion renders one static frame and never loops.
+//   • prefers-reduced-motion renders one static image and never loops.
 const RESIZE_DEBOUNCE_MS = 180
 // Simulated frames burned to produce the single reduced-motion image — enough
 // for particles to leave their spawn points and grow trails (~3s at 30fps).
