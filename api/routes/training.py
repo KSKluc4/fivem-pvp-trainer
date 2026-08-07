@@ -5,6 +5,7 @@ from services.routine_generator import generate_routine
 from services.level_service import resolve_action_level
 from services.aim_level import compute_per_category_levels, resolve_aim_accelerator
 from utils import require_auth
+from services.security_log import security_event
 
 training_bp = Blueprint('training', __name__)
 
@@ -13,6 +14,7 @@ training_bp = Blueprint('training', __name__)
 @require_auth
 def get_training(user_id):
     if g.user_id != user_id:
+        security_event('forbidden_cross_user', actor=g.user_id, target=user_id)
         return jsonify({'error': 'Proibido'}), 403
 
     today   = date.today().isoformat()

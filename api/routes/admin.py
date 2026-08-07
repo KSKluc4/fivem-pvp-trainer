@@ -3,6 +3,7 @@ from functools import wraps
 from flask import Blueprint, request, jsonify, g
 from database import get_user_by_id, get_admin_stats, get_admin_users
 from utils import decode_access_token
+from services.security_log import security_event
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -21,6 +22,7 @@ def require_admin(f):
         g.user_id = user_id
         user = get_user_by_id(user_id)
         if not user or not user.get('is_admin'):
+            security_event('forbidden_admin', actor=user_id)
             return jsonify({'error': 'Acesso negado'}), 403
         return f(*args, **kwargs)
     return decorated

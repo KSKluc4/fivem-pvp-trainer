@@ -1,3 +1,4 @@
+import html
 import os
 import resend
 
@@ -8,8 +9,12 @@ _SUBJECT = 'Redefinição de senha / Password reset — FiveM PvP Trainer'
 
 
 def _reset_html(name: str, reset_url: str) -> str:
-    greeting = f'Olá, {name}.' if name else 'Olá.'
-    hi       = f'Hi {name},' if name else 'Hi,'
+    # `name` é digitado pelo usuário (/auth/register, /auth/profile) e, ao
+    # contrário da bio, nunca passa por strip_html_tags — escapar aqui é o que
+    # impede um nome como "<b>x</b>" de virar marcação dentro do email.
+    safe_name = html.escape(name or '')
+    greeting  = f'Olá, {safe_name}.' if safe_name else 'Olá.'
+    hi        = f'Hi {safe_name},' if safe_name else 'Hi,'
     return f"""
     <div style="background:#10101c;padding:40px 20px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;">
       <div style="max-width:480px;margin:0 auto;background:#16162a;border:1px solid #33334d;border-radius:12px;padding:32px;">

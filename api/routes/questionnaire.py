@@ -32,6 +32,21 @@ def _as_list(value, default):
     return items or ([default] if default else [])
 
 
+MIN_DAILY_TIME = 5
+MAX_DAILY_TIME = 240
+
+
+def _as_int(value, default, minimum, maximum):
+    """Nunca levanta: valor não-numérico vira o default e o resultado é sempre
+    grampeado ao intervalo aceitável. Antes, um daily_time não-numérico chegava
+    cru no int() e derrubava a rota inteira com 500."""
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, v))
+
+
 def _build_profile_from_payload(data):
     return {
         'focus_area':        _as_list(data.get('focus_area'), 'aim'),
@@ -39,7 +54,7 @@ def _build_profile_from_payload(data):
         'aim_difficulty':    _as_list(data.get('aim_difficulty'), ''),
         'reflex_level':      data.get('reflex_level', ''),
         'movement_quality':  data.get('movement_quality', ''),
-        'daily_time':        int(data.get('daily_time', 30)),
+        'daily_time':        _as_int(data.get('daily_time'), 30, MIN_DAILY_TIME, MAX_DAILY_TIME),
         'preferred_tool':    data.get('preferred_tool', 'aimlab'),
         'main_weapon':       data.get('main_weapon', ''),
         'specific_weakness': _as_list(data.get('specific_weakness'), ''),

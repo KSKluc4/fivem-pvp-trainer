@@ -16,6 +16,7 @@ from utils import (
 )
 from services.email import send_password_reset_email
 from services.rate_limit import check_and_hit, client_ip
+from services.security_log import security_event
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -104,9 +105,11 @@ def login():
 
     user = get_user_by_email(identifier) if '@' in identifier else get_user_by_username(identifier)
     if not user or not user.get('password_hash'):
+        security_event('login_failed', reason='user_not_found', identifier=identifier[:40])
         return jsonify({'error': 'Username ou senha incorretos'}), 401
 
     if not verify_password(password, user['password_hash']):
+        security_event('login_failed', reason='bad_password', user_id=user['id'])
         return jsonify({'error': 'Username ou senha incorretos'}), 401
 
     # Silently migrate legacy werkzeug hashes to bcrypt

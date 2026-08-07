@@ -5,6 +5,7 @@ from database import (
     get_action_level_summary, get_activity_heatmap,
 )
 from utils import require_auth
+from services.security_log import security_event
 
 progress_bp = Blueprint('progress', __name__)
 
@@ -16,6 +17,7 @@ MAX_HEATMAP_DAYS = 365
 @require_auth
 def get_progress(user_id):
     if g.user_id != user_id:
+        security_event('forbidden_cross_user', actor=g.user_id, target=user_id)
         return jsonify({'error': 'Proibido'}), 403
     return jsonify(get_progress_history(user_id))
 
@@ -24,6 +26,7 @@ def get_progress(user_id):
 @require_auth
 def get_action_level(user_id):
     if g.user_id != user_id:
+        security_event('forbidden_cross_user', actor=g.user_id, target=user_id)
         return jsonify({'error': 'Proibido'}), 403
     summary = get_action_level_summary(user_id)
     return jsonify(summary)  # None -> JSON null when the user has no goal_levels row yet
@@ -33,6 +36,7 @@ def get_action_level(user_id):
 @require_auth
 def get_heatmap(user_id):
     if g.user_id != user_id:
+        security_event('forbidden_cross_user', actor=g.user_id, target=user_id)
         return jsonify({'error': 'Proibido'}), 403
     try:
         days = max(1, min(MAX_HEATMAP_DAYS, int(request.args.get('days', DEFAULT_HEATMAP_DAYS))))
@@ -63,6 +67,9 @@ def save_progress():
 
         return jsonify({'message': 'Progresso salvo'}), 201
 
-    except Exception as exc:
+    except Exception:
+        # O detalhe fica no log da Vercel, nunca na resposta: a mensagem crua do
+        # Supabase carrega nome de tabela, de coluna e de constraint — mapa da
+        # estrutura do banco entregue de graça a quem chamar a rota errado.
         traceback.print_exc()
-        return jsonify({'error': str(exc)}), 500
+        return jsonify({'error': 'Não foi possível salvar o progresso agora.'}), 500
